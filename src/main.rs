@@ -4,6 +4,8 @@ mod cartridge;
 mod cartridge_header;
 mod cpu;
 mod emulator;
+mod memory_device;
+mod opcodes;
 mod register;
 
 fn main() -> Result<(), std::io::Error> {
@@ -20,7 +22,11 @@ fn main() -> Result<(), std::io::Error> {
     let rom = &args[1];
     println!("load of {}", &rom);
 
-    let _emu = emulator::Emulator::new(rom);
+    let emu = emulator::Emulator::new(rom)?;
+
+    loop {
+        emu.step();
+    }
 
     Ok(())
 }
