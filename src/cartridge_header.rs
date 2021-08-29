@@ -3,8 +3,11 @@ use std::num::Wrapping;
 pub struct CartridgeHeader {
     title: String,
     memory_bank_type: MemoryBankType,
+    ram_size: RamSize,
 }
 
+/// Specifies which Memory Bank Controller (if any) is used in
+/// the cartridge, and if further external hardware exists
 #[derive(Debug, PartialEq, Eq)]
 pub enum MemoryBankType {
     NoMemoryBank,
@@ -64,6 +67,26 @@ fn decode_memory_bank_type(data: &[u8]) -> MemoryBankType {
     }
 }
 
+/// Specifies the size of the external RAM in the cartridge (if any).
+enum RamSize {
+    None,
+    OneBankOf2Kb,
+    OneBankOf8Kb,
+    FourBankOf8Kb,
+}
+
+impl From<u8> for RamSize {
+    fn from(orig: u8) -> Self {
+        match orig {
+            0x0 => RamSize::None,
+            0x1 => RamSize::OneBankOf2Kb,
+            0x2 => RamSize::OneBankOf8Kb,
+            0x3 => RamSize::FourBankOf8Kb,
+            _ => panic!("unknown ram size"),
+        }
+    }
+}
+
 impl CartridgeHeader {
     pub fn new(data: &[u8]) -> Result<Self, std::io::Error> {
         let t = data[0x134..0x144]
@@ -78,7 +101,17 @@ impl CartridgeHeader {
         Ok(CartridgeHeader {
             title: String::from_utf8(t).unwrap(),
             memory_bank_type: decode_memory_bank_type(data),
+            ram_size: data[0x149].into(),
         })
+    }
+
+    pub fn ram_in_bytes(&self) -> usize {
+        match self.ram_size {
+            RamSize::None => 0,
+            RamSize::OneBankOf2Kb => 1 * (2 * 1024),
+            RamSize::OneBankOf8Kb => 1 * (8 * 1024),
+            RamSize::FourBankOf8Kb => 4 * (8 * 1024),
+        }
     }
 }
 
@@ -123,5 +156,14 @@ mod tests {
             header.unwrap().memory_bank_type,
             MemoryBankType::NoMemoryBank
         );
+    }
+
+    #[test]
+    fn verify_ram_size() {
+        let data = fs::read("./roms/Tetris.gb");
+        assert_eq!(data.is_err(), false);
+        let header = CartridgeHeader::new(&data.unwrap());
+        assert_eq!(header.is_err(), false);
+        assert_eq!(header.unwrap().ram_in_bytes(), 0);
     }
 }
