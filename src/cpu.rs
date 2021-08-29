@@ -78,6 +78,14 @@ impl CPU {
             OpCode::LdAH => self.ld_r_r(Register::A, Register::H),
             OpCode::LdAL => self.ld_r_r(Register::A, Register::L),
             OpCode::LdAA => self.ld_r_r(Register::A, Register::A),
+
+            OpCode::LdBNext => self.ld_r_next(Register::B),
+            OpCode::LdCNext => self.ld_r_next(Register::B),
+            OpCode::LdDNext => self.ld_r_next(Register::B),
+            OpCode::LdENext => self.ld_r_next(Register::B),
+            OpCode::LdHNext => self.ld_r_next(Register::B),
+            OpCode::LdLNext => self.ld_r_next(Register::B),
+            OpCode::LdANext => self.ld_r_next(Register::B),
         }
     }
 
@@ -129,5 +137,21 @@ impl CPU {
         };
 
         4
+    }
+
+    fn ld_r_next(self: &mut Self, reg: Register) -> u8 {
+        let r = self.fetch_byte();
+        match reg {
+            Register::B => self.registers.b = r,
+            Register::C => self.registers.c = r,
+            Register::D => self.registers.d = r,
+            Register::E => self.registers.e = r,
+            Register::H => self.registers.h = r,
+            Register::L => self.registers.l = r,
+            Register::A => self.registers.a = r,
+            _ => panic!("can't ld_r_next"),
+        };
+
+        8
     }
 }

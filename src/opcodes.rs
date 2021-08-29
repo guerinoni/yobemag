@@ -71,6 +71,18 @@ pub enum OpCode {
     LdAL,
     LdAA,
 
+    /// LD r, n
+    /// Byte n is read as an integer and loaded into register r. Register
+    /// r may be any of B, C, D, E, H, L or A.
+    /// Clock cycles: 8
+    LdBNext,
+    LdCNext,
+    LdDNext,
+    LdENext,
+    LdHNext,
+    LdLNext,
+    LdANext,
+
     /// The CPU performs no operation during this cycle.
     /// Clock cycles: 4
     Noop,
@@ -142,6 +154,13 @@ impl From<u8> for OpCode {
             0x7C => OpCode::LdAH,
             0x7D => OpCode::LdAL,
             0x7F => OpCode::LdAA,
+            0x6 => OpCode::LdBNext,
+            0xE => OpCode::LdCNext,
+            0x16 => OpCode::LdDNext,
+            0x1E => OpCode::LdENext,
+            0x26 => OpCode::LdHNext,
+            0x2E => OpCode::LdLNext,
+            0x3E => OpCode::LdANext,
             _ => panic!("unknown ram size"),
         }
     }
