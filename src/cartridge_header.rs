@@ -1,8 +1,19 @@
-
 use std::num::Wrapping;
 
 pub struct CartridgeHeader {
     title: String,
+    memory_bank_type: MemoryBankType,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum MemoryBankType {
+    NoMemoryBank,
+    MBC1,
+    MBC2,
+    MMM01,
+    MBC3,
+    MBC4,
+    MBC5,
 }
 
 const NINTENDO_LOGO: [u8; 48] = [
@@ -12,7 +23,7 @@ const NINTENDO_LOGO: [u8; 48] = [
 ];
 
 /// original games have all nintengo logo bytes insiede its cartridge.
-fn check_logo(data: &Vec<u8>) -> Result<(), std::io::Error> {
+fn check_logo(data: &[u8]) -> Result<(), std::io::Error> {
     match data[0x104..0x134].iter().cmp(NINTENDO_LOGO.iter()) {
         std::cmp::Ordering::Equal => Ok(()),
         std::cmp::Ordering::Less | std::cmp::Ordering::Greater => Err(std::io::Error::new(
@@ -23,12 +34,11 @@ fn check_logo(data: &Vec<u8>) -> Result<(), std::io::Error> {
 }
 
 /// since gameboy check for non original games when loading cartridge.
-pub fn valid_checksum(data: &Vec<u8>) -> Result<(), std::io::Error> {
+pub fn valid_checksum(data: &[u8]) -> Result<(), std::io::Error> {
     let checksum: Wrapping<u8> = data[0x134..0x14D]
-    .iter()
-    .cloned()
-    .map(|v| Wrapping(v))
-    .fold(Wrapping(0), |acc, v| acc - v - Wrapping(1));
+        .iter()
+        .cloned()
+        .fold(Wrapping(0), |acc, v| acc - Wrapping(v) - Wrapping(1));
 
     dbg!(checksum);
     if checksum.0 != data[0x14D] {
@@ -41,19 +51,33 @@ pub fn valid_checksum(data: &Vec<u8>) -> Result<(), std::io::Error> {
     Ok(())
 }
 
+fn decode_memory_bank_type(data: &[u8]) -> MemoryBankType {
+    match data[0x147] {
+        0x00 | 0x08..=0x09 => MemoryBankType::NoMemoryBank,
+        0x01..=0x03 => MemoryBankType::MBC1,
+        0x05..=0x06 => MemoryBankType::MBC2,
+        0x0B..=0x0D => MemoryBankType::MMM01,
+        0x0F..=0x13 => MemoryBankType::MBC3,
+        0x15..=0x17 => MemoryBankType::MBC4,
+        0x19..=0x1E => MemoryBankType::MBC5,
+        _ => panic!("unknown memory bank type"),
+    }
+}
+
 impl CartridgeHeader {
-    pub fn new(data: &Vec<u8>) -> Result<Self, std::io::Error> {
+    pub fn new(data: &[u8]) -> Result<Self, std::io::Error> {
         let t = data[0x134..0x144]
             .iter()
             .take_while(|&&v| v > 0)
-            .map(|&c| c)
+            .copied()
             .collect::<Vec<_>>();
 
-        check_logo(&data)?;
-        valid_checksum(&data)?;
+        check_logo(data)?;
+        valid_checksum(data)?;
 
         Ok(CartridgeHeader {
             title: String::from_utf8(t).unwrap(),
+            memory_bank_type: decode_memory_bank_type(data),
         })
     }
 }
@@ -62,7 +86,7 @@ impl CartridgeHeader {
 mod tests {
     use std::fs;
 
-    use crate::cartridge_header::CartridgeHeader;
+    use crate::cartridge_header::*;
 
     #[test]
     fn verify_title() {
@@ -87,5 +111,17 @@ mod tests {
         assert_eq!(data.is_err(), false);
         let header = CartridgeHeader::new(&data.unwrap());
         assert_eq!(header.is_err(), false);
+    }
+
+    #[test]
+    fn verify_memory_bank_type() {
+        let data = fs::read("./roms/Tetris.gb");
+        assert_eq!(data.is_err(), false);
+        let header = CartridgeHeader::new(&data.unwrap());
+        assert_eq!(header.is_err(), false);
+        assert_eq!(
+            header.unwrap().memory_bank_type,
+            MemoryBankType::NoMemoryBank
+        );
     }
 }
