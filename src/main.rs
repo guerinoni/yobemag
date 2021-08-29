@@ -1,5 +1,9 @@
 use std::env;
 
+mod cartridge;
+mod cartridge_header;
+mod emulator;
+
 fn main() -> Result<(), std::io::Error> {
     println!("starting yobemag...");
 
@@ -13,6 +17,8 @@ fn main() -> Result<(), std::io::Error> {
 
     let rom = &args[1];
     println!("load of {}", &rom);
+
+    let _emu = emulator::Emulator::new(rom);
 
     Ok(())
 }
