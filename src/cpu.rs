@@ -86,6 +86,14 @@ impl CPU {
             OpCode::LdHNext => self.ld_r_next(Register::B),
             OpCode::LdLNext => self.ld_r_next(Register::B),
             OpCode::LdANext => self.ld_r_next(Register::B),
+
+            OpCode::LdBHL => self.ld_r_next(Register::B),
+            OpCode::LdCHL => self.ld_r_next(Register::B),
+            OpCode::LdDHL => self.ld_r_next(Register::B),
+            OpCode::LdEHL => self.ld_r_next(Register::B),
+            OpCode::LdHHL => self.ld_r_next(Register::B),
+            OpCode::LdLHL => self.ld_r_next(Register::B),
+            OpCode::LdAHL => self.ld_r_next(Register::B),
         }
     }
 
@@ -149,6 +157,22 @@ impl CPU {
             Register::H => self.registers.h = r,
             Register::L => self.registers.l = r,
             Register::A => self.registers.a = r,
+            _ => panic!("can't ld_r_next"),
+        };
+
+        8
+    }
+
+    fn ld_r_hl(self: &mut Self, reg: Register) -> u8 {
+        let hl = self.device.read_byte(self.registers.hl() as usize).unwrap();
+        match reg {
+            Register::B => self.registers.b = hl,
+            Register::C => self.registers.c = hl,
+            Register::D => self.registers.d = hl,
+            Register::E => self.registers.e = hl,
+            Register::H => self.registers.h = hl,
+            Register::L => self.registers.l = hl,
+            Register::A => self.registers.a = hl,
             _ => panic!("can't ld_r_next"),
         };
 

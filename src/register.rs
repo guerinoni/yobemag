@@ -38,4 +38,11 @@ impl Registers {
             stack_pointer: 0xFFFE,
         }
     }
+
+    pub fn hl(self: &Self) -> u16 {
+        let ret = self.h << 8;
+        let mut ret = ret as u16;
+        ret = ret | self.l as u16;
+        ret
+    }
 }

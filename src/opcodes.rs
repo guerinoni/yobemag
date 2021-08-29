@@ -83,6 +83,19 @@ pub enum OpCode {
     LdLNext,
     LdANext,
 
+    /// LD r, (HL)
+    /// The byte at the memory address stored in the register pair HL is
+    /// loaded into register r. Register r may be any of B, C, D, E, H, L
+    /// or A.
+    /// Clock cycles: 8
+    LdBHL,
+    LdCHL,
+    LdDHL,
+    LdEHL,
+    LdHHL,
+    LdLHL,
+    LdAHL,
+
     /// The CPU performs no operation during this cycle.
     /// Clock cycles: 4
     Noop,
@@ -105,6 +118,7 @@ impl From<u8> for OpCode {
             0x0 => OpCode::Noop,
             0x76 => OpCode::Halt,
             0x10 => OpCode::Stop,
+
             0x40 => OpCode::LdBB,
             0x41 => OpCode::LdBC,
             0x42 => OpCode::LdBD,
@@ -154,6 +168,7 @@ impl From<u8> for OpCode {
             0x7C => OpCode::LdAH,
             0x7D => OpCode::LdAL,
             0x7F => OpCode::LdAA,
+
             0x6 => OpCode::LdBNext,
             0xE => OpCode::LdCNext,
             0x16 => OpCode::LdDNext,
@@ -161,6 +176,15 @@ impl From<u8> for OpCode {
             0x26 => OpCode::LdHNext,
             0x2E => OpCode::LdLNext,
             0x3E => OpCode::LdANext,
+
+            0x46 => OpCode::LdBHL,
+            0x4E => OpCode::LdCHL,
+            0x56 => OpCode::LdDHL,
+            0x5E => OpCode::LdEHL,
+            0x66 => OpCode::LdHHL,
+            0x6E => OpCode::LdLHL,
+            0x7E => OpCode::LdAHL,
+
             _ => panic!("unknown ram size"),
         }
     }
