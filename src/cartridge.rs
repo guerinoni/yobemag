@@ -24,7 +24,7 @@ impl ReadWrite for NoMBCartridge {
         }
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
         Ok(0)
     }
 

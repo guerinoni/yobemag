@@ -22,6 +22,14 @@ impl CPU {
     }
 
     pub fn step(self: &mut Self) -> u8 {
+        if self.stop {
+            return 0;
+        }
+
+        if self.halt {
+            return self.noop();
+        }
+
         let op_code = self.fetch_byte();
         dbg!(op_code);
         match op_code.into() {
@@ -87,13 +95,15 @@ impl CPU {
             OpCode::LdLNext => self.ld_r_next(Register::B),
             OpCode::LdANext => self.ld_r_next(Register::B),
 
-            OpCode::LdBHL => self.ld_r_next(Register::B),
-            OpCode::LdCHL => self.ld_r_next(Register::B),
-            OpCode::LdDHL => self.ld_r_next(Register::B),
-            OpCode::LdEHL => self.ld_r_next(Register::B),
-            OpCode::LdHHL => self.ld_r_next(Register::B),
-            OpCode::LdLHL => self.ld_r_next(Register::B),
-            OpCode::LdAHL => self.ld_r_next(Register::B),
+            OpCode::LdBHL => self.ld_r_hl(Register::B),
+            OpCode::LdCHL => self.ld_r_hl(Register::B),
+            OpCode::LdDHL => self.ld_r_hl(Register::B),
+            OpCode::LdEHL => self.ld_r_hl(Register::B),
+            OpCode::LdHHL => self.ld_r_hl(Register::B),
+            OpCode::LdLHL => self.ld_r_hl(Register::B),
+            OpCode::LdAHL => self.ld_r_hl(Register::B),
+
+            OpCode::JpNN => self.jp_nn(),
         }
     }
 
@@ -105,6 +115,16 @@ impl CPU {
         self.registers.program_counter += 1;
 
         byte
+    }
+
+    fn fetch_word(self: &mut Self) -> u16 {
+        let word = self
+            .device
+            .read_word(self.registers.program_counter as usize)
+            .unwrap();
+        self.registers.program_counter += 2;
+
+        word
     }
 
     fn noop(self: &Self) -> u8 {
@@ -177,5 +197,11 @@ impl CPU {
         };
 
         8
+    }
+
+    fn jp_nn(self: &mut Self) -> u8 {
+        let nn = self.fetch_word();
+        self.registers.program_counter = nn;
+        16
     }
 }

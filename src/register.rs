@@ -40,8 +40,8 @@ impl Registers {
     }
 
     pub fn hl(self: &Self) -> u16 {
-        let ret = self.h << 8;
-        let mut ret = ret as u16;
+        let mut ret = self.h as u16;
+        ret = ret << 8;
         ret = ret | self.l as u16;
         ret
     }

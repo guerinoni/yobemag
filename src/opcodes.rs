@@ -96,6 +96,12 @@ pub enum OpCode {
     LdLHL,
     LdAHL,
 
+    /// JP nn
+    /// The 16-bit word nn is loaded into the program counter, from where
+    /// execution continues.
+    /// Clock cycles: 16
+    JpNN,
+
     /// The CPU performs no operation during this cycle.
     /// Clock cycles: 4
     Noop,
@@ -184,6 +190,8 @@ impl From<u8> for OpCode {
             0x66 => OpCode::LdHHL,
             0x6E => OpCode::LdLHL,
             0x7E => OpCode::LdAHL,
+
+            0xC3 => OpCode::JpNN,
 
             _ => panic!("unknown ram size"),
         }
