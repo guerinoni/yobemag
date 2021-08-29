@@ -3,6 +3,7 @@ use std::env;
 mod cartridge;
 mod cartridge_header;
 mod emulator;
+mod register;
 
 fn main() -> Result<(), std::io::Error> {
     println!("starting yobemag...");
