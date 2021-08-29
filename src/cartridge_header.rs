@@ -2,7 +2,7 @@ use std::num::Wrapping;
 
 pub struct CartridgeHeader {
     title: String,
-    memory_bank_type: MemoryBankType,
+    pub memory_bank_type: MemoryBankType,
     ram_size: RamSize,
     gameboy_color_support: GameBoyColorFlag,
 }
