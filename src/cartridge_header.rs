@@ -4,6 +4,7 @@ pub struct CartridgeHeader {
     title: String,
     memory_bank_type: MemoryBankType,
     ram_size: RamSize,
+    gameboy_color_support: GameBoyColorFlag,
 }
 
 /// Specifies which Memory Bank Controller (if any) is used in
@@ -87,6 +88,34 @@ impl From<u8> for RamSize {
     }
 }
 
+/// In CGB cartridges the upper bit is used to enable CGB functions.
+/// This is required, otherwise the CGB switches itself into Non-CGB-Mode.
+///  - 80h: Game supports CGB functions, but works on old gameboys also.
+///  - C0h: Game works on CGB only (physically the same as 80h).
+/// Values with Bit 7 set, and either Bit 2 or 3 set, will switch the gameboy
+/// into a special non-CGB-mode with uninitialized palettes. Purpose unknown,
+/// eventually this has been supposed to be used to colorize monochrome games
+/// that include fixed palette data at a special location in ROM.
+#[derive(Debug, PartialEq, Eq)]
+enum GameBoyColorFlag {
+    /// Uses GB features only; default
+    GB,
+    /// Uses CGB features but works on GB
+    CgbGb = 0x80,
+    /// Uses CGB features and does not work on GB
+    CGB = 0xC0,
+}
+
+impl From<u8> for GameBoyColorFlag {
+    fn from(orig: u8) -> Self {
+        match orig {
+            0x80 => GameBoyColorFlag::CgbGb,
+            0xC0 => GameBoyColorFlag::CGB,
+            _ => GameBoyColorFlag::GB,
+        }
+    }
+}
+
 impl CartridgeHeader {
     pub fn new(data: &[u8]) -> Result<Self, std::io::Error> {
         let t = data[0x134..0x144]
@@ -102,6 +131,7 @@ impl CartridgeHeader {
             title: String::from_utf8(t).unwrap(),
             memory_bank_type: decode_memory_bank_type(data),
             ram_size: data[0x149].into(),
+            gameboy_color_support: data[0x149].into(),
         })
     }
 
@@ -165,5 +195,14 @@ mod tests {
         let header = CartridgeHeader::new(&data.unwrap());
         assert_eq!(header.is_err(), false);
         assert_eq!(header.unwrap().ram_in_bytes(), 0);
+    }
+
+    #[test]
+    fn verify_gameboy_color_support() {
+        let data = fs::read("./roms/Tetris.gb");
+        assert_eq!(data.is_err(), false);
+        let header = CartridgeHeader::new(&data.unwrap());
+        assert_eq!(header.is_err(), false);
+        assert_eq!(header.unwrap().gameboy_color_support, GameBoyColorFlag::GB);
     }
 }
