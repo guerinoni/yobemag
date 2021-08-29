@@ -1,3 +1,6 @@
+
+use std::num::Wrapping;
+
 pub struct CartridgeHeader {
     title: String,
 }
@@ -8,6 +11,7 @@ const NINTENDO_LOGO: [u8; 48] = [
     0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E,
 ];
 
+/// original games have all nintengo logo bytes insiede its cartridge.
 fn check_logo(data: &Vec<u8>) -> Result<(), std::io::Error> {
     match data[0x104..0x134].iter().cmp(NINTENDO_LOGO.iter()) {
         std::cmp::Ordering::Equal => Ok(()),
@@ -16,6 +20,25 @@ fn check_logo(data: &Vec<u8>) -> Result<(), std::io::Error> {
             "logo bytes are corrupted.",
         )),
     }
+}
+
+/// since gameboy check for non original games when loading cartridge.
+pub fn valid_checksum(data: &Vec<u8>) -> Result<(), std::io::Error> {
+    let checksum: Wrapping<u8> = data[0x134..0x14D]
+    .iter()
+    .cloned()
+    .map(|v| Wrapping(v))
+    .fold(Wrapping(0), |acc, v| acc - v - Wrapping(1));
+
+    dbg!(checksum);
+    if checksum.0 != data[0x14D] {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "checksum not valid.",
+        ));
+    }
+
+    Ok(())
 }
 
 impl CartridgeHeader {
@@ -27,6 +50,7 @@ impl CartridgeHeader {
             .collect::<Vec<_>>();
 
         check_logo(&data)?;
+        valid_checksum(&data)?;
 
         Ok(CartridgeHeader {
             title: String::from_utf8(t).unwrap(),
@@ -51,6 +75,14 @@ mod tests {
 
     #[test]
     fn verify_nintendo_logo() {
+        let data = fs::read("./roms/Tetris.gb");
+        assert_eq!(data.is_err(), false);
+        let header = CartridgeHeader::new(&data.unwrap());
+        assert_eq!(header.is_err(), false);
+    }
+
+    #[test]
+    fn verify_checksum() {
         let data = fs::read("./roms/Tetris.gb");
         assert_eq!(data.is_err(), false);
         let header = CartridgeHeader::new(&data.unwrap());
