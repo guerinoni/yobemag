@@ -2,6 +2,7 @@ use std::env;
 
 mod cartridge;
 mod cartridge_header;
+mod cpu;
 mod emulator;
 mod register;
 
