@@ -12,7 +12,7 @@ impl Emulator {
         })
     }
 
-    pub fn step(self: &Self) {
+    pub fn step(self: &mut Self) {
         self.cpu.step();
     }
 }

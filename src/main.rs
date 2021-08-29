@@ -22,7 +22,7 @@ fn main() -> Result<(), std::io::Error> {
     let rom = &args[1];
     println!("load of {}", &rom);
 
-    let emu = emulator::Emulator::new(rom)?;
+    let mut emu = emulator::Emulator::new(rom)?;
 
     loop {
         emu.step();

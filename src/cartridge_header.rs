@@ -44,7 +44,6 @@ pub fn valid_checksum(data: &[u8]) -> Result<(), std::io::Error> {
         .cloned()
         .fold(Wrapping(0), |acc, v| acc - Wrapping(v) - Wrapping(1));
 
-    dbg!(checksum);
     if checksum.0 != data[0x14D] {
         return Err(std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
