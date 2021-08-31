@@ -103,6 +103,11 @@ pub enum OpCode {
     LdHlL,
     LdHlA,
 
+    /// LD (HL), n
+    /// Byte n is read as an integer and loaded into the memory address specified in the register pair HL.
+    /// Clock cycles: 12
+    LdHlN,
+
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
     /// Clock cycles: 16
@@ -205,6 +210,8 @@ impl From<u8> for OpCode {
             0x75 => OpCode::LdHlL,
             0x77 => OpCode::LdHlA,
 
+            0x36 => OpCode::LdHlN,
+            
             0xC3 => OpCode::JpNN,
 
             _ => panic!("unknown opcode"),

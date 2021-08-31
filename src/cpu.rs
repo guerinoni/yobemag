@@ -90,20 +90,30 @@ impl CPU {
             OpCode::LdAA => self.ld_r_r(Register::A, Register::A),
 
             OpCode::LdBNext => self.ld_r_next(Register::B),
-            OpCode::LdCNext => self.ld_r_next(Register::B),
-            OpCode::LdDNext => self.ld_r_next(Register::B),
-            OpCode::LdENext => self.ld_r_next(Register::B),
-            OpCode::LdHNext => self.ld_r_next(Register::B),
-            OpCode::LdLNext => self.ld_r_next(Register::B),
-            OpCode::LdANext => self.ld_r_next(Register::B),
+            OpCode::LdCNext => self.ld_r_next(Register::C),
+            OpCode::LdDNext => self.ld_r_next(Register::D),
+            OpCode::LdENext => self.ld_r_next(Register::E),
+            OpCode::LdHNext => self.ld_r_next(Register::H),
+            OpCode::LdLNext => self.ld_r_next(Register::L),
+            OpCode::LdANext => self.ld_r_next(Register::A),
 
             OpCode::LdBHL => self.ld_r_hl(Register::B),
-            OpCode::LdCHL => self.ld_r_hl(Register::B),
-            OpCode::LdDHL => self.ld_r_hl(Register::B),
-            OpCode::LdEHL => self.ld_r_hl(Register::B),
-            OpCode::LdHHL => self.ld_r_hl(Register::B),
-            OpCode::LdLHL => self.ld_r_hl(Register::B),
-            OpCode::LdAHL => self.ld_r_hl(Register::B),
+            OpCode::LdCHL => self.ld_r_hl(Register::C),
+            OpCode::LdDHL => self.ld_r_hl(Register::D),
+            OpCode::LdEHL => self.ld_r_hl(Register::E),
+            OpCode::LdHHL => self.ld_r_hl(Register::H),
+            OpCode::LdLHL => self.ld_r_hl(Register::L),
+            OpCode::LdAHL => self.ld_r_hl(Register::A),
+
+            OpCode::LdHlB => self.ld_hl_r(Register::B),
+            OpCode::LdHlC => self.ld_hl_r(Register::C),
+            OpCode::LdHlD => self.ld_hl_r(Register::D),
+            OpCode::LdHlE => self.ld_hl_r(Register::E),
+            OpCode::LdHlH => self.ld_hl_r(Register::H),
+            OpCode::LdHlL => self.ld_hl_r(Register::L),
+            OpCode::LdHlA => self.ld_hl_r(Register::A),
+
+            OpCode::LdHlN => self.ld_hl_next(),
 
             OpCode::JpNN => self.jp_nn(),
         }
@@ -213,7 +223,15 @@ impl CPU {
             _ => panic!("can't ld_r_next"),
         };
 
-        self.device.write_byte(self.registers.hl() as usize, r);
+        self.device.write_byte(self.registers.hl() as usize, r).unwrap(); // TODO: check result
+
+        8
+    }
+
+    fn ld_hl_next(self: &mut Self) -> u8 {
+        let hl = self.registers.hl();
+        let next = self.fetch_byte();
+        self.device.write_byte(hl as usize, next).unwrap(); // TODO: check result
 
         8
     }
