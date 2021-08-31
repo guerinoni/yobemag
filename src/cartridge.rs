@@ -19,7 +19,7 @@ impl ReadWrite for NoMBCartridge {
             0x0000..=0x7FFF => Ok(self.rom[address]),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::OutOfMemory,
-                "can't read byte for NoMBCartridge over 0x7FFF",
+                "can't read byte for NoMBCartridge over 0x7FFF.",
             )),
         }
     }
@@ -28,11 +28,14 @@ impl ReadWrite for NoMBCartridge {
         Ok(0)
     }
 
-    fn write_byte(self: &Self, address: usize, value: u8) -> Result<(), std::io::Error> {
-        Ok(())
+    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::OutOfMemory,
+            "can't write byte for NoMBCartridge on ram.",
+        ))
     }
 
-    fn write_word(self: &Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
         Ok(())
     }
 }
