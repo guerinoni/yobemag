@@ -1,6 +1,6 @@
 pub struct Registers {
     pub a: u8,
-    flags: CpuFlag,
+    pub flags: CpuFlag,
     pub b: u8,
     pub c: u8,
     pub d: u8,
@@ -11,11 +11,37 @@ pub struct Registers {
     pub stack_pointer: u16,
 }
 
-struct CpuFlag {
+#[derive(PartialEq, Eq)]
+pub enum SideEffect {
+    Unmodified,
+    Set,
+    Unset,
+    Dependent,
+}
+
+pub struct SideEffectsCpuFlags {
+    pub carry: SideEffect,
+    pub half_carry: SideEffect,
+    pub negative: SideEffect,
+    pub zero: SideEffect,
+}
+
+pub struct CpuFlag {
     carry: bool,
     half_carry: bool,
     negative: bool,
     zero: bool,
+}
+
+impl CpuFlag {
+    pub fn evaluate_effect(self: &mut Self, value: u8, effects: SideEffectsCpuFlags) {
+        self.zero = match effects.zero {
+            SideEffect::Dependent => value == 0,
+            SideEffect::Set => true,
+            SideEffect::Unset => false,
+            SideEffect::Unmodified => self.zero,
+        }
+    }
 }
 
 impl Registers {

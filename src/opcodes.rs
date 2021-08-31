@@ -108,6 +108,18 @@ pub enum OpCode {
     /// Clock cycles: 12
     LdHlN,
 
+    // XOR r
+    // A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
+    // stored in register A.
+    // Clock cycles: 4
+    XorB,
+    XorC,
+    XorD,
+    XorE,
+    XorH,
+    XorL,
+    XorA,
+
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
     /// Clock cycles: 16
@@ -211,7 +223,15 @@ impl From<u8> for OpCode {
             0x77 => OpCode::LdHlA,
 
             0x36 => OpCode::LdHlN,
-            
+
+            0xA8 => OpCode::XorB,
+            0xA9 => OpCode::XorC,
+            0xAA => OpCode::XorD,
+            0xAB => OpCode::XorE,
+            0xAC => OpCode::XorH,
+            0xAD => OpCode::XorL,
+            0xAF => OpCode::XorA,
+
             0xC3 => OpCode::JpNN,
 
             _ => panic!("unknown opcode"),

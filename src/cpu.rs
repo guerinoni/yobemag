@@ -1,10 +1,4 @@
-use std::ops::DerefMut;
-
-use crate::{
-    memory_device::ReadWrite,
-    opcodes::*,
-    register::{self, Registers},
-};
+use crate::{memory_device::ReadWrite, opcodes::*, register::*};
 
 pub struct CPU {
     registers: Registers,
@@ -35,10 +29,6 @@ impl CPU {
         let op_code = self.fetch_byte();
         dbg!(op_code);
         match op_code.into() {
-            OpCode::Noop => self.noop(),
-            OpCode::Stop => self.stop(),
-            OpCode::Halt => self.halt(),
-
             OpCode::LdBB => self.ld_r_r(Register::B, Register::B),
             OpCode::LdBC => self.ld_r_r(Register::B, Register::C),
             OpCode::LdBD => self.ld_r_r(Register::B, Register::D),
@@ -115,7 +105,19 @@ impl CPU {
 
             OpCode::LdHlN => self.ld_hl_next(),
 
+            OpCode::XorB => self.xor_r(Register::B),
+            OpCode::XorC => self.xor_r(Register::C),
+            OpCode::XorD => self.xor_r(Register::D),
+            OpCode::XorE => self.xor_r(Register::E),
+            OpCode::XorH => self.xor_r(Register::H),
+            OpCode::XorL => self.xor_r(Register::L),
+            OpCode::XorA => self.xor_r(Register::A),
+
             OpCode::JpNN => self.jp_nn(),
+
+            OpCode::Noop => self.noop(),
+            OpCode::Stop => self.stop(),
+            OpCode::Halt => self.halt(),
         }
     }
 
@@ -205,7 +207,7 @@ impl CPU {
             Register::H => self.registers.h = hl,
             Register::L => self.registers.l = hl,
             Register::A => self.registers.a = hl,
-            _ => panic!("can't ld_r_next"),
+            _ => panic!("can't ld_r_hl"),
         };
 
         8
@@ -220,10 +222,12 @@ impl CPU {
             Register::H => self.registers.h,
             Register::L => self.registers.l,
             Register::A => self.registers.a,
-            _ => panic!("can't ld_r_next"),
+            _ => panic!("can't ld_hl_r"),
         };
 
-        self.device.write_byte(self.registers.hl() as usize, r).unwrap(); // TODO: check result
+        self.device
+            .write_byte(self.registers.hl() as usize, r)
+            .unwrap(); // TODO: check result
 
         8
     }
@@ -234,6 +238,32 @@ impl CPU {
         self.device.write_byte(hl as usize, next).unwrap(); // TODO: check result
 
         8
+    }
+
+    fn xor_r(self: &mut Self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => self.registers.b,
+            Register::C => self.registers.c,
+            Register::D => self.registers.d,
+            Register::E => self.registers.e,
+            Register::H => self.registers.h,
+            Register::L => self.registers.l,
+            Register::A => self.registers.a,
+            _ => panic!("can't xor_r"),
+        };
+
+        self.registers.a ^= r;
+        self.registers.flags.evaluate_effect(
+            self.registers.a,
+            SideEffectsCpuFlags {
+                carry: SideEffect::Unmodified,
+                half_carry: SideEffect::Unmodified,
+                negative: SideEffect::Unmodified,
+                zero: SideEffect::Dependent,
+            },
+        );
+
+        4
     }
 
     fn jp_nn(self: &mut Self) -> u8 {
@@ -259,6 +289,8 @@ mod tests {
         assert_eq!(cpu.step(), 4);
         assert_eq!(cpu.step(), 16);
         assert_eq!(cpu.step(), 16);
-        assert_eq!(cpu.step(), 16);
+        assert_eq!(cpu.step(), 4);
+        assert_eq!(cpu.step(), 4);
+        assert_eq!(cpu.step(), 4);
     }
 }
