@@ -13,7 +13,6 @@ pub enum Register {
 pub enum OpCode {
     /// LD r, r'
     /// The contents of the register r' are loaded to the register r.
-    /// Registers r and r' may be any combination of B, C, D, E, H, L or A.
     /// Clock cycles: 4
     LdBB,
     LdBC,
@@ -72,8 +71,7 @@ pub enum OpCode {
     LdAA,
 
     /// LD r, n
-    /// Byte n is read as an integer and loaded into register r. Register
-    /// r may be any of B, C, D, E, H, L or A.
+    /// Byte n is read as an integer and loaded into register r.
     /// Clock cycles: 8
     LdBNext,
     LdCNext,
@@ -84,9 +82,7 @@ pub enum OpCode {
     LdANext,
 
     /// LD r, (HL)
-    /// The byte at the memory address stored in the register pair HL is
-    /// loaded into register r. Register r may be any of B, C, D, E, H, L
-    /// or A.
+    /// The byte at the memory address stored in the register pair HL is loaded into register r.
     /// Clock cycles: 8
     LdBHL,
     LdCHL,
@@ -96,9 +92,19 @@ pub enum OpCode {
     LdLHL,
     LdAHL,
 
+    /// LD (HL), r
+    /// The contents of register r are loaded into the byte at the memory address specified in the register pair HL.
+    /// Clock cycles: 8
+    LdHlB,
+    LdHlC,
+    LdHlD,
+    LdHlE,
+    LdHlH,
+    LdHlL,
+    LdHlA,
+
     /// JP nn
-    /// The 16-bit word nn is loaded into the program counter, from where
-    /// execution continues.
+    /// The 16-bit word nn is loaded into the program counter, from where execution continues.
     /// Clock cycles: 16
     JpNN,
 
@@ -191,9 +197,17 @@ impl From<u8> for OpCode {
             0x6E => OpCode::LdLHL,
             0x7E => OpCode::LdAHL,
 
+            0x70 => OpCode::LdHlB,
+            0x71 => OpCode::LdHlC,
+            0x72 => OpCode::LdHlD,
+            0x73 => OpCode::LdHlE,
+            0x74 => OpCode::LdHlH,
+            0x75 => OpCode::LdHlL,
+            0x77 => OpCode::LdHlA,
+
             0xC3 => OpCode::JpNN,
 
-            _ => panic!("unknown ram size"),
+            _ => panic!("unknown opcode"),
         }
     }
 }

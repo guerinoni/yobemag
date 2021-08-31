@@ -1,3 +1,5 @@
+use std::ops::DerefMut;
+
 use crate::{
     memory_device::ReadWrite,
     opcodes::*,
@@ -199,9 +201,46 @@ impl CPU {
         8
     }
 
+    fn ld_hl_r(self: &mut Self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => self.registers.b,
+            Register::C => self.registers.c,
+            Register::D => self.registers.d,
+            Register::E => self.registers.e,
+            Register::H => self.registers.h,
+            Register::L => self.registers.l,
+            Register::A => self.registers.a,
+            _ => panic!("can't ld_r_next"),
+        };
+
+        self.device.write_byte(self.registers.hl() as usize, r);
+
+        8
+    }
+
     fn jp_nn(self: &mut Self) -> u8 {
         let nn = self.fetch_word();
         self.registers.program_counter = nn;
         16
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        cartridge::make_cartridge,
+        emulator::{self, Emulator},
+    };
+
+    use super::CPU;
+
+    #[test]
+    fn check() {
+        let device = make_cartridge("./roms/Tetris.gb").unwrap();
+        let mut cpu = CPU::new(device);
+        assert_eq!(cpu.step(), 4);
+        assert_eq!(cpu.step(), 16);
+        assert_eq!(cpu.step(), 16);
+        assert_eq!(cpu.step(), 16);
     }
 }
