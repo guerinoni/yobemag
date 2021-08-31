@@ -115,6 +115,14 @@ pub enum OpCode {
     /// Clock cycles: 12
     LdHlN,
 
+    /// LD dd, nn
+    /// The 16-bit short nn is read as an integer and loaded into the register pair dd.
+    /// Clock cycles: 12
+    LdBcNn,
+    LdDeNn,
+    LdHlNn,
+    LdSpNn,
+
     /// XOR r
     /// A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
     /// stored in register A.
@@ -238,6 +246,11 @@ impl From<u8> for OpCode {
             0x77 => OpCode::LdHlA,
 
             0x36 => OpCode::LdHlN,
+
+            0x1 => OpCode::LdBcNn,
+            0x11 => OpCode::LdDeNn,
+            0x21 => OpCode::LdHlNn,
+            0x31 => OpCode::LdSpNn,
 
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,

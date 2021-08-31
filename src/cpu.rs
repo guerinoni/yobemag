@@ -105,6 +105,11 @@ impl CPU {
 
             OpCode::LdHlN => self.ld_hl_next(),
 
+            OpCode::LdBcNn => self.ld_dd_nn(RegisterWord::BC),
+            OpCode::LdDeNn => self.ld_dd_nn(RegisterWord::DE),
+            OpCode::LdHlNn => self.ld_dd_nn(RegisterWord::HL),
+            OpCode::LdSpNn => self.ld_dd_nn(RegisterWord::SP),
+
             OpCode::XorB => self.xor_r(Register::B),
             OpCode::XorC => self.xor_r(Register::C),
             OpCode::XorD => self.xor_r(Register::D),
@@ -245,6 +250,18 @@ impl CPU {
         8
     }
 
+    fn ld_dd_nn(self: &mut Self, reg: RegisterWord) -> u8 {
+        let w = self.fetch_word();
+        match reg {
+            RegisterWord::BC => self.registers.set_bc(w),
+            RegisterWord::DE => self.registers.set_de(w),
+            RegisterWord::HL => self.registers.set_hl(w),
+            RegisterWord::SP => self.registers.stack_pointer = w,
+        };
+
+        12
+    }
+
     fn xor_r(self: &mut Self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => self.registers.b,
@@ -299,11 +316,9 @@ mod tests {
     fn check() {
         let device = make_cartridge("./roms/Tetris.gb").unwrap();
         let mut cpu = CPU::new(device);
-        assert_eq!(cpu.step(), 4);
-        assert_eq!(cpu.step(), 16);
-        assert_eq!(cpu.step(), 16);
-        assert_eq!(cpu.step(), 4);
-        assert_eq!(cpu.step(), 4);
-        assert_eq!(cpu.step(), 4);
+        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8];
+        for c in cycles {
+            assert_eq!(cpu.step(), c);
+        }
     }
 }
