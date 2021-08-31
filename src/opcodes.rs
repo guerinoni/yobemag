@@ -9,6 +9,13 @@ pub enum Register {
     L,
 }
 
+pub enum RegisterWord {
+    BC,
+    DE,
+    HL,
+    SP,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum OpCode {
     /// LD r, r'
@@ -108,10 +115,10 @@ pub enum OpCode {
     /// Clock cycles: 12
     LdHlN,
 
-    // XOR r
-    // A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
-    // stored in register A.
-    // Clock cycles: 4
+    /// XOR r
+    /// A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
+    /// stored in register A.
+    /// Clock cycles: 4
     XorB,
     XorC,
     XorD,
@@ -119,6 +126,14 @@ pub enum OpCode {
     XorH,
     XorL,
     XorA,
+
+    /// INC rr
+    /// The register pair rr is incremented by 1.
+    /// Clock cycles: 8
+    IncBC,
+    IncDE,
+    IncHL,
+    IncSP,
 
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
@@ -231,6 +246,11 @@ impl From<u8> for OpCode {
             0xAC => OpCode::XorH,
             0xAD => OpCode::XorL,
             0xAF => OpCode::XorA,
+
+            0x3 => OpCode::IncBC,
+            0x13 => OpCode::IncDE,
+            0x23 => OpCode::IncHL,
+            0x33 => OpCode::IncSP,
 
             0xC3 => OpCode::JpNN,
 

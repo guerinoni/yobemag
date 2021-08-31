@@ -65,6 +65,35 @@ impl Registers {
         }
     }
 
+    pub fn set_bc(self: &mut Self, value: u16) {
+        self.b = (value >> 8 as u16) as u8;
+        self.c = value as u8;
+    }
+
+    pub fn bc(self: &Self) -> u16 {
+        let mut ret = self.c as u16;
+        ret = ret << 8;
+        ret = ret | self.c as u16;
+        ret
+    }
+
+    pub fn set_de(self: &mut Self, value: u16) {
+        self.d = (value >> 8 as u16) as u8;
+        self.e = value as u8;
+    }
+
+    pub fn de(self: &Self) -> u16 {
+        let mut ret = self.d as u16;
+        ret = ret << 8;
+        ret = ret | self.e as u16;
+        ret
+    }
+
+    pub fn set_hl(self: &mut Self, value: u16) {
+        self.h = (value >> 8 as u16) as u8;
+        self.l = value as u8;
+    }
+
     pub fn hl(self: &Self) -> u16 {
         let mut ret = self.h as u16;
         ret = ret << 8;

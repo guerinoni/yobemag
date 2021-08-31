@@ -113,6 +113,11 @@ impl CPU {
             OpCode::XorL => self.xor_r(Register::L),
             OpCode::XorA => self.xor_r(Register::A),
 
+            OpCode::IncBC => self.inc_rr(RegisterWord::BC),
+            OpCode::IncDE => self.inc_rr(RegisterWord::DE),
+            OpCode::IncHL => self.inc_rr(RegisterWord::HL),
+            OpCode::IncSP => self.inc_rr(RegisterWord::SP),
+
             OpCode::JpNN => self.jp_nn(),
 
             OpCode::Noop => self.noop(),
@@ -266,6 +271,17 @@ impl CPU {
         4
     }
 
+    fn inc_rr(self: &mut Self, reg: RegisterWord) -> u8 {
+        match reg {
+            RegisterWord::BC => self.registers.set_bc(self.registers.bc() + 1),
+            RegisterWord::DE => self.registers.set_de(self.registers.de() + 1),
+            RegisterWord::HL => self.registers.set_hl(self.registers.hl() + 1),
+            RegisterWord::SP => self.registers.stack_pointer = self.registers.stack_pointer + 1,
+        };
+
+        8
+    }
+
     fn jp_nn(self: &mut Self) -> u8 {
         let nn = self.fetch_word();
         self.registers.program_counter = nn;
@@ -275,10 +291,7 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        cartridge::make_cartridge,
-        emulator::{self, Emulator},
-    };
+    use crate::cartridge::make_cartridge;
 
     use super::CPU;
 
