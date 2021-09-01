@@ -110,6 +110,8 @@ impl CPU {
             OpCode::LdHlNn => self.ld_dd_nn(RegisterWord::HL),
             OpCode::LdSpNn => self.ld_dd_nn(RegisterWord::SP),
 
+            OpCode::LddHlA => self.ldd_hl_a(),
+
             OpCode::XorB => self.xor_r(Register::B),
             OpCode::XorC => self.xor_r(Register::C),
             OpCode::XorD => self.xor_r(Register::D),
@@ -262,6 +264,14 @@ impl CPU {
         12
     }
 
+    fn ldd_hl_a(self: &mut Self) -> u8 {
+        self.device
+            .write_byte((self.registers.hl() - 1) as usize, self.registers.a)
+            .unwrap();
+
+        8
+    }
+
     fn xor_r(self: &mut Self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => self.registers.b,
@@ -316,7 +326,7 @@ mod tests {
     fn check() {
         let device = make_cartridge("./roms/Tetris.gb").unwrap();
         let mut cpu = CPU::new(device);
-        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8];
+        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 8];
         for c in cycles {
             assert_eq!(cpu.step(), c);
         }

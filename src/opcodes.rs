@@ -123,6 +123,12 @@ pub enum OpCode {
     LdHlNn,
     LdSpNn,
 
+    /// LDD (HL), A
+    /// The contents of the register A are loaded into the byte at the memory address specified by the register pair HL.
+    /// HL is then decremented by 1.
+    /// Clock cycles: 8
+    LddHlA,
+
     /// XOR r
     /// A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
     /// stored in register A.
@@ -252,6 +258,7 @@ impl From<u8> for OpCode {
             0x21 => OpCode::LdHlNn,
             0x31 => OpCode::LdSpNn,
 
+            0x32 => OpCode::LddHlA,
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
             0xAA => OpCode::XorD,
