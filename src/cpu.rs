@@ -125,6 +125,14 @@ impl CPU {
             OpCode::IncHL => self.inc_rr(RegisterWord::HL),
             OpCode::IncSP => self.inc_rr(RegisterWord::SP),
 
+            OpCode::DecB => self.dec_r(Register::B),
+            OpCode::DecC => self.dec_r(Register::C),
+            OpCode::DecD => self.dec_r(Register::D),
+            OpCode::DecE => self.dec_r(Register::E),
+            OpCode::DecH => self.dec_r(Register::H),
+            OpCode::DecL => self.dec_r(Register::L),
+            OpCode::DecA => self.dec_r(Register::A),
+
             OpCode::JpNN => self.jp_nn(),
 
             OpCode::Noop => self.noop(),
@@ -309,6 +317,33 @@ impl CPU {
         8
     }
 
+    fn dec_r(self: &mut Self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => &mut self.registers.b,
+            Register::C => &mut self.registers.c,
+            Register::D => &mut self.registers.d,
+            Register::E => &mut self.registers.e,
+            Register::H => &mut self.registers.h,
+            Register::L => &mut self.registers.l,
+            Register::A => &mut self.registers.a,
+            _ => panic!("can't dec_r"),
+        };
+
+        *r = r.wrapping_sub(1);
+
+        self.registers.flags.evaluate_effect(
+            *r,
+            SideEffectsCpuFlags {
+                carry: SideEffect::Unmodified,
+                half_carry: SideEffect::Unmodified,
+                negative: SideEffect::Unmodified,
+                zero: SideEffect::Dependent,
+            },
+        );
+
+        4
+    }
+
     fn jp_nn(self: &mut Self) -> u8 {
         let nn = self.fetch_word();
         self.registers.program_counter = nn;
@@ -326,7 +361,7 @@ mod tests {
     fn check() {
         let device = make_cartridge("./roms/Tetris.gb").unwrap();
         let mut cpu = CPU::new(device);
-        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 8];
+        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4];
         for c in cycles {
             assert_eq!(cpu.step(), c);
         }

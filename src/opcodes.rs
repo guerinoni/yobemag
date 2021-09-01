@@ -149,6 +149,17 @@ pub enum OpCode {
     IncHL,
     IncSP,
 
+    /// DEC r
+    /// The register r is decremented by 1.
+    /// Clock cycles: 4
+    DecB,
+    DecC,
+    DecD,
+    DecE,
+    DecH,
+    DecL,
+    DecA,
+
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
     /// Clock cycles: 16
@@ -271,6 +282,14 @@ impl From<u8> for OpCode {
             0x13 => OpCode::IncDE,
             0x23 => OpCode::IncHL,
             0x33 => OpCode::IncSP,
+
+            0x5 => OpCode::DecB,
+            0xD => OpCode::DecC,
+            0x15 => OpCode::DecD,
+            0x1D => OpCode::DecE,
+            0x25 => OpCode::DecH,
+            0x2D => OpCode::DecL,
+            0x3D => OpCode::DecA,
 
             0xC3 => OpCode::JpNN,
 
