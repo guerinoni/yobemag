@@ -40,7 +40,14 @@ impl CpuFlag {
             SideEffect::Set => true,
             SideEffect::Unset => false,
             SideEffect::Unmodified => self.zero,
-        }
+        };
+
+        self.carry = match effects.carry {
+            SideEffect::Dependent => value != 0,
+            SideEffect::Set => true,
+            SideEffect::Unset => false,
+            SideEffect::Unmodified => self.zero,
+        };
     }
 }
 
