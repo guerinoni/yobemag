@@ -42,21 +42,7 @@ impl ReadWrite for NoMBCartridge {
     }
 
     fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::OutOfMemory,
-            "can't write byte for NoMBCartridge on ram.",
-        ))
-
-        // match address {
-        // 0x0000..=0x7FFF => {
-        // self.ram[address - 0xA000] = value;
-        // Ok(())
-        // }
-        // _ => Err(std::io::Error::new(
-        // std::io::ErrorKind::OutOfMemory,
-        // "can't read byte for NoMBCartridge over 0x7FFF",
-        // )),
-        // }
+        Ok(())
     }
 
     fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
