@@ -1,10 +1,10 @@
+#[derive(Debug)]
 pub enum Register {
     A,
     B,
     C,
     D,
     E,
-    F,
     H,
     L,
 }
@@ -14,6 +14,13 @@ pub enum RegisterWord {
     DE,
     HL,
     SP,
+}
+
+pub enum ConditionOperand {
+    NZ,
+    Z,
+    NC,
+    C,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -165,6 +172,16 @@ pub enum OpCode {
     /// Clock cycles: 16
     JpNN,
 
+    /// JR f, PC+dd
+    /// The 8-bit signed integer dd is added to the program counter and the result is stored in the program counter only if the condition f is true.
+    /// Execution will then continue from the program counter.
+    /// Condition f may be any of nz, z, nc or c.
+    /// Clock cycles: 12 if condition is met, otherwise 8
+    JrNzPcDd,
+    JrZPcDd,
+    JrNcPcDd,
+    JrCPcDd,
+
     /// The CPU performs no operation during this cycle.
     /// Clock cycles: 4
     Noop,
@@ -292,6 +309,11 @@ impl From<u8> for OpCode {
             0x3D => OpCode::DecA,
 
             0xC3 => OpCode::JpNN,
+
+            0x20 => OpCode::JrNzPcDd,
+            0x28 => OpCode::JrZPcDd,
+            0x30 => OpCode::JrNcPcDd,
+            0x38 => OpCode::JrCPcDd,
 
             _ => panic!("unknown opcode"),
         }

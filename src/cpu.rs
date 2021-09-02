@@ -135,6 +135,11 @@ impl CPU {
 
             OpCode::JpNN => self.jp_nn(),
 
+            OpCode::JrNzPcDd => self.jr_f_pc_dd(ConditionOperand::NZ),
+            OpCode::JrZPcDd => self.jr_f_pc_dd(ConditionOperand::Z),
+            OpCode::JrNcPcDd => self.jr_f_pc_dd(ConditionOperand::NC),
+            OpCode::JrCPcDd => self.jr_f_pc_dd(ConditionOperand::C),
+
             OpCode::Noop => self.noop(),
             OpCode::Stop => self.stop(),
             OpCode::Halt => self.halt(),
@@ -349,6 +354,20 @@ impl CPU {
         self.registers.program_counter = nn;
         16
     }
+    fn jr_f_pc_dd(self: &mut Self, op: ConditionOperand) -> u8 {
+        let condition = match op {
+            ConditionOperand::NZ => !self.registers.flags.zero,
+            ConditionOperand::Z => self.registers.flags.zero,
+            ConditionOperand::NC => !self.registers.flags.carry,
+            ConditionOperand::C => self.registers.flags.carry,
+        };
+        if condition {
+            self.registers.program_counter += self.fetch_byte() as u16;
+            return 12;
+        }
+
+        8
+    }
 }
 
 #[cfg(test)]
@@ -361,7 +380,7 @@ mod tests {
     fn check() {
         let device = make_cartridge("./roms/Tetris.gb").unwrap();
         let mut cpu = CPU::new(device);
-        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4];
+        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4, 12];
         for c in cycles {
             assert_eq!(cpu.step(), c);
         }
