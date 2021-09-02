@@ -1,3 +1,5 @@
+use std::str::EncodeUtf16;
+
 use crate::{memory_device::ReadWrite, opcodes::*, prefix_opcodes::*, register::*};
 
 pub struct CPU {
@@ -132,6 +134,14 @@ impl CPU {
             OpCode::IncDE => self.inc_rr(RegisterWord::DE),
             OpCode::IncHL => self.inc_rr(RegisterWord::HL),
             OpCode::IncSP => self.inc_rr(RegisterWord::SP),
+
+            OpCode::IncB => self.inc_r(Register::B),
+            OpCode::IncC => self.inc_r(Register::C),
+            OpCode::IncD => self.inc_r(Register::D),
+            OpCode::IncE => self.inc_r(Register::E),
+            OpCode::IncH => self.inc_r(Register::H),
+            OpCode::IncL => self.inc_r(Register::L),
+            OpCode::IncA => self.inc_r(Register::A),
 
             OpCode::DecB => self.dec_r(Register::B),
             OpCode::DecC => self.dec_r(Register::C),
@@ -312,6 +322,7 @@ impl CPU {
         self.registers.a |= r;
         self.registers.flags.evaluate_effect(
             self.registers.a,
+            self.registers.a,
             SideEffectsCpuFlags {
                 carry: SideEffect::Unset,
                 half_carry: SideEffect::Unset,
@@ -332,11 +343,11 @@ impl CPU {
             Register::H => self.registers.h,
             Register::L => self.registers.l,
             Register::A => self.registers.a,
-            _ => panic!("can't xor_r"),
         };
 
         self.registers.a ^= r;
         self.registers.flags.evaluate_effect(
+            self.registers.a,
             self.registers.a,
             SideEffectsCpuFlags {
                 carry: SideEffect::Unmodified,
@@ -360,6 +371,34 @@ impl CPU {
         8
     }
 
+    fn inc_r(self: &mut Self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => &mut self.registers.b,
+            Register::C => &mut self.registers.c,
+            Register::D => &mut self.registers.d,
+            Register::E => &mut self.registers.e,
+            Register::H => &mut self.registers.h,
+            Register::L => &mut self.registers.l,
+            Register::A => &mut self.registers.a,
+        };
+
+        let result = *r + 1;
+        self.registers.flags.evaluate_effect(
+            *r,
+            result,
+            SideEffectsCpuFlags {
+                carry: SideEffect::Unmodified,
+                half_carry: SideEffect::Unmodified,
+                negative: SideEffect::Unset,
+                zero: SideEffect::Dependent,
+            },
+        );
+
+        *r = result;
+
+        8
+    }
+
     fn dec_r(self: &mut Self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => &mut self.registers.b,
@@ -369,12 +408,12 @@ impl CPU {
             Register::H => &mut self.registers.h,
             Register::L => &mut self.registers.l,
             Register::A => &mut self.registers.a,
-            _ => panic!("can't dec_r"),
         };
 
         *r = r.wrapping_sub(1);
 
         self.registers.flags.evaluate_effect(
+            *r,
             *r,
             SideEffectsCpuFlags {
                 carry: SideEffect::Unmodified,
@@ -389,11 +428,12 @@ impl CPU {
 
     fn jp_nn(self: &mut Self) -> u8 {
         let nn = self.fetch_word();
-        self.registers.program_counter = nn;
+        self.registers.program_counter = nn as i32;
         16
     }
 
     fn jr_f_pc_dd(self: &mut Self, op: ConditionOperand) -> u8 {
+        let dd = self.fetch_byte() as i8;
         let condition = match op {
             ConditionOperand::NZ => !self.registers.flags.zero,
             ConditionOperand::Z => self.registers.flags.zero,
@@ -402,7 +442,8 @@ impl CPU {
         };
 
         if condition {
-            self.registers.program_counter += self.fetch_byte() as u16;
+            self.registers.program_counter += dd as i32;
+            dbg!(self.registers.program_counter);
             return 12;
         }
 
@@ -419,6 +460,7 @@ impl CPU {
         big_a = big_a ^ (old_carry << 8);
         self.registers.a = (big_a >> 1) as u8;
         self.registers.flags.evaluate_effect(
+            self.registers.a,
             self.registers.a,
             SideEffectsCpuFlags {
                 carry: SideEffect::Unset,
@@ -453,7 +495,6 @@ impl CPU {
             Register::H => &mut self.registers.h,
             Register::L => &mut self.registers.l,
             Register::A => &mut self.registers.a,
-            _ => panic!("can't rlc_r"),
         };
 
         let sign = *r >> 7;
@@ -461,6 +502,7 @@ impl CPU {
         *r = tmp ^ sign;
 
         self.registers.flags.evaluate_effect(
+            *r,
             *r,
             SideEffectsCpuFlags {
                 carry: SideEffect::Dependent,
@@ -484,7 +526,7 @@ mod tests {
     fn verify_tetris() {
         let device = make_cartridge("./roms/Tetris.gb").unwrap();
         let mut cpu = CPU::new(device);
-        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4, 12, 4, 4, 4, 4, 4, 4];
+        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4, 12, 8, 4, 12, 8, 4, 12, 8, 4];
         for c in cycles {
             assert_eq!(cpu.step(), c);
         }

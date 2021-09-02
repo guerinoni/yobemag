@@ -167,6 +167,17 @@ pub enum OpCode {
     IncHL,
     IncSP,
 
+    /// INC r
+    /// The register r is incremented by 1.
+    /// Clock cycles: 4
+    IncB,
+    IncC,
+    IncD,
+    IncE,
+    IncH,
+    IncL,
+    IncA,
+
     /// DEC r
     /// The register r is decremented by 1.
     /// Clock cycles: 4
@@ -328,6 +339,14 @@ impl From<u8> for OpCode {
             0x13 => OpCode::IncDE,
             0x23 => OpCode::IncHL,
             0x33 => OpCode::IncSP,
+
+            0x4 => OpCode::IncB,
+            0xC => OpCode::IncC,
+            0x14 => OpCode::IncD,
+            0x1C => OpCode::IncE,
+            0x24 => OpCode::IncH,
+            0x2C => OpCode::IncL,
+            0x3C => OpCode::IncA,
 
             0x5 => OpCode::DecB,
             0xD => OpCode::DecC,
