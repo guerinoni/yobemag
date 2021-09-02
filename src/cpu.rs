@@ -112,6 +112,14 @@ impl CPU {
 
             OpCode::LddHlA => self.ldd_hl_a(),
 
+            OpCode::OrB => self.or_r(Register::B),
+            OpCode::OrC => self.or_r(Register::C),
+            OpCode::OrD => self.or_r(Register::D),
+            OpCode::OrE => self.or_r(Register::E),
+            OpCode::OrH => self.or_r(Register::H),
+            OpCode::OrL => self.or_r(Register::L),
+            OpCode::OrA => self.or_r(Register::A),
+
             OpCode::XorB => self.xor_r(Register::B),
             OpCode::XorC => self.xor_r(Register::C),
             OpCode::XorD => self.xor_r(Register::D),
@@ -289,6 +297,32 @@ impl CPU {
         8
     }
 
+    fn or_r(self: &mut Self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => self.registers.b,
+            Register::C => self.registers.c,
+            Register::D => self.registers.d,
+            Register::E => self.registers.e,
+            Register::H => self.registers.h,
+            Register::L => self.registers.l,
+            Register::A => self.registers.a,
+            _ => panic!("can't ld_hl_r"),
+        };
+
+        self.registers.a |= r;
+        self.registers.flags.evaluate_effect(
+            self.registers.a,
+            SideEffectsCpuFlags {
+                carry: SideEffect::Unset,
+                half_carry: SideEffect::Unset,
+                negative: SideEffect::Unset,
+                zero: SideEffect::Dependent,
+            },
+        );
+
+        4
+    }
+
     fn xor_r(self: &mut Self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => self.registers.b,
@@ -450,7 +484,7 @@ mod tests {
     fn verify_tetris() {
         let device = make_cartridge("./roms/Tetris.gb").unwrap();
         let mut cpu = CPU::new(device);
-        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4, 12, 4];
+        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4, 12, 4, 4, 4, 4, 4, 4];
         for c in cycles {
             assert_eq!(cpu.step(), c);
         }

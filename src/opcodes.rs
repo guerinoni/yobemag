@@ -136,6 +136,17 @@ pub enum OpCode {
     /// Clock cycles: 8
     LddHlA,
 
+    /// OR r
+    /// A bitwise OR operation is performed between the contents of the register r and the contents of the register A, and the result is  stored in register A.
+    /// Clock cycles: 4
+    OrB,
+    OrC,
+    OrD,
+    OrE,
+    OrH,
+    OrL,
+    OrA,
+
     /// XOR r
     /// A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
     /// stored in register A.
@@ -296,6 +307,14 @@ impl From<u8> for OpCode {
             0x31 => OpCode::LdSpNn,
 
             0x32 => OpCode::LddHlA,
+
+            0xB0 => OpCode::OrB,
+            0xB1 => OpCode::OrC,
+            0xB2 => OpCode::OrD,
+            0xB3 => OpCode::OrE,
+            0xB4 => OpCode::OrH,
+            0xB5 => OpCode::OrL,
+            0xB7 => OpCode::OrA,
 
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
