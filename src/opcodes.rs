@@ -182,6 +182,11 @@ pub enum OpCode {
     JrNcPcDd,
     JrCPcDd,
 
+    /// RRA
+    /// The contents of register A are rotated right by 1 bit position through the carry flag.
+    /// Clock cycles: 4
+    RrA,
+
     /// The CPU performs no operation during this cycle.
     /// Clock cycles: 4
     Noop,
@@ -315,6 +320,7 @@ impl From<u8> for OpCode {
             0x30 => OpCode::JrNcPcDd,
             0x38 => OpCode::JrCPcDd,
 
+            0x1F => OpCode::RrA,
             _ => panic!("unknown opcode"),
         }
     }

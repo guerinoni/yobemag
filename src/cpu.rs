@@ -1,4 +1,4 @@
-use crate::{memory_device::ReadWrite, opcodes::*, register::*};
+use crate::{memory_device::ReadWrite, opcodes::*, prefix_opcodes::*, register::*};
 
 pub struct CPU {
     registers: Registers,
@@ -140,6 +140,7 @@ impl CPU {
             OpCode::JrNcPcDd => self.jr_f_pc_dd(ConditionOperand::NC),
             OpCode::JrCPcDd => self.jr_f_pc_dd(ConditionOperand::C),
 
+            OpCode::RrA => self.rr_a(),
             OpCode::Noop => self.noop(),
             OpCode::Stop => self.stop(),
             OpCode::Halt => self.halt(),
@@ -368,6 +369,29 @@ impl CPU {
 
         8
     }
+    fn rr_a(self: &mut Self) -> u8 {
+        let old_carry = self.registers.flags.carry as u16;
+        let mut big_a = self.registers.a as u16;
+        big_a = big_a.rotate_left(1);
+        big_a |= old_carry;
+        self.registers.flags.carry = big_a & (1 << 1) != 0;
+        big_a = big_a.rotate_right(1);
+        big_a = big_a ^ (old_carry << 8);
+        self.registers.a = (big_a >> 1) as u8;
+        self.registers.flags.evaluate_effect(
+            self.registers.a,
+            SideEffectsCpuFlags {
+                carry: SideEffect::Unset,
+                half_carry: SideEffect::Unset,
+                negative: SideEffect::Unset,
+                zero: SideEffect::Dependent,
+            },
+        );
+
+        4
+    }
+
+                half_carry: SideEffect::Unset,
 }
 
 #[cfg(test)]
@@ -377,10 +401,10 @@ mod tests {
     use super::CPU;
 
     #[test]
-    fn check() {
+    fn verify_tetris() {
         let device = make_cartridge("./roms/Tetris.gb").unwrap();
         let mut cpu = CPU::new(device);
-        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4, 12];
+        let cycles = vec![4, 16, 16, 4, 12, 8, 8, 8, 4, 12, 4];
         for c in cycles {
             assert_eq!(cpu.step(), c);
         }

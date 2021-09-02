@@ -27,10 +27,10 @@ pub struct SideEffectsCpuFlags {
 }
 
 pub struct CpuFlag {
-    carry: bool,
+    pub carry: bool,
     half_carry: bool,
     negative: bool,
-    zero: bool,
+    pub zero: bool,
 }
 
 impl CpuFlag {
