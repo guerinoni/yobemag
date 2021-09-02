@@ -6,6 +6,7 @@ mod cpu;
 mod emulator;
 mod memory_device;
 mod opcodes;
+mod prefix_opcodes;
 mod register;
 
 fn main() -> Result<(), std::io::Error> {

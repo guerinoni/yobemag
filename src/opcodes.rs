@@ -201,6 +201,10 @@ pub enum OpCode {
     /// this halted state, NOPs are executed to maintain memory refresh logic.
     /// Clock cycles: 4 (+4 for every following NOP)
     Halt,
+
+    /// CB
+    /// Interpret the next byte as a prefix instruction (PrefixOpCode) rather than a normal instruction (OpCode)
+    CB,
 }
 
 impl From<u8> for OpCode {
@@ -292,6 +296,7 @@ impl From<u8> for OpCode {
             0x31 => OpCode::LdSpNn,
 
             0x32 => OpCode::LddHlA,
+
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
             0xAA => OpCode::XorD,
@@ -321,6 +326,9 @@ impl From<u8> for OpCode {
             0x38 => OpCode::JrCPcDd,
 
             0x1F => OpCode::RrA,
+
+            0xCB => OpCode::CB,
+
             _ => panic!("unknown opcode"),
         }
     }

@@ -141,9 +141,12 @@ impl CPU {
             OpCode::JrCPcDd => self.jr_f_pc_dd(ConditionOperand::C),
 
             OpCode::RrA => self.rr_a(),
+
             OpCode::Noop => self.noop(),
             OpCode::Stop => self.stop(),
             OpCode::Halt => self.halt(),
+
+            OpCode::CB => self.interpret_prefix(),
         }
     }
 
@@ -355,6 +358,7 @@ impl CPU {
         self.registers.program_counter = nn;
         16
     }
+
     fn jr_f_pc_dd(self: &mut Self, op: ConditionOperand) -> u8 {
         let condition = match op {
             ConditionOperand::NZ => !self.registers.flags.zero,
@@ -362,6 +366,7 @@ impl CPU {
             ConditionOperand::NC => !self.registers.flags.carry,
             ConditionOperand::C => self.registers.flags.carry,
         };
+
         if condition {
             self.registers.program_counter += self.fetch_byte() as u16;
             return 12;
@@ -369,6 +374,7 @@ impl CPU {
 
         8
     }
+
     fn rr_a(self: &mut Self) -> u8 {
         let old_carry = self.registers.flags.carry as u16;
         let mut big_a = self.registers.a as u16;
@@ -391,7 +397,47 @@ impl CPU {
         4
     }
 
+    fn interpret_prefix(self: &mut Self) -> u8 {
+        let prefix_opcode = self.fetch_byte();
+        match prefix_opcode.into() {
+            PrefixOpCode::RlcB => self.rlc_r(Register::B),
+            PrefixOpCode::RlcC => self.rlc_r(Register::B),
+            PrefixOpCode::RlcD => self.rlc_r(Register::B),
+            PrefixOpCode::RlcE => self.rlc_r(Register::B),
+            PrefixOpCode::RlcH => self.rlc_r(Register::B),
+            PrefixOpCode::RlcL => self.rlc_r(Register::B),
+            PrefixOpCode::RlcA => self.rlc_r(Register::B),
+        }
+    }
+
+    fn rlc_r(self: &mut Self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => &mut self.registers.b,
+            Register::C => &mut self.registers.c,
+            Register::D => &mut self.registers.d,
+            Register::E => &mut self.registers.e,
+            Register::H => &mut self.registers.h,
+            Register::L => &mut self.registers.l,
+            Register::A => &mut self.registers.a,
+            _ => panic!("can't rlc_r"),
+        };
+
+        let sign = *r >> 7;
+        let tmp = *r << 1;
+        *r = tmp ^ sign;
+
+        self.registers.flags.evaluate_effect(
+            *r,
+            SideEffectsCpuFlags {
+                carry: SideEffect::Dependent,
                 half_carry: SideEffect::Unset,
+                negative: SideEffect::Unset,
+                zero: SideEffect::Dependent,
+            },
+        );
+
+        8
+    }
 }
 
 #[cfg(test)]
