@@ -209,6 +209,11 @@ pub enum OpCode {
     /// Clock cycles: 4
     RrA,
 
+    /// DI
+    /// Interrupts are disabled by resetting the Interrupt Master Flag (IME).
+    /// Clock cycles: 4
+    DI,
+
     /// The CPU performs no operation during this cycle.
     /// Clock cycles: 4
     Noop,
@@ -362,6 +367,8 @@ impl From<u8> for OpCode {
             0x28 => OpCode::JrZPcDd,
             0x30 => OpCode::JrNcPcDd,
             0x38 => OpCode::JrCPcDd,
+
+            0xF3 => OpCode::DI,
 
             0x1F => OpCode::RrA,
 
