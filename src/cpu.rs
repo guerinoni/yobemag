@@ -1,10 +1,8 @@
-use std::str::EncodeUtf16;
-
-use crate::{memory_device::ReadWrite, opcodes::*, prefix_opcodes::*, register::*};
+use crate::{memory_device::ReadWrite, mmu::MMU, opcodes::*, prefix_opcodes::*, register::*};
 
 pub struct CPU {
     registers: Registers,
-    device: Box<dyn ReadWrite>,
+    mmu: MMU,
     stop: bool,
     halt: bool,
 
@@ -14,9 +12,10 @@ pub struct CPU {
 
 impl CPU {
     pub fn new(device: Box<dyn ReadWrite>) -> CPU {
+        let mmu = MMU::new(device);
         CPU {
             registers: Registers::new(),
-            device,
+            mmu,
             stop: false,
             halt: false,
             ime: false,
@@ -180,7 +179,7 @@ impl CPU {
 
     fn fetch_byte(self: &mut Self) -> u8 {
         let byte = self
-            .device
+            .mmu
             .read_byte(self.registers.program_counter as usize)
             .unwrap();
         self.registers.program_counter += 1;
@@ -190,7 +189,7 @@ impl CPU {
 
     fn fetch_word(self: &mut Self) -> u16 {
         let word = self
-            .device
+            .mmu
             .read_word(self.registers.program_counter as usize)
             .unwrap();
         self.registers.program_counter += 2;
@@ -255,7 +254,7 @@ impl CPU {
     }
 
     fn ld_r_hl(self: &mut Self, reg: Register) -> u8 {
-        let hl = self.device.read_byte(self.registers.hl() as usize).unwrap();
+        let hl = self.mmu.read_byte(self.registers.hl() as usize).unwrap();
         match reg {
             Register::B => self.registers.b = hl,
             Register::C => self.registers.c = hl,
@@ -282,7 +281,7 @@ impl CPU {
             _ => panic!("can't ld_hl_r"),
         };
 
-        self.device
+        self.mmu
             .write_byte(self.registers.hl() as usize, r)
             .unwrap(); // TODO: check result
 
@@ -292,13 +291,13 @@ impl CPU {
     fn ld_hl_next(self: &mut Self) -> u8 {
         let hl = self.registers.hl();
         let next = self.fetch_byte();
-        self.device.write_byte(hl as usize, next).unwrap(); // TODO: check result
+        self.mmu.write_byte(hl as usize, next).unwrap(); // TODO: check result
 
         8
     }
 
     fn ld_bc_a(self: &mut Self) -> u8 {
-        self.device
+        self.mmu
             .write_byte(self.registers.bc() as usize, self.registers.a)
             .unwrap();
 
@@ -318,25 +317,23 @@ impl CPU {
     }
 
     fn ldd_hl_a(self: &mut Self) -> u8 {
-        self.device
+        self.mmu
             .write_byte((self.registers.hl() - 1) as usize, self.registers.a)
             .unwrap();
 
         8
     }
 
-    fn ld_a_ff00_n(self:&mut Self) ->u8 {
+    fn ld_a_ff00_n(self: &mut Self) -> u8 {
         let add = 0xFF00 as usize + self.fetch_byte() as usize;
-        self.registers.a = self.device.read_byte(add).unwrap();
+        self.registers.a = self.mmu.read_byte(add).unwrap();
 
         12
     }
 
     fn ld_ff00_na(self: &mut Self) -> u8 {
         let add = 0xFF as u16 + self.fetch_byte() as u16;
-        self.device
-            .write_byte(add as usize, self.registers.a)
-            .unwrap();
+        self.mmu.write_byte(add as usize, self.registers.a).unwrap();
 
         12
     }

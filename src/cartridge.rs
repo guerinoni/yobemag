@@ -4,15 +4,16 @@ use std::fs;
 
 pub struct NoMBCartridge {
     header: CartridgeHeader,
+
+    /// 0x0150-0x3FFF
     rom: Vec<u8>,
-    ram: Vec<u8>,
 }
 
 impl NoMBCartridge {
     fn new(rom: Vec<u8>, header: CartridgeHeader) -> NoMBCartridge {
-        let mut ram = Vec::new();
-        ram.resize(rom.len(), 0);
-        NoMBCartridge { header, rom, ram }
+        // let mut ram = Vec::new();
+        // ram.resize(rom.len(), 0);
+        NoMBCartridge { header, rom }
     }
 }
 
@@ -36,7 +37,7 @@ impl ReadWrite for NoMBCartridge {
             }
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::OutOfMemory,
-                "can't read byte for NoMBCartridge over 0x7FFF.",
+                "can't read word for NoMBCartridge over 0x7FFF.",
             )),
         }
     }
