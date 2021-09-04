@@ -142,6 +142,12 @@ pub enum OpCode {
     /// Clock cycles: 8
     LddHlA,
 
+    /// LD A, (FF00+n)
+    /// The byte at the memory address (FF00+n) - the nth I/O port - is
+    /// loaded into the register A.
+    /// Clock cycles: 12
+    LdAFF00n = 0xF0,
+
     /// LD (FF00+n), A
     /// The contents of the register A are loaded into the byte at the
     /// memory address (FF00+n) - the nth I/O port.
@@ -369,6 +375,7 @@ impl From<u8> for OpCode {
             0xC3 => OpCode::JpNN,
             0xCB => OpCode::CB,
             0xE0 => OpCode::LdFF00nA,
+            0xF0 => OpCode::LdAFF00n,
             0xF3 => OpCode::DI,
 
             _ => panic!("unknown opcode"),
