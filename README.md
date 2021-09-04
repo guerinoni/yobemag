@@ -135,8 +135,13 @@ This area contains all the control registers for all the hardware on the GameBoy
 
 Is the heart of every computer, and in this case we have eight 8 bit registers:
 A, B, C, D, E, F, H, and L, as well as two 16 bit registers: SP, and PC.
-PC -> program counter (where cpu is for scanning next istruction).
-SP -> stack pointer (address in memory of the top of the stack).
+PC -> program counter, tells the CPU the address that the next instruction is to be fetched from in memory, starts from 0x0100.
+SP -> stack pointer, address in memory of the top of the stack, 0xFFFE when start.
+A -> where almost all data being processed passes through. It is also known as the "accumulator".
+B,C -> generally used as counters during repetitive blocks of code such as moving data from one location to another.
+D,E -> generally used together as a 16-bit register for holding a destination address in moving data from one address to another.
+H,L -> special due to the fact that they are extensively used for indirect addressing as register pair HL.
+Indirect Addressing is when instead of specifying an specific address for an operation, you could just use the 16-bit value in HL as an address.
 
 #### Flags
 
