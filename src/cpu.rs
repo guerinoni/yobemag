@@ -111,6 +111,8 @@ impl CPU {
 
             OpCode::LdHlN => self.ld_hl_next(),
 
+            OpCode::LdBcA => self.ld_bc_a(),
+
             OpCode::LdBcNn => self.ld_dd_nn(RegisterWord::BC),
             OpCode::LdDeNn => self.ld_dd_nn(RegisterWord::DE),
             OpCode::LdHlNn => self.ld_dd_nn(RegisterWord::HL),
@@ -289,6 +291,14 @@ impl CPU {
         let hl = self.registers.hl();
         let next = self.fetch_byte();
         self.device.write_byte(hl as usize, next).unwrap(); // TODO: check result
+
+        8
+    }
+
+    fn ld_bc_a(self: &mut Self) -> u8 {
+        self.device
+            .write_byte(self.registers.bc() as usize, self.registers.a)
+            .unwrap();
 
         8
     }

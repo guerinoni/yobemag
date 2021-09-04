@@ -122,6 +122,12 @@ pub enum OpCode {
     /// Clock cycles: 12
     LdHlN,
 
+    /// LD (BC), A
+    /// The contents of the register A are loaded into the byte at the
+    /// memory address specified in the register pair BC.
+    /// Clock cycles: 8
+    LdBcA,
+
     /// LD dd, nn
     /// The 16-bit short nn is read as an integer and loaded into the register pair dd.
     /// Clock cycles: 12
@@ -239,6 +245,7 @@ impl From<u8> for OpCode {
         match orig {
             0x0 => OpCode::Noop,
             0x1 => OpCode::LdBcNn,
+            0x2 => OpCode::LdBcA,
             0x3 => OpCode::IncBC,
             0x4 => OpCode::IncB,
             0x5 => OpCode::DecB,
