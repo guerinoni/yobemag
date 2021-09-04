@@ -119,6 +119,7 @@ impl CPU {
             OpCode::LdSpNn => self.ld_dd_nn(RegisterWord::SP),
 
             OpCode::LddHlA => self.ldd_hl_a(),
+            OpCode::LdFF00nA => self.ld_ff00_na(),
 
             OpCode::OrB => self.or_r(Register::B),
             OpCode::OrC => self.or_r(Register::C),
@@ -321,6 +322,15 @@ impl CPU {
             .unwrap();
 
         8
+    }
+
+    fn ld_ff00_na(self: &mut Self) -> u8 {
+        let add = 0xFF as u16 + self.fetch_byte() as u16;
+        self.device
+            .write_byte(add as usize, self.registers.a)
+            .unwrap();
+
+        12
     }
 
     fn or_r(self: &mut Self, reg: Register) -> u8 {
