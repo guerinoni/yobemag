@@ -1,4 +1,6 @@
 pub trait ReadWrite {
+    fn contains(self: &Self, address: usize) -> bool;
+
     fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error>;
     fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error>;
 

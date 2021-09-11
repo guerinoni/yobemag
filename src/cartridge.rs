@@ -18,28 +18,18 @@ impl NoMBCartridge {
 }
 
 impl ReadWrite for NoMBCartridge {
+    fn contains(self: &Self, address: usize) -> bool {
+        (0x0000..=0x7FFF).contains(&address)
+    }
+
     fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
-        match address {
-            0x0000..=0x7FFF => Ok(self.rom[address]),
-            _ => Err(std::io::Error::new(
-                std::io::ErrorKind::OutOfMemory,
-                "can't read byte for NoMBCartridge over 0x7FFF.",
-            )),
-        }
+        Ok(self.rom[address])
     }
 
     fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
-        match address {
-            0x0000..=0x7FFF => {
-                let low = self.rom[address] as u16;
-                let high = self.rom[address + 1] as u16;
-                Ok(high << 8 | low)
-            }
-            _ => Err(std::io::Error::new(
-                std::io::ErrorKind::OutOfMemory,
-                "can't read word for NoMBCartridge over 0x7FFF.",
-            )),
-        }
+        let low = self.rom[address] as u16;
+        let high = self.rom[address + 1] as u16;
+        Ok(high << 8 | low)
     }
 
     fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {

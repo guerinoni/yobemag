@@ -32,7 +32,7 @@ impl CPU {
         }
 
         let op_code = self.fetch_byte();
-        dbg!(op_code);
+        dbg!(format!("{:#04x}", op_code));
         match op_code.into() {
             OpCode::LdBB => self.ld_r_r(Register::B, Register::B),
             OpCode::LdBC => self.ld_r_r(Register::B, Register::C),
