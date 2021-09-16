@@ -1,9 +1,8 @@
 use crate::gpu::GPU;
 use crate::memory_device::ReadWrite;
-use crate::internal_memory::{self, InternalMemory};
+use crate::internal_memory::InternalMemory;
 
 /// Holds all memory space addressable for emulation.
-/// This contains
 pub struct MMU {
     cartridge: Box<dyn ReadWrite>,
     gpu: GPU,
