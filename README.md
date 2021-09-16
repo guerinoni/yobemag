@@ -6,9 +6,8 @@ GameBoy emulator. WIP for now :)
 
 ### ROM
 
-This is the read-only memory, it's also called "cartridge" and holds the data of the game, for example
-what you find in the foder `/roms` like tetris and other games. In my childhood these are external
-piece of hardware pluggable into gameboy (like memory card of Playstation 1/2 for who remember that).
+This is the read-only memory, it's also called "cartridge" and holds the data of the game. Usually
+they have the .gb extension in the filename.
 
 #### Header
 
