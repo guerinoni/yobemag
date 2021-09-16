@@ -1,6 +1,6 @@
 # yobemag
 
-GameBoy emulator.
+GameBoy emulator. WIP for now :)
 
 ## General knowledge
 
