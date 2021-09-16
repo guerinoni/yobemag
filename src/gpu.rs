@@ -9,6 +9,8 @@ pub struct GPU {
     wram0: [u8; 0x1FFF + 1],
     /// working ram bank n: 0xD000-0xDFFF
     wramn: [u8; 0x1FFF + 1],
+    /// high ram (zero-page): 0xFF80-0xFFFE
+    hram: [u8; 0x1FFF + 1],
 }
 
 impl GPU {
@@ -17,6 +19,7 @@ impl GPU {
             vram: [0; 0x1FFF + 1],
             wram0: [0; 0x1FFF + 1],
             wramn: [0; 0x1FFF + 1],
+            hram: [0; 0x1FFF + 1],
         }
     }
 }
@@ -40,6 +43,7 @@ impl ReadWrite for GPU {
         match address {
             0xC000..=0xCFFF => Ok(self.wram0[address - 0xC000] = value),
             0xD000..=0xDFFF => Ok(self.wramn[address - 0xD000] = value),
+            0xFF80..=0xFFFE => Ok(self.hram[address - 0xFF80] = value),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",

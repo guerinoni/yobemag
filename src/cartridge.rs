@@ -33,7 +33,8 @@ impl ReadWrite for NoMBCartridge {
     }
 
     fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
-        todo!("implement this func")
+        println!("implement this func for address {:#04x}", address);
+        todo!("")
     }
 
     fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {

@@ -32,7 +32,7 @@ impl CPU {
         }
 
         let op_code = self.fetch_byte();
-        dbg!(format!("{:#04x}", op_code));
+        println!("{:#04x}", op_code);
         match op_code.into() {
             OpCode::LdBB => self.ld_r_r(Register::B, Register::B),
             OpCode::LdBC => self.ld_r_r(Register::B, Register::C),
@@ -332,7 +332,7 @@ impl CPU {
     }
 
     fn ld_ff00_na(self: &mut Self) -> u8 {
-        let add = 0xFF as u16 + self.fetch_byte() as u16;
+        let add = 0xFF00 as u16 + self.fetch_byte() as u16;
         self.mmu.write_byte(add as usize, self.registers.a).unwrap();
 
         12
@@ -474,7 +474,6 @@ impl CPU {
 
         if condition {
             self.registers.program_counter += dd as i32;
-            dbg!(self.registers.program_counter);
             return 12;
         }
 
