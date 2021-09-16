@@ -1,11 +1,13 @@
-use crate::gpu::{self, GPU};
+use crate::gpu::GPU;
 use crate::memory_device::ReadWrite;
+use crate::internal_memory::{self, InternalMemory};
 
 /// Holds all memory space addressable for emulation.
 /// This contains
 pub struct MMU {
     cartridge: Box<dyn ReadWrite>,
     gpu: GPU,
+    internal: InternalMemory,
 }
 
 impl MMU {
@@ -13,6 +15,7 @@ impl MMU {
         MMU {
             cartridge,
             gpu: GPU::new(),
+            internal: InternalMemory::new(),
         }
     }
 }
@@ -30,6 +33,10 @@ impl ReadWrite for MMU {
 
         if self.cartridge.contains(address) {
             return self.cartridge.read_byte(address);
+        }
+
+        if self.internal.contains(address) {
+            return self.internal.read_byte(address);
         }
 
         Err(std::io::Error::new(
@@ -51,6 +58,10 @@ impl ReadWrite for MMU {
             return self.cartridge.read_word(address);
         }
 
+        if self.internal.contains(address) {
+            return self.internal.read_word(address);
+        }
+
         Err(std::io::Error::new(
             std::io::ErrorKind::OutOfMemory,
             format!(
@@ -68,6 +79,10 @@ impl ReadWrite for MMU {
 
         if self.cartridge.contains(address) {
             return self.cartridge.write_byte(address, value);
+        }
+
+        if self.internal.contains(address) {
+            return self.internal.write_byte(address, value);
         }
 
         Err(std::io::Error::new(
