@@ -5,6 +5,7 @@ mod cartridge_header;
 mod cpu;
 mod emulator;
 mod gpu;
+mod input_output_registers;
 mod internal_memory;
 mod memory_device;
 mod mmu;

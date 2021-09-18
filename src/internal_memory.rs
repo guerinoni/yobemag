@@ -1,3 +1,4 @@
+use crate::input_output_registers::InputOutputRegisters;
 use crate::memory_device::ReadWrite;
 
 /// InternalMemory holds all memory banks for internal handling of the emulating job, not GPU or
@@ -13,6 +14,8 @@ pub struct InternalMemory {
     interrupt_flag: u8,
     /// interrupt flag enable: 0xFFFF
     interrupt_enable: u8,
+    /// I/O registers.
+    io_reg: InputOutputRegisters,
 }
 
 impl InternalMemory {
@@ -23,6 +26,7 @@ impl InternalMemory {
             hram: [0; 0x1FFF + 1],
             interrupt_flag: 0,
             interrupt_enable: 0,
+            io_reg: InputOutputRegisters::new(),
         }
     }
 }
@@ -34,9 +38,14 @@ impl ReadWrite for InternalMemory {
             || (0xFF80..=0xFFFE).contains(&address)
             || 0xFF0F == address
             || 0xFFFF == address
+            || self.io_reg.contains(address)
     }
 
     fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+        if self.io_reg.contains(address) {
+            return self.io_reg.read_byte(address);
+        }
+
         match address {
             0xC000..=0xCFFF => Ok(self.wram0[address - 0xC000]),
             0xD000..=0xDFFF => Ok(self.wramn[address - 0xD000]),
