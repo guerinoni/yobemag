@@ -1,6 +1,6 @@
 use crate::gpu::GPU;
-use crate::memory_device::ReadWrite;
 use crate::internal_memory::InternalMemory;
+use crate::memory_device::ReadWrite;
 
 /// Holds all memory space addressable for emulation.
 pub struct MMU {
