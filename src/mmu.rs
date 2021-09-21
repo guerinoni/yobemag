@@ -1,12 +1,14 @@
 use crate::gpu::GPU;
 use crate::internal_memory::InternalMemory;
 use crate::memory_device::ReadWrite;
+use crate::serial_data_transfer::SerialDataTransfer;
 
 /// Holds all memory space addressable for emulation.
 pub struct MMU {
     cartridge: Box<dyn ReadWrite>,
     gpu: GPU,
     internal: InternalMemory,
+    serial: SerialDataTransfer,
 }
 
 impl MMU {
@@ -15,6 +17,7 @@ impl MMU {
             cartridge,
             gpu: GPU::new(),
             internal: InternalMemory::new(),
+            serial: SerialDataTransfer::new(),
         }
     }
 }
@@ -36,6 +39,10 @@ impl ReadWrite for MMU {
 
         if self.internal.contains(address) {
             return self.internal.read_byte(address);
+        }
+
+        if self.serial.contains(address) {
+            return self.serial.read_byte(address);
         }
 
         Err(std::io::Error::new(
@@ -82,6 +89,10 @@ impl ReadWrite for MMU {
 
         if self.internal.contains(address) {
             return self.internal.write_byte(address, value);
+        }
+
+        if self.serial.contains(address) {
+            return self.serial.write_byte(address, value);
         }
 
         Err(std::io::Error::new(

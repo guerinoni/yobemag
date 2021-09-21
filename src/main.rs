@@ -12,6 +12,7 @@ mod mmu;
 mod opcodes;
 mod prefix_opcodes;
 mod register;
+mod serial_data_transfer;
 
 fn main() -> Result<(), std::io::Error> {
     println!("starting yobemag...");
