@@ -151,36 +151,36 @@ mod tests {
     use crate::cartridge_header::*;
 
     #[test]
-    fn verify_title() {
-        let data = fs::read("./roms/Tetris.gb");
-        assert_eq!(data.is_err(), false);
-        let header = CartridgeHeader::new(&data.unwrap());
+    fn verify_len() {
+        let data = fs::read_to_string("./testdata/tetris")
+            .expect("file not found!")
+            .split(',')
+            .map(|n| n.parse().unwrap())
+            .collect::<Vec<u8>>();
+        assert_eq!(32768, data.len());
+        let header = CartridgeHeader::new(&data);
         assert_eq!(header.is_err(), false);
+    }
+
+    #[test]
+    fn verify_title() {
+        let data = fs::read_to_string("./testdata/tetris")
+            .expect("file not found!")
+            .split(',')
+            .map(|n| n.parse().unwrap())
+            .collect::<Vec<u8>>();
+        let header = CartridgeHeader::new(&data);
         assert_eq!(header.unwrap().title, "TETRIS");
     }
 
     #[test]
-    fn verify_nintendo_logo() {
-        let data = fs::read("./roms/Tetris.gb");
-        assert_eq!(data.is_err(), false);
-        let header = CartridgeHeader::new(&data.unwrap());
-        assert_eq!(header.is_err(), false);
-    }
-
-    #[test]
-    fn verify_checksum() {
-        let data = fs::read("./roms/Tetris.gb");
-        assert_eq!(data.is_err(), false);
-        let header = CartridgeHeader::new(&data.unwrap());
-        assert_eq!(header.is_err(), false);
-    }
-
-    #[test]
     fn verify_memory_bank_type() {
-        let data = fs::read("./roms/Tetris.gb");
-        assert_eq!(data.is_err(), false);
-        let header = CartridgeHeader::new(&data.unwrap());
-        assert_eq!(header.is_err(), false);
+        let data = fs::read_to_string("./testdata/tetris")
+            .expect("file not found!")
+            .split(',')
+            .map(|n| n.parse().unwrap())
+            .collect::<Vec<u8>>();
+        let header = CartridgeHeader::new(&data);
         assert_eq!(
             header.unwrap().memory_bank_type,
             MemoryBankType::NoMemoryBank
@@ -189,19 +189,23 @@ mod tests {
 
     #[test]
     fn verify_ram_size() {
-        let data = fs::read("./roms/Tetris.gb");
-        assert_eq!(data.is_err(), false);
-        let header = CartridgeHeader::new(&data.unwrap());
-        assert_eq!(header.is_err(), false);
+        let data = fs::read_to_string("./testdata/tetris")
+            .expect("file not found!")
+            .split(',')
+            .map(|n| n.parse().unwrap())
+            .collect::<Vec<u8>>();
+        let header = CartridgeHeader::new(&data);
         assert_eq!(header.unwrap().ram_in_bytes(), 0);
     }
 
     #[test]
     fn verify_gameboy_color_support() {
-        let data = fs::read("./roms/Tetris.gb");
-        assert_eq!(data.is_err(), false);
-        let header = CartridgeHeader::new(&data.unwrap());
-        assert_eq!(header.is_err(), false);
+        let data = fs::read_to_string("./testdata/tetris")
+            .expect("file not found!")
+            .split(',')
+            .map(|n| n.parse().unwrap())
+            .collect::<Vec<u8>>();
+        let header = CartridgeHeader::new(&data);
         assert_eq!(header.unwrap().gameboy_color_support, GameBoyColorFlag::GB);
     }
 }
