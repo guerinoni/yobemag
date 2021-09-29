@@ -35,6 +35,10 @@ pub struct GPU {
     /// Bit 6 - Window Tile Map Display Select (0=0x9800-0x9BFF, 1=0x9C00-0x9FFF)
     /// Bit 7 - LCD Display Enable             (0=Off, 1=On)
     control: u8,
+
+    /// The LY indicates the vertical line to which the present data is transferred to the LCD Driver. 
+    /// The LY can take on any value between 0 through 153. The values between 144 and 153 indicate the V-Blank period.
+    current_y: u8,
 }
 
 impl GPU {
@@ -45,6 +49,7 @@ impl GPU {
             scroll_y: 0,
             scroll_x: 0,
             control: 0,
+            current_y:0,
         }
     }
 }
@@ -56,6 +61,7 @@ impl ReadWrite for GPU {
             || 0xFF41 == address
             || 0xFF42 == address
             || 0xFF43 == address
+            || 0xFF44 == address
     }
 
     fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
@@ -65,6 +71,7 @@ impl ReadWrite for GPU {
             0xFF41 => Ok(self.status),
             0xFF42 => Ok(self.scroll_y),
             0xFF43 => Ok(self.scroll_x),
+            0xFF44 => Ok(self.current_y),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -83,6 +90,7 @@ impl ReadWrite for GPU {
             0xFF41 => Ok(self.status = value),
             0xFF42 => Ok(self.scroll_y = value),
             0xFF43 => Ok(self.scroll_x = value),
+            0xFF44 => Ok(self.current_y = value),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
