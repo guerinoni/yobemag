@@ -36,7 +36,7 @@ pub struct GPU {
     /// Bit 7 - LCD Display Enable             (0=Off, 1=On)
     control: u8,
 
-    /// The LY indicates the vertical line to which the present data is transferred to the LCD Driver. 
+    /// The LY indicates the vertical line to which the present data is transferred to the LCD Driver.
     /// The LY can take on any value between 0 through 153. The values between 144 and 153 indicate the V-Blank period.
     current_y: u8,
 }
@@ -49,7 +49,7 @@ impl GPU {
             scroll_y: 0,
             scroll_x: 0,
             control: 0,
-            current_y:0,
+            current_y: 0,
         }
     }
 }

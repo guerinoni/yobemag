@@ -1,3 +1,5 @@
+use crate::opcodes;
+
 #[derive(Debug)]
 pub enum Register {
     A,
@@ -222,6 +224,12 @@ pub enum OpCode {
     JrNcPcDd,
     JrCPcDd,
 
+    /// CP n
+    /// The byte n is compared with (subtracted from) the register A, setting
+    /// the appropriate flags but not storing the result.
+    /// Clock cycles: 8
+    CpN,
+
     /// RRA
     /// The contents of register A are rotated right by 1 bit position through the carry flag.
     /// Clock cycles: 4
@@ -377,6 +385,7 @@ impl From<u8> for OpCode {
             0xE0 => OpCode::LdFF00nA,
             0xF0 => OpCode::LdAFF00n,
             0xF3 => OpCode::DI,
+            0xFE => OpCode::CpN,
 
             _ => panic!("unknown opcode"),
         }

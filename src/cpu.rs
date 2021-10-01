@@ -165,6 +165,8 @@ impl CPU {
             OpCode::JrNcPcDd => self.jr_f_pc_dd(ConditionOperand::NC),
             OpCode::JrCPcDd => self.jr_f_pc_dd(ConditionOperand::C),
 
+            OpCode::CpN => self.cp_n(),
+
             OpCode::RrA => self.rr_a(),
 
             OpCode::DI => self.di(),
@@ -351,16 +353,16 @@ impl CPU {
         };
 
         self.registers.a |= r;
-        self.registers.flags.evaluate_effect(
-            self.registers.a,
-            self.registers.a,
-            SideEffectsCpuFlags {
-                carry: SideEffect::Unset,
-                half_carry: SideEffect::Unset,
-                negative: SideEffect::Unset,
-                zero: SideEffect::Dependent,
-            },
-        );
+        // self.registers.flags.evaluate_effect(
+        // self.registers.a,
+        // self.registers.a,
+        //     SideEffectsCpuFlags {
+        //         carry: SideEffect::Unset,
+        //         half_carry: SideEffect::Unset,
+        //         negative: SideEffect::Unset,
+        //         zero: SideEffect::Dependent,
+        //     },
+        // );
 
         4
     }
@@ -377,16 +379,16 @@ impl CPU {
         };
 
         self.registers.a ^= r;
-        self.registers.flags.evaluate_effect(
-            self.registers.a,
-            self.registers.a,
-            SideEffectsCpuFlags {
-                carry: SideEffect::Unmodified,
-                half_carry: SideEffect::Unmodified,
-                negative: SideEffect::Unmodified,
-                zero: SideEffect::Dependent,
-            },
-        );
+        // self.registers.flags.evaluate_effect(
+        //     self.registers.a,
+        //     self.registers.a,
+        //     SideEffectsCpuFlags {
+        //         carry: SideEffect::Unmodified,
+        //         half_carry: SideEffect::Unmodified,
+        //         negative: SideEffect::Unmodified,
+        //         zero: SideEffect::Dependent,
+        //     },
+        // );
 
         4
     }
@@ -414,16 +416,16 @@ impl CPU {
         };
 
         let result = *r + 1;
-        self.registers.flags.evaluate_effect(
-            *r,
-            result,
-            SideEffectsCpuFlags {
-                carry: SideEffect::Unmodified,
-                half_carry: SideEffect::Unmodified,
-                negative: SideEffect::Unset,
-                zero: SideEffect::Dependent,
-            },
-        );
+        // self.registers.flags.evaluate_effect(
+        //     *r,
+        //     result,
+        //     SideEffectsCpuFlags {
+        //         carry: SideEffect::Unmodified,
+        //         half_carry: SideEffect::Unmodified,
+        //         negative: SideEffect::Unset,
+        //         zero: SideEffect::Dependent,
+        //     },
+        // );
 
         *r = result;
 
@@ -443,16 +445,16 @@ impl CPU {
 
         *r = r.wrapping_sub(1);
 
-        self.registers.flags.evaluate_effect(
-            *r,
-            *r,
-            SideEffectsCpuFlags {
-                carry: SideEffect::Unmodified,
-                half_carry: SideEffect::Unmodified,
-                negative: SideEffect::Unmodified,
-                zero: SideEffect::Dependent,
-            },
-        );
+        // self.registers.flags.evaluate_effect(
+        //     *r,
+        //     *r,
+        //     SideEffectsCpuFlags {
+        //         carry: SideEffect::Unmodified,
+        //         half_carry: SideEffect::Unmodified,
+        //         negative: SideEffect::Unmodified,
+        //         zero: SideEffect::Dependent,
+        //     },
+        // );
 
         4
     }
@@ -480,6 +482,24 @@ impl CPU {
         8
     }
 
+    fn cp_n(self: &mut Self) -> u8 {
+        let n = self.fetch_byte();
+        let ret = self.registers.a - n;
+        // self.registers.flags.evaluate_effect(
+        // self.registers.a,
+        // self.registers.a,
+        // SideEffectsCpuFlags {
+        // carry: SideEffect::Dependent,
+        // half_carry: SideEffect::Dependent,
+        // negative: SideEffect::Set,
+        // zero: SideEffect::Dependent,
+        // },
+        // );
+        // FIXME: finish this consistent on comment in evaluate_effect
+
+        8
+    }
+
     fn di(self: &mut Self) -> u8 {
         self.ime = false;
         4
@@ -487,23 +507,9 @@ impl CPU {
 
     fn rr_a(self: &mut Self) -> u8 {
         let old_carry = self.registers.flags.carry as u16;
-        let mut big_a = self.registers.a as u16;
-        big_a = big_a.rotate_left(1);
-        big_a |= old_carry;
+        let big_a = (self.registers.a as u16).rotate_left(1) | old_carry;
         self.registers.flags.carry = big_a & (1 << 1) != 0;
-        big_a = big_a.rotate_right(1);
-        big_a = big_a ^ (old_carry << 8);
-        self.registers.a = (big_a >> 1) as u8;
-        self.registers.flags.evaluate_effect(
-            self.registers.a,
-            self.registers.a,
-            SideEffectsCpuFlags {
-                carry: SideEffect::Unset,
-                half_carry: SideEffect::Unset,
-                negative: SideEffect::Unset,
-                zero: SideEffect::Dependent,
-            },
-        );
+        self.registers.a = ((big_a.rotate_right(1) ^ (old_carry << 8)) >> 1) as u8;
 
         4
     }
@@ -536,17 +542,57 @@ impl CPU {
         let tmp = *r << 1;
         *r = tmp ^ sign;
 
-        self.registers.flags.evaluate_effect(
-            *r,
-            *r,
-            SideEffectsCpuFlags {
-                carry: SideEffect::Dependent,
-                half_carry: SideEffect::Unset,
-                negative: SideEffect::Unset,
-                zero: SideEffect::Dependent,
-            },
-        );
+        // self.registers.flags.evaluate_effect(
+        //     *r,
+        //     *r,
+        //     SideEffectsCpuFlags {
+        //         carry: SideEffect::Dependent,
+        //         half_carry: SideEffect::Unset,
+        //         negative: SideEffect::Unset,
+        //         zero: SideEffect::Dependent,
+        //     },
+        // );
 
         8
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::memory_device::ReadWrite;
+
+    use super::CPU;
+
+    struct mock_device {}
+
+    impl ReadWrite for mock_device {
+        fn contains(self: &Self, address: usize) -> bool {
+            false
+        }
+
+        fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+            Ok(0)
+        }
+        fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+            Ok(0)
+        }
+
+        fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+            Ok(())
+        }
+        fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn verify_rr_a() {
+        let mc = mock_device {};
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.a = 2;
+        cpu.registers.c = 1;
+        let cycle = cpu.rr_a();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 1);
     }
 }
