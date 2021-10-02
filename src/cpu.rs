@@ -237,7 +237,6 @@ impl CPU {
             Register::H => self.registers.h,
             Register::L => self.registers.l,
             Register::A => self.registers.a,
-            _ => panic!("can't ld_r_r"),
         };
 
         match reg1 {
@@ -248,7 +247,6 @@ impl CPU {
             Register::H => self.registers.h = r2,
             Register::L => self.registers.l = r2,
             Register::A => self.registers.a = r2,
-            _ => panic!("can't ld_r_r"),
         };
 
         4
@@ -264,7 +262,6 @@ impl CPU {
             Register::H => self.registers.h = hl,
             Register::L => self.registers.l = hl,
             Register::A => self.registers.a = hl,
-            _ => panic!("can't ld_r_hl"),
         };
 
         8
@@ -279,7 +276,6 @@ impl CPU {
             Register::H => self.registers.h,
             Register::L => self.registers.l,
             Register::A => self.registers.a,
-            _ => panic!("can't ld_hl_r"),
         };
 
         self.mmu
@@ -603,6 +599,36 @@ mod tests {
             let mut cpu = CPU::new(Box::new(mc));
             cpu.ld_r_next(Register::A);
             assert_eq!(cpu.registers.a, 10);
+        }
+    }
+
+    #[test]
+    fn verify_ld_r_r() {
+        {
+            let mc = mock_device {
+                fake_byte_to_return: 0,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.b = 9;
+            let cycle = cpu.ld_r_r(Register::A, Register::B);
+            assert_eq!(cycle, 4);
+            assert_eq!(cpu.registers.a, 9);
+        }
+    }
+
+    #[test]
+    fn verify_ld_r_hl() {
+        {
+            let mc = mock_device {
+                fake_byte_to_return: 87,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.set_hl(44);
+            let cycle = cpu.ld_r_hl(Register::B);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.b, 87);
         }
     }
 
