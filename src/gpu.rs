@@ -25,6 +25,20 @@ pub struct GPU {
     scroll_y: u8,
     /// scroll X 0xFF43 (read-write)
     scroll_x: u8,
+
+    /// Bit 0 - BG/Window Display/Priority     (0=Off, 1=On)
+    /// Bit 1 - OBJ (Sprite) Display Enable    (0=Off, 1=On)
+    /// Bit 2 - OBJ (Sprite) Size              (0=8x8, 1=8x16)
+    /// Bit 3 - BG Tile Map Display Select     (0=0x9800-0x9BFF, 1=0x9C00-0x9FFF)
+    /// Bit 4 - BG & Window Tile Data Select   (0=0x8800-0x97FF, 1=0x8000-0x8FFF)
+    /// Bit 5 - Window Display Enable          (0=Off, 1=On)
+    /// Bit 6 - Window Tile Map Display Select (0=0x9800-0x9BFF, 1=0x9C00-0x9FFF)
+    /// Bit 7 - LCD Display Enable             (0=Off, 1=On)
+    control: u8,
+
+    /// The LY indicates the vertical line to which the present data is transferred to the LCD Driver.
+    /// The LY can take on any value between 0 through 153. The values between 144 and 153 indicate the V-Blank period.
+    current_y: u8,
 }
 
 impl GPU {
@@ -34,6 +48,8 @@ impl GPU {
             status: 0,
             scroll_y: 0,
             scroll_x: 0,
+            control: 0,
+            current_y: 0,
         }
     }
 }
@@ -41,17 +57,21 @@ impl GPU {
 impl ReadWrite for GPU {
     fn contains(self: &Self, address: usize) -> bool {
         (0x8000..=0x1FFF).contains(&address)
+            || 0xFF40 == address
             || 0xFF41 == address
             || 0xFF42 == address
             || 0xFF43 == address
+            || 0xFF44 == address
     }
 
     fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
         match address {
             0x8000..=0x9FFF => Ok(self.vram[address - 0x8000]),
+            0xFF40 => Ok(self.control),
             0xFF41 => Ok(self.status),
             0xFF42 => Ok(self.scroll_y),
             0xFF43 => Ok(self.scroll_x),
+            0xFF44 => Ok(self.current_y),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -66,9 +86,11 @@ impl ReadWrite for GPU {
     fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
             0x8000..=0x9FFF => Ok(self.vram[address - 0x8000] = value),
+            0xFF40 => Ok(self.control = value),
             0xFF41 => Ok(self.status = value),
             0xFF42 => Ok(self.scroll_y = value),
             0xFF43 => Ok(self.scroll_x = value),
+            0xFF44 => Ok(self.current_y = value),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",

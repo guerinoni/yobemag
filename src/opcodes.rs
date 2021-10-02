@@ -1,3 +1,5 @@
+use crate::opcodes;
+
 #[derive(Debug)]
 pub enum Register {
     A,
@@ -25,6 +27,17 @@ pub enum ConditionOperand {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum OpCode {
+    /// LD r, n
+    /// Byte n is read as an integer and loaded into register r.
+    /// Clock cycles: 8
+    LdBNext,
+    LdCNext,
+    LdDNext,
+    LdENext,
+    LdHNext,
+    LdLNext,
+    LdANext,
+
     /// LD r, r'
     /// The contents of the register r' are loaded to the register r.
     /// Clock cycles: 4
@@ -84,17 +97,6 @@ pub enum OpCode {
     LdAL,
     LdAA,
 
-    /// LD r, n
-    /// Byte n is read as an integer and loaded into register r.
-    /// Clock cycles: 8
-    LdBNext,
-    LdCNext,
-    LdDNext,
-    LdENext,
-    LdHNext,
-    LdLNext,
-    LdANext,
-
     /// LD r, (HL)
     /// The byte at the memory address stored in the register pair HL is loaded into register r.
     /// Clock cycles: 8
@@ -116,6 +118,21 @@ pub enum OpCode {
     LdHlH,
     LdHlL,
     LdHlA,
+
+    /// LD A, (BC)
+    /// The byte at the memory address specified in the register pair BC is loaded in to the register A.
+    /// Clock cycles: 8
+    LdABc,
+
+    /// LD A, (DE)
+    /// The byte at the memory address specified in the register pair DE is loaded in to the register A.
+    /// Clock cycles: 8
+    LdADe,
+
+    /// LD A, (nn)
+    /// The byte at the memory address specified by the 16-bit short nn is loaded into the register A.
+    /// Clock cycles: 16
+    LdANn,
 
     /// LD (HL), n
     /// Byte n is read as an integer and loaded into the memory address specified in the register pair HL.
@@ -146,7 +163,7 @@ pub enum OpCode {
     /// The byte at the memory address (FF00+n) - the nth I/O port - is
     /// loaded into the register A.
     /// Clock cycles: 12
-    LdAFF00n = 0xF0,
+    LdAFF00n,
 
     /// LD (FF00+n), A
     /// The contents of the register A are loaded into the byte at the
@@ -222,6 +239,12 @@ pub enum OpCode {
     JrNcPcDd,
     JrCPcDd,
 
+    /// CP n
+    /// The byte n is compared with (subtracted from) the register A, setting
+    /// the appropriate flags but not storing the result.
+    /// Clock cycles: 8
+    CpN,
+
     /// RRA
     /// The contents of register A are rotated right by 1 bit position through the carry flag.
     /// Clock cycles: 4
@@ -255,22 +278,24 @@ pub enum OpCode {
 impl From<u8> for OpCode {
     fn from(orig: u8) -> Self {
         match orig {
-            0x0 => OpCode::Noop,
-            0x1 => OpCode::LdBcNn,
-            0x2 => OpCode::LdBcA,
-            0x3 => OpCode::IncBC,
-            0x4 => OpCode::IncB,
-            0x5 => OpCode::DecB,
-            0x6 => OpCode::LdBNext,
-            0xC => OpCode::IncC,
-            0xD => OpCode::DecC,
-            0xE => OpCode::LdCNext,
+            0x00 => OpCode::Noop,
+            0x01 => OpCode::LdBcNn,
+            0x02 => OpCode::LdBcA,
+            0x03 => OpCode::IncBC,
+            0x04 => OpCode::IncB,
+            0x05 => OpCode::DecB,
+            0x06 => OpCode::LdBNext,
+            0x0A => OpCode::LdABc,
+            0x0C => OpCode::IncC,
+            0x0D => OpCode::DecC,
+            0x0E => OpCode::LdCNext,
             0x10 => OpCode::Stop,
             0x11 => OpCode::LdDeNn,
             0x13 => OpCode::IncDE,
             0x14 => OpCode::IncD,
             0x15 => OpCode::DecD,
             0x16 => OpCode::LdDNext,
+            0x1A => OpCode::LdADe,
             0x1C => OpCode::IncE,
             0x1D => OpCode::DecE,
             0x1E => OpCode::LdENext,
@@ -377,6 +402,8 @@ impl From<u8> for OpCode {
             0xE0 => OpCode::LdFF00nA,
             0xF0 => OpCode::LdAFF00n,
             0xF3 => OpCode::DI,
+            0xFA => OpCode::LdANn,
+            0xFE => OpCode::CpN,
 
             _ => panic!("unknown opcode"),
         }
