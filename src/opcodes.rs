@@ -148,7 +148,7 @@ pub enum OpCode {
     /// The byte at the memory address (FF00+n) - the nth I/O port - is
     /// loaded into the register A.
     /// Clock cycles: 12
-    LdAFF00n = 0xF0,
+    LdAFF00n,
 
     /// LD (FF00+n), A
     /// The contents of the register A are loaded into the byte at the

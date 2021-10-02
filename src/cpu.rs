@@ -1,3 +1,5 @@
+use core::panic;
+
 use crate::{memory_device::ReadWrite, mmu::MMU, opcodes::*, prefix_opcodes::*, register::*};
 
 pub struct CPU {
@@ -278,9 +280,10 @@ impl CPU {
             Register::A => self.registers.a,
         };
 
-        self.mmu
-            .write_byte(self.registers.hl() as usize, r)
-            .unwrap(); // TODO: check result
+        match self.mmu.write_byte(self.registers.hl() as usize, r) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
 
         8
     }
@@ -564,35 +567,40 @@ mod tests {
 
     use super::CPU;
 
-    struct mock_device {
+    struct MockDevice {
         fake_byte_to_return: u8,
         fake_word_to_return: u16,
     }
 
-    impl ReadWrite for mock_device {
+    impl ReadWrite for MockDevice {
         fn contains(self: &Self, address: usize) -> bool {
+            let _ = address;
             true
         }
 
         fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+            let _ = address;
             Ok(self.fake_byte_to_return)
         }
         fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+            let _ = address;
             Ok(self.fake_word_to_return)
         }
 
         fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
-            Ok(())
+            let _ = address;
+            Ok(self.fake_byte_to_return = value)
         }
         fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
-            Ok(())
+            let _ = address;
+            Ok(self.fake_word_to_return = value)
         }
     }
 
     #[test]
     fn verify_ld_r_next() {
         {
-            let mc = mock_device {
+            let mc = MockDevice {
                 fake_byte_to_return: 10,
                 fake_word_to_return: 0,
             };
@@ -605,7 +613,7 @@ mod tests {
     #[test]
     fn verify_ld_r_r() {
         {
-            let mc = mock_device {
+            let mc = MockDevice {
                 fake_byte_to_return: 0,
                 fake_word_to_return: 0,
             };
@@ -620,7 +628,7 @@ mod tests {
     #[test]
     fn verify_ld_r_hl() {
         {
-            let mc = mock_device {
+            let mc = MockDevice {
                 fake_byte_to_return: 87,
                 fake_word_to_return: 0,
             };
@@ -633,9 +641,24 @@ mod tests {
     }
 
     #[test]
+    fn verify_ld_hl_r() {
+        {
+            let mc = MockDevice {
+                fake_byte_to_return: 0,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.b = 99;
+            let cycle = cpu.ld_hl_r(Register::B);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
+        }
+    }
+
+    #[test]
     fn verify_rr_a() {
         {
-            let mc = mock_device {
+            let mc = MockDevice {
                 fake_byte_to_return: 0,
                 fake_word_to_return: 0,
             };
@@ -650,7 +673,7 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, true);
         }
         {
-            let mc = mock_device {
+            let mc = MockDevice {
                 fake_byte_to_return: 0,
                 fake_word_to_return: 0,
             };
@@ -665,7 +688,7 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = mock_device {
+            let mc = MockDevice {
                 fake_byte_to_return: 0,
                 fake_word_to_return: 0,
             };
