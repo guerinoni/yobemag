@@ -110,6 +110,8 @@ impl CPU {
             OpCode::LdHlL => self.ld_hl_r(Register::L),
             OpCode::LdHlA => self.ld_hl_r(Register::A),
 
+            OpCode::LdABc => self.ld_a_nn(RegisterWord::BC),
+
             OpCode::LdHlN => self.ld_hl_next(),
 
             OpCode::LdBcA => self.ld_bc_a(),
@@ -284,6 +286,22 @@ impl CPU {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
+
+        8
+    }
+
+    fn ld_a_nn(self: &mut Self, reg: RegisterWord) -> u8 {
+        let address = match reg {
+            RegisterWord::BC => self.registers.bc(),
+            RegisterWord::DE => self.registers.de(),
+            RegisterWord::HL => self.registers.hl(),
+            RegisterWord::SP => self.registers.stack_pointer,
+        };
+        let v = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+        self.registers.a = v;
 
         8
     }
@@ -563,7 +581,7 @@ impl CPU {
 #[cfg(test)]
 mod tests {
     use crate::memory_device::ReadWrite;
-    use crate::opcodes::Register;
+    use crate::opcodes::{Register, RegisterWord};
 
     use super::CPU;
 
@@ -652,6 +670,21 @@ mod tests {
             let cycle = cpu.ld_hl_r(Register::B);
             assert_eq!(cycle, 8);
             assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
+        }
+    }
+
+    #[test]
+    fn verify_ld_a_nn() {
+        {
+            let mc = MockDevice {
+                fake_byte_to_return: 100,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.set_bc(99);
+            let cycle = cpu.ld_a_nn(RegisterWord::BC);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.a, 100);
         }
     }
 
