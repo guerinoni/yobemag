@@ -506,10 +506,15 @@ impl CPU {
     }
 
     fn rr_a(self: &mut Self) -> u8 {
+        let old_bit_zero_data = self.registers.a & 0x01 == 0x01;
         let old_carry = self.registers.flags.carry as u16;
         let big_a = (self.registers.a as u16).rotate_left(1) | old_carry;
         self.registers.flags.carry = big_a & (1 << 1) != 0;
         self.registers.a = ((big_a.rotate_right(1) ^ (old_carry << 8)) >> 1) as u8;
+        self.registers.flags.zero = self.registers.a == 0;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.carry = old_bit_zero_data;
 
         4
     }
@@ -587,12 +592,41 @@ mod tests {
 
     #[test]
     fn verify_rr_a() {
-        let mc = mock_device {};
-        let mut cpu = CPU::new(Box::new(mc));
-        cpu.registers.a = 2;
-        cpu.registers.c = 1;
-        let cycle = cpu.rr_a();
-        assert_eq!(cycle, 4);
-        assert_eq!(cpu.registers.a, 1);
+        {
+            let mc = mock_device {};
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.a = 1;
+            let cycle = cpu.rr_a();
+            assert_eq!(cycle, 4);
+            assert_eq!(cpu.registers.a, 0);
+            assert_eq!(cpu.registers.flags.zero, true);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, true);
+        }
+        {
+            let mc = mock_device {};
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.a = 2;
+            let cycle = cpu.rr_a();
+            assert_eq!(cycle, 4);
+            assert_eq!(cpu.registers.a, 1);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
+        {
+            let mc = mock_device {};
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.a = 3;
+            let cycle = cpu.rr_a();
+            assert_eq!(cycle, 4);
+            assert_eq!(cpu.registers.a, 1);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, true);
+        }
     }
 }
