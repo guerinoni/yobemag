@@ -110,8 +110,10 @@ impl CPU {
             OpCode::LdHlL => self.ld_hl_r(Register::L),
             OpCode::LdHlA => self.ld_hl_r(Register::A),
 
-            OpCode::LdABc => self.ld_a_nn(RegisterWord::BC),
-            OpCode::LdADe => self.ld_a_nn(RegisterWord::DE),
+            OpCode::LdABc => self.ld_a_rr(RegisterWord::BC),
+            OpCode::LdADe => self.ld_a_rr(RegisterWord::DE),
+
+            OpCode::LdANn => self.ld_a_nn(),
 
             OpCode::LdHlN => self.ld_hl_next(),
 
@@ -291,13 +293,24 @@ impl CPU {
         8
     }
 
-    fn ld_a_nn(self: &mut Self, reg: RegisterWord) -> u8 {
+    fn ld_a_rr(self: &mut Self, reg: RegisterWord) -> u8 {
         let address = match reg {
             RegisterWord::BC => self.registers.bc(),
             RegisterWord::DE => self.registers.de(),
             RegisterWord::HL => self.registers.hl(),
             RegisterWord::SP => self.registers.stack_pointer,
         };
+        let v = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+        self.registers.a = v;
+
+        8
+    }
+
+    fn ld_a_nn(self: &mut Self) -> u8 {
+        let address = self.fetch_word();
         let v = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -675,7 +688,7 @@ mod tests {
     }
 
     #[test]
-    fn verify_ld_a_nn() {
+    fn verify_ld_a_rr() {
         {
             let mc = MockDevice {
                 fake_byte_to_return: 100,
@@ -683,7 +696,21 @@ mod tests {
             };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.set_bc(99);
-            let cycle = cpu.ld_a_nn(RegisterWord::BC);
+            let cycle = cpu.ld_a_rr(RegisterWord::BC);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.a, 100);
+        }
+    }
+
+    #[test]
+    fn verify_ld_a_nn() {
+        {
+            let mc = MockDevice {
+                fake_byte_to_return: 100,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            let cycle = cpu.ld_a_nn();
             assert_eq!(cycle, 8);
             assert_eq!(cpu.registers.a, 100);
         }

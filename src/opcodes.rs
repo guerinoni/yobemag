@@ -119,15 +119,20 @@ pub enum OpCode {
     LdHlL,
     LdHlA,
 
-    // LD A, (BC)
-    // The byte at the memory address specified in the register pair BC is loaded in to the register A.
-    // Clock cycles: 8
+    /// LD A, (BC)
+    /// The byte at the memory address specified in the register pair BC is loaded in to the register A.
+    /// Clock cycles: 8
     LdABc,
 
-    // LD A, (DE)
-    // The byte at the memory address specified in the register pair DE is loaded in to the register A.
-    // Clock cycles: 8
+    /// LD A, (DE)
+    /// The byte at the memory address specified in the register pair DE is loaded in to the register A.
+    /// Clock cycles: 8
     LdADe,
+
+    /// LD A, (nn)
+    /// The byte at the memory address specified by the 16-bit short nn is loaded into the register A.
+    /// Clock cycles: 16
+    LdANn,
 
     /// LD (HL), n
     /// Byte n is read as an integer and loaded into the memory address specified in the register pair HL.
@@ -397,6 +402,7 @@ impl From<u8> for OpCode {
             0xE0 => OpCode::LdFF00nA,
             0xF0 => OpCode::LdAFF00n,
             0xF3 => OpCode::DI,
+            0xFA => OpCode::LdANn,
             0xFE => OpCode::CpN,
 
             _ => panic!("unknown opcode"),
