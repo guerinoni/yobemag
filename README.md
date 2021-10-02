@@ -1,5 +1,7 @@
 # yobemag
 
+[![CI](https://github.com/guerinoni/yobemag/actions/workflows/ci.yml/badge.svg)](https://github.com/guerinoni/yobemag/actions/workflows/ci.yml)
+
 GameBoy emulator. WIP for now :)
 
 ## General knowledge
