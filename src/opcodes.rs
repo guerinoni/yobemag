@@ -27,6 +27,17 @@ pub enum ConditionOperand {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum OpCode {
+    /// LD r, n
+    /// Byte n is read as an integer and loaded into register r.
+    /// Clock cycles: 8
+    LdBNext,
+    LdCNext,
+    LdDNext,
+    LdENext,
+    LdHNext,
+    LdLNext,
+    LdANext,
+
     /// LD r, r'
     /// The contents of the register r' are loaded to the register r.
     /// Clock cycles: 4
@@ -85,17 +96,6 @@ pub enum OpCode {
     LdAH,
     LdAL,
     LdAA,
-
-    /// LD r, n
-    /// Byte n is read as an integer and loaded into register r.
-    /// Clock cycles: 8
-    LdBNext,
-    LdCNext,
-    LdDNext,
-    LdENext,
-    LdHNext,
-    LdLNext,
-    LdANext,
 
     /// LD r, (HL)
     /// The byte at the memory address stored in the register pair HL is loaded into register r.
@@ -263,16 +263,16 @@ pub enum OpCode {
 impl From<u8> for OpCode {
     fn from(orig: u8) -> Self {
         match orig {
-            0x0 => OpCode::Noop,
-            0x1 => OpCode::LdBcNn,
-            0x2 => OpCode::LdBcA,
-            0x3 => OpCode::IncBC,
-            0x4 => OpCode::IncB,
-            0x5 => OpCode::DecB,
-            0x6 => OpCode::LdBNext,
-            0xC => OpCode::IncC,
-            0xD => OpCode::DecC,
-            0xE => OpCode::LdCNext,
+            0x00 => OpCode::Noop,
+            0x01 => OpCode::LdBcNn,
+            0x02 => OpCode::LdBcA,
+            0x03 => OpCode::IncBC,
+            0x04 => OpCode::IncB,
+            0x05 => OpCode::DecB,
+            0x06 => OpCode::LdBNext,
+            0x0C => OpCode::IncC,
+            0x0D => OpCode::DecC,
+            0x0E => OpCode::LdCNext,
             0x10 => OpCode::Stop,
             0x11 => OpCode::LdDeNn,
             0x13 => OpCode::IncDE,

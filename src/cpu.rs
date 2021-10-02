@@ -34,6 +34,14 @@ impl CPU {
         let op_code = self.fetch_byte();
         println!("{:#04x}", op_code);
         match op_code.into() {
+            OpCode::LdBNext => self.ld_r_next(Register::B),
+            OpCode::LdCNext => self.ld_r_next(Register::C),
+            OpCode::LdDNext => self.ld_r_next(Register::D),
+            OpCode::LdENext => self.ld_r_next(Register::E),
+            OpCode::LdHNext => self.ld_r_next(Register::H),
+            OpCode::LdLNext => self.ld_r_next(Register::L),
+            OpCode::LdANext => self.ld_r_next(Register::A),
+
             OpCode::LdBB => self.ld_r_r(Register::B, Register::B),
             OpCode::LdBC => self.ld_r_r(Register::B, Register::C),
             OpCode::LdBD => self.ld_r_r(Register::B, Register::D),
@@ -83,14 +91,6 @@ impl CPU {
             OpCode::LdAH => self.ld_r_r(Register::A, Register::H),
             OpCode::LdAL => self.ld_r_r(Register::A, Register::L),
             OpCode::LdAA => self.ld_r_r(Register::A, Register::A),
-
-            OpCode::LdBNext => self.ld_r_next(Register::B),
-            OpCode::LdCNext => self.ld_r_next(Register::C),
-            OpCode::LdDNext => self.ld_r_next(Register::D),
-            OpCode::LdENext => self.ld_r_next(Register::E),
-            OpCode::LdHNext => self.ld_r_next(Register::H),
-            OpCode::LdLNext => self.ld_r_next(Register::L),
-            OpCode::LdANext => self.ld_r_next(Register::A),
 
             OpCode::LdBHL => self.ld_r_hl(Register::B),
             OpCode::LdCHL => self.ld_r_hl(Register::C),
@@ -213,6 +213,21 @@ impl CPU {
         0
     }
 
+    fn ld_r_next(self: &mut Self, reg: Register) -> u8 {
+        let r = self.fetch_byte();
+        match reg {
+            Register::B => self.registers.b = r,
+            Register::C => self.registers.c = r,
+            Register::D => self.registers.d = r,
+            Register::E => self.registers.e = r,
+            Register::H => self.registers.h = r,
+            Register::L => self.registers.l = r,
+            Register::A => self.registers.a = r,
+        };
+
+        8
+    }
+
     fn ld_r_r(self: &mut Self, reg1: Register, reg2: Register) -> u8 {
         let r2 = match reg2 {
             Register::B => self.registers.b,
@@ -237,22 +252,6 @@ impl CPU {
         };
 
         4
-    }
-
-    fn ld_r_next(self: &mut Self, reg: Register) -> u8 {
-        let r = self.fetch_byte();
-        match reg {
-            Register::B => self.registers.b = r,
-            Register::C => self.registers.c = r,
-            Register::D => self.registers.d = r,
-            Register::E => self.registers.e = r,
-            Register::H => self.registers.h = r,
-            Register::L => self.registers.l = r,
-            Register::A => self.registers.a = r,
-            _ => panic!("can't ld_r_next"),
-        };
-
-        8
     }
 
     fn ld_r_hl(self: &mut Self, reg: Register) -> u8 {
@@ -565,21 +564,25 @@ impl CPU {
 #[cfg(test)]
 mod tests {
     use crate::memory_device::ReadWrite;
+    use crate::opcodes::Register;
 
     use super::CPU;
 
-    struct mock_device {}
+    struct mock_device {
+        fake_byte_to_return: u8,
+        fake_word_to_return: u16,
+    }
 
     impl ReadWrite for mock_device {
         fn contains(self: &Self, address: usize) -> bool {
-            false
+            true
         }
 
         fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
-            Ok(0)
+            Ok(self.fake_byte_to_return)
         }
         fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
-            Ok(0)
+            Ok(self.fake_word_to_return)
         }
 
         fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
@@ -591,9 +594,25 @@ mod tests {
     }
 
     #[test]
+    fn verify_ld_r_next() {
+        {
+            let mc = mock_device {
+                fake_byte_to_return: 10,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.ld_r_next(Register::A);
+            assert_eq!(cpu.registers.a, 10);
+        }
+    }
+
+    #[test]
     fn verify_rr_a() {
         {
-            let mc = mock_device {};
+            let mc = mock_device {
+                fake_byte_to_return: 0,
+                fake_word_to_return: 0,
+            };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.a = 1;
             let cycle = cpu.rr_a();
@@ -605,7 +624,10 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, true);
         }
         {
-            let mc = mock_device {};
+            let mc = mock_device {
+                fake_byte_to_return: 0,
+                fake_word_to_return: 0,
+            };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.a = 2;
             let cycle = cpu.rr_a();
@@ -617,7 +639,10 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = mock_device {};
+            let mc = mock_device {
+                fake_byte_to_return: 0,
+                fake_word_to_return: 0,
+            };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.a = 3;
             let cycle = cpu.rr_a();
