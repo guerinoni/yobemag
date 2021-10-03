@@ -176,10 +176,14 @@ pub enum OpCode {
     LdAFF00n,
 
     /// LD (FF00+n), A
-    /// The contents of the register A are loaded into the byte at the
-    /// memory address (FF00+n) - the nth I/O port.
+    /// The contents of the register A are loaded into the byte at the  memory address (FF00+n) - the nth I/O port.
     /// Clock cycles: 12
     LdFF00nA,
+
+    /// LD A, (FF00+C)
+    /// The byte at the memory address (FF00 + register C) - the Cth I/O port - is loaded into the register A.
+    /// Clock cycles: 8
+    LdAFF00C,
 
     /// OR r
     /// A bitwise OR operation is performed between the contents of the register r and the contents of the register A, and the result is  stored in register A.
@@ -413,6 +417,7 @@ impl From<u8> for OpCode {
             0xE0 => OpCode::LdFF00nA,
             0xEA => OpCode::LDNnA,
             0xF0 => OpCode::LdAFF00n,
+            0xF2 => OpCode::LdAFF00C,
             0xF3 => OpCode::DI,
             0xFA => OpCode::LdANn,
             0xFE => OpCode::CpN,
