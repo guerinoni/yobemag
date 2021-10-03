@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  ci:
 
     runs-on: ubuntu-latest
 
@@ -23,3 +23,20 @@ jobs:
 
     - name: tests
       run: cargo test
+
+    - name: run cargo-tarpaulin
+      uses: actions-rs/tarpaulin@v0.1
+      with:
+        version: '0.18.2'
+        args: '-- --test-threads 1'
+
+    - name: upload to codecov.io
+      uses: codecov/codecov-action@v1.0.2
+      with:
+        token: ${{secrets.CODECOV_TOKEN}}
+
+    - name: archive code coverage results
+      uses: actions/upload-artifact@v1
+      with:
+        name: code-coverage-report
+        path: cobertura.xml
