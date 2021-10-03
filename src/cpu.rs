@@ -117,7 +117,8 @@ impl CPU {
 
             OpCode::LdHlN => self.ld_hl_next(),
 
-            OpCode::LdBcA => self.ld_bc_a(),
+            OpCode::LdBcA => self.ld_rr_a(RegisterWord::BC),
+            OpCode::LdDeA => self.ld_rr_a(RegisterWord::DE),
 
             OpCode::LdBcNn => self.ld_dd_nn(RegisterWord::BC),
             OpCode::LdDeNn => self.ld_dd_nn(RegisterWord::DE),
@@ -320,18 +321,25 @@ impl CPU {
         8
     }
 
-    fn ld_hl_next(self: &mut Self) -> u8 {
-        let hl = self.registers.hl();
-        let next = self.fetch_byte();
-        self.mmu.write_byte(hl as usize, next).unwrap(); // TODO: check result
+    fn ld_rr_a(self: &mut Self, reg: RegisterWord) -> u8 {
+        let address = match reg {
+            RegisterWord::BC => self.registers.bc(),
+            RegisterWord::DE => self.registers.de(),
+            RegisterWord::HL => self.registers.hl(),
+            RegisterWord::SP => self.registers.stack_pointer,
+        };
+        match self.mmu.write_byte(address as usize, self.registers.a) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
 
         8
     }
 
-    fn ld_bc_a(self: &mut Self) -> u8 {
-        self.mmu
-            .write_byte(self.registers.bc() as usize, self.registers.a)
-            .unwrap();
+    fn ld_hl_next(self: &mut Self) -> u8 {
+        let hl = self.registers.hl();
+        let next = self.fetch_byte();
+        self.mmu.write_byte(hl as usize, next).unwrap(); // TODO: check result
 
         8
     }
@@ -713,6 +721,22 @@ mod tests {
             let cycle = cpu.ld_a_nn();
             assert_eq!(cycle, 8);
             assert_eq!(cpu.registers.a, 100);
+        }
+    }
+
+    #[test]
+    fn verify_ld_rr_a() {
+        {
+            let mc = MockDevice {
+                fake_byte_to_return: 0,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.set_bc(11);
+            cpu.registers.a = 99;
+            let cycle = cpu.ld_rr_a(RegisterWord::BC);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
         }
     }
 
