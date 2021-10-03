@@ -113,6 +113,8 @@ impl CPU {
             OpCode::LdABc => self.ld_a_rr(RegisterWord::BC),
             OpCode::LdADe => self.ld_a_rr(RegisterWord::DE),
 
+            OpCode::LDNnA => self.ld_nn_a(),
+
             OpCode::LdANn => self.ld_a_nn(),
 
             OpCode::LdHlN => self.ld_hl_next(),
@@ -334,6 +336,16 @@ impl CPU {
         }
 
         8
+    }
+
+    fn ld_nn_a(self: &mut Self) -> u8 {
+        let address = self.fetch_word();
+        match self.mmu.write_byte(address as usize, self.registers.a) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
+
+        16
     }
 
     fn ld_hl_next(self: &mut Self) -> u8 {
@@ -736,6 +748,21 @@ mod tests {
             cpu.registers.a = 99;
             let cycle = cpu.ld_rr_a(RegisterWord::BC);
             assert_eq!(cycle, 8);
+            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
+        }
+    }
+
+    #[test]
+    fn verify_ld_nn_a() {
+        {
+            let mc = MockDevice {
+                fake_byte_to_return: 0,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.a = 99;
+            let cycle = cpu.ld_nn_a();
+            assert_eq!(cycle, 16);
             assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
         }
     }
