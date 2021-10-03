@@ -386,7 +386,10 @@ impl CPU {
 
     fn ld_ff00_na(self: &mut Self) -> u8 {
         let add = 0xFF00 as u16 + self.fetch_byte() as u16;
-        self.mmu.write_byte(add as usize, self.registers.a).unwrap();
+        match self.mmu.write_byte(add as usize, self.registers.a) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
 
         12
     }
@@ -760,6 +763,21 @@ mod tests {
             let cycle = cpu.ld_rr_a(RegisterWord::BC);
             assert_eq!(cycle, 8);
             assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
+        }
+    }
+
+    #[test]
+    fn verify_ld_ff00_na() {
+        {
+            let mc = MockDevice {
+                fake_byte_to_return: 99,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.a = 94;
+            let cycle = cpu.ld_ff00_na();
+            assert_eq!(cycle, 12);
+            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 94);
         }
     }
 
