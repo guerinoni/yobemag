@@ -193,20 +193,24 @@ impl CPU {
     }
 
     fn fetch_byte(self: &mut Self) -> u8 {
-        let byte = self
-            .mmu
-            .read_byte(self.registers.program_counter as usize)
-            .unwrap();
+        let address = self.registers.program_counter as usize;
+        let byte = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
         self.registers.program_counter += 1;
 
         byte
     }
 
     fn fetch_word(self: &mut Self) -> u16 {
-        let word = self
-            .mmu
-            .read_word(self.registers.program_counter as usize)
-            .unwrap();
+        let address = self.registers.program_counter as usize;
+        let word = match self.mmu.read_word(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
         self.registers.program_counter += 2;
 
         word
@@ -266,7 +270,12 @@ impl CPU {
     }
 
     fn ld_r_hl(self: &mut Self, reg: Register) -> u8 {
-        let hl = self.mmu.read_byte(self.registers.hl() as usize).unwrap();
+        let address = self.registers.hl() as usize;
+        let hl = match self.mmu.read_byte(address) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
         match reg {
             Register::B => self.registers.b = hl,
             Register::C => self.registers.c = hl,
@@ -306,10 +315,12 @@ impl CPU {
             RegisterWord::HL => self.registers.hl(),
             RegisterWord::SP => self.registers.stack_pointer,
         };
+
         let v = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
+
         self.registers.a = v;
 
         8
@@ -321,6 +332,7 @@ impl CPU {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
+
         self.registers.a = v;
 
         8
@@ -333,6 +345,7 @@ impl CPU {
             RegisterWord::HL => self.registers.hl(),
             RegisterWord::SP => self.registers.stack_pointer,
         };
+
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -354,9 +367,12 @@ impl CPU {
     fn ld_hl_next(self: &mut Self) -> u8 {
         let hl = self.registers.hl();
         let next = self.fetch_byte();
-        self.mmu.write_byte(hl as usize, next).unwrap(); // TODO: check result
+        match self.mmu.write_byte(hl as usize, next) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
 
-        8
+        12
     }
 
     fn ld_dd_nn(self: &mut Self, reg: RegisterWord) -> u8 {
@@ -372,23 +388,28 @@ impl CPU {
     }
 
     fn ldd_hl_a(self: &mut Self) -> u8 {
-        self.mmu
-            .write_byte((self.registers.hl() - 1) as usize, self.registers.a)
-            .unwrap();
+        let address = self.registers.hl() - 1;
+        match self.mmu.write_byte(address as usize, self.registers.a) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
 
         8
     }
 
     fn ld_a_ff00_n(self: &mut Self) -> u8 {
         let add = 0xFF00 as usize + self.fetch_byte() as usize;
-        self.registers.a = self.mmu.read_byte(add).unwrap();
+        self.registers.a = match self.mmu.read_byte(add) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
 
         12
     }
 
     fn ld_ff00_na(self: &mut Self) -> u8 {
-        let add = 0xFF00 as u16 + self.fetch_byte() as u16;
-        match self.mmu.write_byte(add as usize, self.registers.a) {
+        let address = 0xFF00 as u16 + self.fetch_byte() as u16;
+        match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -407,8 +428,7 @@ impl CPU {
     }
 
     fn ldd_a_hl(self: &mut Self) -> u8 {
-        let v = self.mmu.read_byte(self.registers.hl() as usize);
-        self.registers.a = match v {
+        self.registers.a = match self.mmu.read_byte(self.registers.hl() as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -427,7 +447,6 @@ impl CPU {
             Register::H => self.registers.h,
             Register::L => self.registers.l,
             Register::A => self.registers.a,
-            _ => panic!("can't ld_hl_r"),
         };
 
         self.registers.a |= r;
@@ -642,14 +661,16 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use crate::memory_device::ReadWrite;
     use crate::opcodes::{Register, RegisterWord};
 
     use super::CPU;
 
     struct MockDevice {
-        fake_byte_to_return: u8,
-        fake_word_to_return: u16,
+        bytes: HashMap<usize, u8>,
+        words: HashMap<usize, u16>,
     }
 
     impl ReadWrite for MockDevice {
@@ -659,183 +680,199 @@ mod tests {
         }
 
         fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
-            let _ = address;
-            Ok(self.fake_byte_to_return)
+            dbg!(address);
+            Ok(self.bytes[&address])
         }
         fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
-            let _ = address;
-            Ok(self.fake_word_to_return)
+            Ok(self.words[&address])
         }
 
         fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
-            let _ = address;
-            Ok(self.fake_byte_to_return = value)
+            self.bytes.insert(address, value);
+            Ok(())
         }
         fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
-            let _ = address;
-            Ok(self.fake_word_to_return = value)
+            self.words.insert(address, value);
+            Ok(())
         }
+    }
+
+    macro_rules! collection {
+        ($($k:expr => $v:expr),* $(,)?) => {{
+            use std::iter::{Iterator, IntoIterator};
+            Iterator::collect(IntoIterator::into_iter([$(($k, $v),)*]))
+        }};
     }
 
     #[test]
     fn verify_ld_r_next() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 10,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            cpu.ld_r_next(Register::A);
-            assert_eq!(cpu.registers.a, 10);
-        }
+        let mc = MockDevice {
+            bytes: collection! { 256 => 10 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        let cycle = cpu.ld_r_next(Register::A);
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 10);
     }
 
     #[test]
     fn verify_ld_r_r() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 0,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            cpu.registers.b = 9;
-            let cycle = cpu.ld_r_r(Register::A, Register::B);
-            assert_eq!(cycle, 4);
-            assert_eq!(cpu.registers.a, 9);
-        }
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.b = 9;
+        let cycle = cpu.ld_r_r(Register::A, Register::B);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 9);
     }
 
     #[test]
     fn verify_ld_r_hl() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 87,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            cpu.registers.set_hl(44);
-            let cycle = cpu.ld_r_hl(Register::B);
-            assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.b, 87);
-        }
+        let mc = MockDevice {
+            bytes: collection! { 44 => 10 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.set_hl(44);
+        let cycle = cpu.ld_r_hl(Register::B);
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.b, 10);
     }
 
     #[test]
     fn verify_ld_hl_r() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 0,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            cpu.registers.b = 99;
-            let cycle = cpu.ld_hl_r(Register::B);
-            assert_eq!(cycle, 8);
-            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
-        }
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.set_hl(44);
+        cpu.registers.b = 99;
+        let cycle = cpu.ld_hl_r(Register::B);
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.mmu.read_byte(44).unwrap(), 99);
     }
 
     #[test]
     fn verify_ld_a_rr() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 100,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            cpu.registers.set_bc(99);
-            let cycle = cpu.ld_a_rr(RegisterWord::BC);
-            assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.a, 100);
-        }
+        let mc = MockDevice {
+            bytes: collection! { 44 => 10 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.set_bc(44);
+        let cycle = cpu.ld_a_rr(RegisterWord::BC);
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 10);
     }
 
     #[test]
     fn verify_ld_a_nn() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 100,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            let cycle = cpu.ld_a_nn();
-            assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.a, 100);
-        }
+        let mc = MockDevice {
+            bytes: collection! { 44 => 10 },
+            words: collection! { 256 => 44 },
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        let cycle = cpu.ld_a_nn();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 10);
     }
 
     #[test]
     fn verify_ld_rr_a() {
         {
             let mc = MockDevice {
-                fake_byte_to_return: 0,
-                fake_word_to_return: 0,
+                bytes: collection! {},
+                words: collection! {},
             };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.set_bc(11);
             cpu.registers.a = 99;
             let cycle = cpu.ld_rr_a(RegisterWord::BC);
             assert_eq!(cycle, 8);
-            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
-        }
-    }
-
-    #[test]
-    fn verify_ld_ff00_na() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 99,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            cpu.registers.a = 94;
-            let cycle = cpu.ld_ff00_na();
-            assert_eq!(cycle, 12);
-            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 94);
+            assert_eq!(cpu.mmu.read_byte(11).unwrap(), 99);
         }
     }
 
     #[test]
     fn verify_ld_nn_a() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 0,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            cpu.registers.a = 99;
-            let cycle = cpu.ld_nn_a();
-            assert_eq!(cycle, 16);
-            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 99);
-        }
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! { 256 => 44 },
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.a = 99;
+        let cycle = cpu.ld_nn_a();
+        assert_eq!(cycle, 16);
+        assert_eq!(cpu.mmu.read_byte(44).unwrap(), 99);
+    }
+
+    #[test]
+    fn verify_ld_hl_next() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 94 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.set_hl(99);
+        let cycle = cpu.ld_hl_next();
+        assert_eq!(cycle, 12);
+        assert_eq!(cpu.mmu.read_byte(99).unwrap(), 94);
+    }
+
+    #[test]
+    fn verify_ld_a_ff00_n() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 1, 0xFF01 => 10 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        let cycle = cpu.ld_a_ff00_n();
+        assert_eq!(cycle, 12);
+        assert_eq!(cpu.registers.a, 10);
+    }
+
+    #[test]
+    fn verify_ld_ff00_na() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 1 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.a = 94;
+        let cycle = cpu.ld_ff00_na();
+        assert_eq!(cycle, 12);
+        assert_eq!(cpu.mmu.read_byte(0xFF00 + 1).unwrap(), 94);
     }
 
     #[test]
     fn verify_ld_a_ff00c() {
-        {
-            let mc = MockDevice {
-                fake_byte_to_return: 99,
-                fake_word_to_return: 0,
-            };
-            let mut cpu = CPU::new(Box::new(mc));
-            let cycle = cpu.ld_a_ff00c();
-            assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.a, 99);
-        }
+        let mc = MockDevice {
+            bytes: collection! { 0xFF02 => 10 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.c = 2;
+        let cycle = cpu.ld_a_ff00c();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 10);
     }
 
     #[test]
     fn verify_ldd_a_hl() {
         {
             let mc = MockDevice {
-                fake_byte_to_return: 99,
-                fake_word_to_return: 0,
+                bytes: collection! { 88 => 10 },
+                words: collection! {},
             };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.set_hl(88);
             let cycle = cpu.ldd_a_hl();
             assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.a, 99);
+            assert_eq!(cpu.registers.a, 10);
             assert_eq!(cpu.registers.hl(), 87);
         }
     }
@@ -844,8 +881,8 @@ mod tests {
     fn verify_rr_a() {
         {
             let mc = MockDevice {
-                fake_byte_to_return: 0,
-                fake_word_to_return: 0,
+                bytes: collection! {},
+                words: collection! {},
             };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.a = 1;
@@ -859,8 +896,8 @@ mod tests {
         }
         {
             let mc = MockDevice {
-                fake_byte_to_return: 0,
-                fake_word_to_return: 0,
+                bytes: collection! {},
+                words: collection! {},
             };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.a = 2;
@@ -874,8 +911,8 @@ mod tests {
         }
         {
             let mc = MockDevice {
-                fake_byte_to_return: 0,
-                fake_word_to_return: 0,
+                bytes: collection! {},
+                words: collection! {},
             };
             let mut cpu = CPU::new(Box::new(mc));
             cpu.registers.a = 3;

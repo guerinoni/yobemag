@@ -45,10 +45,8 @@ impl Registers {
     }
 
     pub fn bc(self: &Self) -> u16 {
-        let mut ret = self.c as u16;
-        ret = ret << 8;
-        ret = ret | self.c as u16;
-        ret
+        let ret = (self.b as u16) << 8;
+        ret | self.c as u16
     }
 
     pub fn set_de(self: &mut Self, value: u16) {
@@ -57,10 +55,8 @@ impl Registers {
     }
 
     pub fn de(self: &Self) -> u16 {
-        let mut ret = self.d as u16;
-        ret = ret << 8;
-        ret = ret | self.e as u16;
-        ret
+        let ret = (self.d as u16) << 8;
+        ret | self.e as u16
     }
 
     pub fn set_hl(self: &mut Self, value: u16) {
