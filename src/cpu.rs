@@ -132,6 +132,8 @@ impl CPU {
             OpCode::LdFF00nA => self.ld_ff00_na(),
             OpCode::LdAFF00C => self.ld_a_ff00c(),
 
+            OpCode::LddAHl => self.ldd_a_hl(),
+
             OpCode::OrB => self.or_r(Register::B),
             OpCode::OrC => self.or_r(Register::C),
             OpCode::OrD => self.or_r(Register::D),
@@ -400,6 +402,18 @@ impl CPU {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
+
+        8
+    }
+
+    fn ldd_a_hl(self: &mut Self) -> u8 {
+        let v = self.mmu.read_byte(self.registers.hl() as usize);
+        self.registers.a = match v {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        self.registers.set_hl(self.registers.hl() - 1);
 
         8
     }
@@ -807,6 +821,22 @@ mod tests {
             let cycle = cpu.ld_a_ff00c();
             assert_eq!(cycle, 8);
             assert_eq!(cpu.registers.a, 99);
+        }
+    }
+
+    #[test]
+    fn verify_ldd_a_hl() {
+        {
+            let mc = MockDevice {
+                fake_byte_to_return: 99,
+                fake_word_to_return: 0,
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.set_hl(88);
+            let cycle = cpu.ldd_a_hl();
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.a, 99);
+            assert_eq!(cpu.registers.hl(), 87);
         }
     }
 
