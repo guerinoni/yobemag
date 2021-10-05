@@ -185,6 +185,11 @@ pub enum OpCode {
     /// Clock cycles: 8
     LdAFF00C,
 
+    /// LD (FF00+C), A
+    /// The contents of the register A are loaded into the byte at the memory address (FF00+C) - the Cth I/O port.
+    /// Clock cycles: 8
+    LdFF00CA,
+
     /// LDD A, (HL)
     /// The byte at the memory address specified by the register pair HL is loaded into the register A. HL is then decremented by 1.
     /// Clock cycles: 8
@@ -421,6 +426,7 @@ impl From<u8> for OpCode {
             0xC3 => OpCode::JpNN,
             0xCB => OpCode::CB,
             0xE0 => OpCode::LdFF00nA,
+            0xE2 => OpCode::LdFF00CA,
             0xEA => OpCode::LDNnA,
             0xF0 => OpCode::LdAFF00n,
             0xF2 => OpCode::LdAFF00C,

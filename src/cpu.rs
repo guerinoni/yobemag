@@ -131,6 +131,7 @@ impl CPU {
             OpCode::LdAFF00n => self.ld_a_ff00_n(),
             OpCode::LdFF00nA => self.ld_ff00_na(),
             OpCode::LdAFF00C => self.ld_a_ff00c(),
+            OpCode::LdFF00CA => self.ld_ff00_ca(),
 
             OpCode::LddAHl => self.ldd_a_hl(),
 
@@ -420,6 +421,16 @@ impl CPU {
     fn ld_a_ff00c(self: &mut Self) -> u8 {
         let address = 0xFF00 as u16 + self.registers.c as u16;
         self.registers.a = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        8
+    }
+
+    fn ld_ff00_ca(self: &mut Self) -> u8 {
+        let address = 0xFF00 as u16 + self.registers.c as u16;
+        match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -859,6 +870,20 @@ mod tests {
         let cycle = cpu.ld_a_ff00c();
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 10);
+    }
+
+    #[test]
+    fn verify_ld_ff00_ca() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.a = 10;
+        cpu.registers.c = 2;
+        let cycle = cpu.ld_ff00_ca();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.mmu.read_byte(0xFF02).unwrap(), 10);
     }
 
     #[test]
