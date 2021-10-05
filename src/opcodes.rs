@@ -274,6 +274,11 @@ pub enum OpCode {
     /// Clock cycles: 4
     RrA,
 
+    /// RLCA
+    /// The contents of register A are rotated left by 1 bit position, after the sign bit (7) is copied into the carry flag.
+    /// Clock cycles: 4
+    RLCA,
+
     /// DI
     /// Interrupts are disabled by resetting the Interrupt Master Flag (IME).
     /// Clock cycles: 4
@@ -309,6 +314,7 @@ impl From<u8> for OpCode {
             0x04 => OpCode::IncB,
             0x05 => OpCode::DecB,
             0x06 => OpCode::LdBNext,
+            0x07 => OpCode::RLCA,
             0x0A => OpCode::LdABc,
             0x0C => OpCode::IncC,
             0x0D => OpCode::DecC,

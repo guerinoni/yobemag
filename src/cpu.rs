@@ -182,6 +182,7 @@ impl CPU {
             OpCode::CpN => self.cp_n(),
 
             OpCode::RrA => self.rr_a(),
+            OpCode::RLCA => self.rlca(),
 
             OpCode::DI => self.di(),
 
@@ -627,6 +628,17 @@ impl CPU {
         4
     }
 
+    fn rlca(self: &mut Self) -> u8 {
+        let old_bit_zero_data = self.registers.a & 0x01 == 0x01;
+        self.registers.a = self.registers.a.rotate_left(1);
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = self.registers.a == 0;
+        self.registers.flags.carry = old_bit_zero_data;
+
+        4
+    }
+
     fn interpret_prefix(self: &mut Self) -> u8 {
         let prefix_opcode = self.fetch_byte();
         match prefix_opcode.into() {
@@ -888,17 +900,49 @@ mod tests {
 
     #[test]
     fn verify_ldd_a_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 88 => 10 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.set_hl(88);
+        let cycle = cpu.ldd_a_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 10);
+        assert_eq!(cpu.registers.hl(), 87);
+    }
+
+    #[test]
+    fn verify_rlca() {
         {
             let mc = MockDevice {
-                bytes: collection! { 88 => 10 },
+                bytes: collection! {},
                 words: collection! {},
             };
             let mut cpu = CPU::new(Box::new(mc));
-            cpu.registers.set_hl(88);
-            let cycle = cpu.ldd_a_hl();
-            assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.a, 10);
-            assert_eq!(cpu.registers.hl(), 87);
+            cpu.registers.a = 1;
+            let cycle = cpu.rlca();
+            assert_eq!(cycle, 4);
+            assert_eq!(cpu.registers.a, 2);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, true);
+        }
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! {},
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.a = 2;
+            let cycle = cpu.rlca();
+            assert_eq!(cycle, 4);
+            assert_eq!(cpu.registers.a, 4);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, false);
         }
     }
 
