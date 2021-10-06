@@ -195,6 +195,11 @@ pub enum OpCode {
     /// Clock cycles: 8
     LddAHl,
 
+    /// LD (nn), SP
+    /// The contents of the 16-bit SP register are loaded to the word at the memory address specified in the 16-bit operand nn.
+    /// Clock cycles: 20
+    LdNnSP,
+
     /// OR r
     /// A bitwise OR operation is performed between the contents of the register r and the contents of the register A, and the result is  stored in register A.
     /// Clock cycles: 4
@@ -315,6 +320,7 @@ impl From<u8> for OpCode {
             0x05 => OpCode::DecB,
             0x06 => OpCode::LdBNext,
             0x07 => OpCode::RLCA,
+            0x08 => OpCode::LdNnSP,
             0x0A => OpCode::LdABc,
             0x0C => OpCode::IncC,
             0x0D => OpCode::DecC,

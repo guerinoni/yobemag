@@ -105,6 +105,16 @@ impl ReadWrite for MMU {
     }
 
     fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
-        todo!()
+        match self.write_byte(address, (value & 0xFF) as u8) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
+
+        match self.write_byte(address + 1, (value >> 8) as u8) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
+
+        Ok(())
     }
 }

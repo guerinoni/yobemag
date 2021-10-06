@@ -43,7 +43,6 @@ impl CPU {
             OpCode::LdHNext => self.ld_r_next(Register::H),
             OpCode::LdLNext => self.ld_r_next(Register::L),
             OpCode::LdANext => self.ld_r_next(Register::A),
-
             OpCode::LdBB => self.ld_r_r(Register::B, Register::B),
             OpCode::LdBC => self.ld_r_r(Register::B, Register::C),
             OpCode::LdBD => self.ld_r_r(Register::B, Register::D),
@@ -93,7 +92,6 @@ impl CPU {
             OpCode::LdAH => self.ld_r_r(Register::A, Register::H),
             OpCode::LdAL => self.ld_r_r(Register::A, Register::L),
             OpCode::LdAA => self.ld_r_r(Register::A, Register::A),
-
             OpCode::LdBHL => self.ld_r_hl(Register::B),
             OpCode::LdCHL => self.ld_r_hl(Register::C),
             OpCode::LdDHL => self.ld_r_hl(Register::D),
@@ -101,7 +99,6 @@ impl CPU {
             OpCode::LdHHL => self.ld_r_hl(Register::H),
             OpCode::LdLHL => self.ld_r_hl(Register::L),
             OpCode::LdAHL => self.ld_r_hl(Register::A),
-
             OpCode::LdHlB => self.ld_hl_r(Register::B),
             OpCode::LdHlC => self.ld_hl_r(Register::C),
             OpCode::LdHlD => self.ld_hl_r(Register::D),
@@ -109,32 +106,24 @@ impl CPU {
             OpCode::LdHlH => self.ld_hl_r(Register::H),
             OpCode::LdHlL => self.ld_hl_r(Register::L),
             OpCode::LdHlA => self.ld_hl_r(Register::A),
-
             OpCode::LdABc => self.ld_a_rr(RegisterWord::BC),
             OpCode::LdADe => self.ld_a_rr(RegisterWord::DE),
-
             OpCode::LDNnA => self.ld_nn_a(),
-
             OpCode::LdANn => self.ld_a_nn(),
-
             OpCode::LdHlN => self.ld_hl_next(),
-
             OpCode::LdBcA => self.ld_rr_a(RegisterWord::BC),
             OpCode::LdDeA => self.ld_rr_a(RegisterWord::DE),
-
             OpCode::LdBcNn => self.ld_dd_nn(RegisterWord::BC),
             OpCode::LdDeNn => self.ld_dd_nn(RegisterWord::DE),
             OpCode::LdHlNn => self.ld_dd_nn(RegisterWord::HL),
             OpCode::LdSpNn => self.ld_dd_nn(RegisterWord::SP),
-
             OpCode::LddHlA => self.ldd_hl_a(),
             OpCode::LdAFF00n => self.ld_a_ff00_n(),
             OpCode::LdFF00nA => self.ld_ff00_na(),
             OpCode::LdAFF00C => self.ld_a_ff00c(),
             OpCode::LdFF00CA => self.ld_ff00_ca(),
-
             OpCode::LddAHl => self.ldd_a_hl(),
-
+            OpCode::LdNnSP => self.ld_nn_sp(),
             OpCode::OrB => self.or_r(Register::B),
             OpCode::OrC => self.or_r(Register::C),
             OpCode::OrD => self.or_r(Register::D),
@@ -142,7 +131,6 @@ impl CPU {
             OpCode::OrH => self.or_r(Register::H),
             OpCode::OrL => self.or_r(Register::L),
             OpCode::OrA => self.or_r(Register::A),
-
             OpCode::XorB => self.xor_r(Register::B),
             OpCode::XorC => self.xor_r(Register::C),
             OpCode::XorD => self.xor_r(Register::D),
@@ -150,12 +138,10 @@ impl CPU {
             OpCode::XorH => self.xor_r(Register::H),
             OpCode::XorL => self.xor_r(Register::L),
             OpCode::XorA => self.xor_r(Register::A),
-
             OpCode::IncBC => self.inc_rr(RegisterWord::BC),
             OpCode::IncDE => self.inc_rr(RegisterWord::DE),
             OpCode::IncHL => self.inc_rr(RegisterWord::HL),
             OpCode::IncSP => self.inc_rr(RegisterWord::SP),
-
             OpCode::IncB => self.inc_r(Register::B),
             OpCode::IncC => self.inc_r(Register::C),
             OpCode::IncD => self.inc_r(Register::D),
@@ -163,7 +149,6 @@ impl CPU {
             OpCode::IncH => self.inc_r(Register::H),
             OpCode::IncL => self.inc_r(Register::L),
             OpCode::IncA => self.inc_r(Register::A),
-
             OpCode::DecB => self.dec_r(Register::B),
             OpCode::DecC => self.dec_r(Register::C),
             OpCode::DecD => self.dec_r(Register::D),
@@ -171,25 +156,18 @@ impl CPU {
             OpCode::DecH => self.dec_r(Register::H),
             OpCode::DecL => self.dec_r(Register::L),
             OpCode::DecA => self.dec_r(Register::A),
-
             OpCode::JpNN => self.jp_nn(),
-
             OpCode::JrNzPcDd => self.jr_f_pc_dd(ConditionOperand::NZ),
             OpCode::JrZPcDd => self.jr_f_pc_dd(ConditionOperand::Z),
             OpCode::JrNcPcDd => self.jr_f_pc_dd(ConditionOperand::NC),
             OpCode::JrCPcDd => self.jr_f_pc_dd(ConditionOperand::C),
-
             OpCode::CpN => self.cp_n(),
-
             OpCode::RrA => self.rr_a(),
             OpCode::RLCA => self.rlca(),
-
             OpCode::DI => self.di(),
-
             OpCode::Noop => self.noop(),
             OpCode::Stop => self.stop(),
             OpCode::Halt => self.halt(),
-
             OpCode::CB => self.interpret_prefix(),
         }
     }
@@ -450,6 +428,15 @@ impl CPU {
         8
     }
 
+    fn ld_nn_sp(self: &mut Self) -> u8 {
+        let address = self.fetch_word();
+        self.mmu
+            .write_word(address as usize, self.registers.stack_pointer)
+            .unwrap();
+
+        20
+    }
+
     fn or_r(self: &mut Self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => self.registers.b,
@@ -703,7 +690,6 @@ mod tests {
         }
 
         fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
-            dbg!(address);
             Ok(self.bytes[&address])
         }
         fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
@@ -714,9 +700,8 @@ mod tests {
             self.bytes.insert(address, value);
             Ok(())
         }
-        fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
-            self.words.insert(address, value);
-            Ok(())
+        fn write_word(self: &mut Self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
+            unimplemented!()
         }
     }
 
@@ -910,6 +895,19 @@ mod tests {
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 10);
         assert_eq!(cpu.registers.hl(), 87);
+    }
+
+    #[test]
+    fn verify_ld_nn_sp() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! { 256 => 1000 },
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        let cycle = cpu.ld_nn_sp();
+        assert_eq!(cycle, 20);
+        assert_eq!(cpu.mmu.read_byte(1000).unwrap(), 254);
+        assert_eq!(cpu.mmu.read_byte(1001).unwrap(), 255);
     }
 
     #[test]
