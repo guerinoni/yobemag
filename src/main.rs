@@ -13,6 +13,7 @@ mod opcodes;
 mod prefix_opcodes;
 mod register;
 mod serial_data_transfer;
+mod timer;
 
 fn main() -> Result<(), std::io::Error> {
     println!("starting yobemag...");

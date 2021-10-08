@@ -17,7 +17,7 @@ impl NoMBCartridge {
 
 impl ReadWrite for NoMBCartridge {
     fn contains(self: &Self, address: usize) -> bool {
-        (0x0000..=0x7FFF).contains(&address)
+        (0x0000..=0x3FFF).contains(&address)
     }
 
     fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
@@ -70,10 +70,11 @@ pub struct MBC1 {
 
 impl MBC1 {
     fn new(rom: Vec<u8>, header: CartridgeHeader) -> MBC1 {
+        let ram_size = header.ram_in_bytes();
         MBC1 {
             header,
             rom,
-            ram: Vec::new(),
+            ram: Vec::with_capacity(ram_size),
             ram_enable: false,
             romram_mode: false,
             rombank: 0,
