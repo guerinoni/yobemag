@@ -289,6 +289,12 @@ pub enum OpCode {
     /// Clock cycles: 4
     DI,
 
+    /// CALL nn
+    /// The current program counter (return address) is pushed to the stack, high-order byte first.
+    /// The 16-bit word nn is then loaded into the program counter, from where execution continues.
+    /// Clock cycles: 24
+    CallNn,
+
     /// The CPU performs no operation during this cycle.
     /// Clock cycles: 4
     Noop,
@@ -437,6 +443,7 @@ impl From<u8> for OpCode {
             0xB7 => OpCode::OrA,
             0xC3 => OpCode::JpNN,
             0xCB => OpCode::CB,
+            0xCD => OpCode::CallNn,
             0xE0 => OpCode::LdFF00nA,
             0xE2 => OpCode::LdFF00CA,
             0xEA => OpCode::LDNnA,

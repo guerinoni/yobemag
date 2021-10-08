@@ -114,6 +114,11 @@ impl ReadWrite for MMU {
             return self.timer.write_byte(address, value);
         }
 
+        if (0xFF24..=0xFF27).contains(&address) {
+            // NOTE: seems unused
+            return Ok(());
+        }
+
         Err(std::io::Error::new(
             std::io::ErrorKind::OutOfMemory,
             format!(

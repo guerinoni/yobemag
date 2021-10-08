@@ -165,6 +165,7 @@ impl CPU {
             OpCode::RrA => self.rr_a(),
             OpCode::RLCA => self.rlca(),
             OpCode::DI => self.di(),
+            OpCode::CallNn => self.call_nn(),
             OpCode::Noop => self.noop(),
             OpCode::Stop => self.stop(),
             OpCode::Halt => self.halt(),
@@ -601,6 +602,33 @@ impl CPU {
         4
     }
 
+    fn call_nn(self: &mut Self) -> u8 {
+        let nn = self.fetch_word();
+        let high = (nn >> 8) as u8;
+        self.registers.stack_pointer -= 1;
+        match self
+            .mmu
+            .write_byte(self.registers.stack_pointer as usize, high)
+        {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
+
+        let low = (nn & 0xFF) as u8;
+        self.registers.stack_pointer -= 1;
+        match self
+            .mmu
+            .write_byte(self.registers.stack_pointer as usize, low)
+        {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
+
+        self.registers.program_counter = nn as i32;
+
+        24
+    }
+
     fn rr_a(self: &mut Self) -> u8 {
         let old_bit_zero_data = self.registers.a & 0x01 == 0x01;
         let old_carry = self.registers.flags.carry as u16;
@@ -991,5 +1019,20 @@ mod tests {
             assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, true);
         }
+    }
+
+    #[test]
+    fn verify_call_nn() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! { 256 => 1000},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.stack_pointer = 2;
+        let cycle = cpu.call_nn();
+        assert_eq!(cycle, 24);
+        assert_eq!(cpu.registers.program_counter, 1000);
+        assert_eq!(cpu.mmu.read_byte(1).unwrap(), 3);
+        assert_eq!(cpu.mmu.read_byte(0).unwrap(), 232);
     }
 }
