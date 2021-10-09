@@ -470,16 +470,10 @@ impl CPU {
         };
 
         self.registers.a ^= r;
-        // self.registers.flags.evaluate_effect(
-        //     self.registers.a,
-        //     self.registers.a,
-        //     SideEffectsCpuFlags {
-        //         carry: SideEffect::Unmodified,
-        //         half_carry: SideEffect::Unmodified,
-        //         negative: SideEffect::Unmodified,
-        //         zero: SideEffect::Dependent,
-        //     },
-        // );
+        self.registers.flags.carry = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = self.registers.a == 0;
 
         4
     }
@@ -1042,5 +1036,19 @@ mod tests {
         let cycle = cpu.or_r(Register::B);
         assert_eq!(cycle, 4);
         assert_eq!(cpu.registers.a, 15);
+    }
+
+    #[test]
+    fn verify_xor_r() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.a = 10;
+        cpu.registers.b = 1;
+        let cycle = cpu.xor_r(Register::B);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 11);
     }
 }
