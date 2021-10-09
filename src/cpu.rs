@@ -450,16 +450,10 @@ impl CPU {
         };
 
         self.registers.a |= r;
-        // self.registers.flags.evaluate_effect(
-        // self.registers.a,
-        // self.registers.a,
-        //     SideEffectsCpuFlags {
-        //         carry: SideEffect::Unset,
-        //         half_carry: SideEffect::Unset,
-        //         negative: SideEffect::Unset,
-        //         zero: SideEffect::Dependent,
-        //     },
-        // );
+        self.registers.flags.carry = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = self.registers.a == 0;
 
         4
     }
@@ -1025,7 +1019,7 @@ mod tests {
     fn verify_call_nn() {
         let mc = MockDevice {
             bytes: collection! {},
-            words: collection! { 256 => 1000},
+            words: collection! { 256 => 1000 },
         };
         let mut cpu = CPU::new(Box::new(mc));
         cpu.registers.stack_pointer = 2;
@@ -1034,5 +1028,19 @@ mod tests {
         assert_eq!(cpu.registers.program_counter, 1000);
         assert_eq!(cpu.mmu.read_byte(1).unwrap(), 3);
         assert_eq!(cpu.mmu.read_byte(0).unwrap(), 232);
+    }
+
+    #[test]
+    fn verify_or_r() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.a = 10;
+        cpu.registers.b = 5;
+        let cycle = cpu.or_r(Register::B);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 15);
     }
 }
