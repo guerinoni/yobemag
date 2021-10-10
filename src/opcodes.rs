@@ -268,6 +268,12 @@ pub enum OpCode {
     JrNcPcDd,
     JrCPcDd,
 
+    /// JR PC+dd
+    /// The 8-bit signed integer dd is added to the program counter and the
+    /// result is stored in the program counter, from where execution continues.
+    /// Clock cycles: 12
+    JrPcDd,
+
     /// CP n
     /// The byte n is compared with (subtracted from) the register A, setting
     /// the appropriate flags but not storing the result.
@@ -338,6 +344,7 @@ impl From<u8> for OpCode {
             0x14 => OpCode::IncD,
             0x15 => OpCode::DecD,
             0x16 => OpCode::LdDNext,
+            0x18 => OpCode::JrPcDd,
             0x1A => OpCode::LdADe,
             0x1C => OpCode::IncE,
             0x1D => OpCode::DecE,

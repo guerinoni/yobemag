@@ -161,6 +161,7 @@ impl CPU {
             OpCode::JrZPcDd => self.jr_f_pc_dd(ConditionOperand::Z),
             OpCode::JrNcPcDd => self.jr_f_pc_dd(ConditionOperand::NC),
             OpCode::JrCPcDd => self.jr_f_pc_dd(ConditionOperand::C),
+            OpCode::JrPcDd => self.jr_pc_dd(),
             OpCode::CpN => self.cp_n(),
             OpCode::RrA => self.rr_a(),
             OpCode::RLCA => self.rlca(),
@@ -565,6 +566,12 @@ impl CPU {
         }
 
         8
+    }
+
+    fn jr_pc_dd(self: &mut Self) -> u8 {
+        let dd = self.fetch_byte();
+        self.registers.program_counter += dd as i32;
+        12
     }
 
     fn cp_n(self: &mut Self) -> u8 {
@@ -1050,5 +1057,17 @@ mod tests {
         let cycle = cpu.xor_r(Register::B);
         assert_eq!(cycle, 4);
         assert_eq!(cpu.registers.a, 11);
+    }
+
+    #[test]
+    fn verify_jr_pc_dd() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 99 },
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        let cycle = cpu.jr_pc_dd();
+        assert_eq!(cycle, 12);
+        assert_eq!(cpu.registers.program_counter, 356);
     }
 }
