@@ -216,6 +216,12 @@ impl CPU {
         (((a & 0xF) + (b & 0xF)) & 0x10) != 0
     }
 
+    pub fn check_for_half_carry_first_nible_sub(a: u8, b: u8) -> bool {
+        let sa = (a & 0xF) as i8;
+        let sb = (b & 0xF) as i8;
+        (sa - sb) < 0
+    }
+
     fn ld_r_next(self: &mut Self, reg: Register) -> u8 {
         let r = self.fetch_byte();
         match reg {
@@ -525,18 +531,11 @@ impl CPU {
             Register::A => &mut self.registers.a,
         };
 
-        *r = r.wrapping_sub(1);
-
-        // self.registers.flags.evaluate_effect(
-        //     *r,
-        //     *r,
-        //     SideEffectsCpuFlags {
-        //         carry: SideEffect::Unmodified,
-        //         half_carry: SideEffect::Unmodified,
-        //         negative: SideEffect::Unmodified,
-        //         zero: SideEffect::Dependent,
-        //     },
-        // );
+        let ret = r.wrapping_sub(1);
+        self.registers.flags.zero = ret == 0;
+        self.registers.flags.half_carry = CPU::check_for_half_carry_first_nible_sub(*r, ret);
+        self.registers.flags.negative = true;
+        *r = ret;
 
         4
     }
@@ -1096,6 +1095,40 @@ mod tests {
             assert_eq!(cpu.registers.a, 2);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
+    }
+
+    #[test]
+    fn verify_dec_r() {
+        {
+            let mc = MockDevice {
+                bytes: collection! { 256 => 99 },
+                words: collection! {},
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.a = 16;
+            let cycle = cpu.dec_r(Register::A);
+            assert_eq!(cycle, 4);
+            assert_eq!(cpu.registers.a, 15);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, true);
+            assert_eq!(cpu.registers.flags.half_carry, true);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
+        {
+            let mc = MockDevice {
+                bytes: collection! { 256 => 99 },
+                words: collection! {},
+            };
+            let mut cpu = CPU::new(Box::new(mc));
+            cpu.registers.a = 1;
+            let cycle = cpu.dec_r(Register::A);
+            assert_eq!(cycle, 4);
+            assert_eq!(cpu.registers.a, 0);
+            assert_eq!(cpu.registers.flags.zero, true);
+            assert_eq!(cpu.registers.flags.negative, true);
             assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, false);
         }
