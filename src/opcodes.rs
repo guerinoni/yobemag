@@ -290,6 +290,12 @@ pub enum OpCode {
     /// Clock cycles: 4
     RLCA,
 
+    /// RET
+    /// The 16-bit word on top of the stack is popped off, low-order byte first,
+    /// and loaded into the program counter, from where execution continues.
+    /// Clock cycles: 16
+    RET,
+
     /// DI
     /// Interrupts are disabled by resetting the Interrupt Master Flag (IME).
     /// Clock cycles: 4
@@ -449,6 +455,7 @@ impl From<u8> for OpCode {
             0xB5 => OpCode::OrL,
             0xB7 => OpCode::OrA,
             0xC3 => OpCode::JpNN,
+            0xC9 => OpCode::RET,
             0xCB => OpCode::CB,
             0xCD => OpCode::CallNn,
             0xE0 => OpCode::LdFF00nA,

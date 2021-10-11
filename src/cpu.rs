@@ -165,6 +165,7 @@ impl CPU {
             OpCode::CpN => self.cp_n(),
             OpCode::RrA => self.rr_a(),
             OpCode::RLCA => self.rlca(),
+            OpCode::RET => self.ret(),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
             OpCode::Noop => self.noop(),
@@ -642,6 +643,18 @@ impl CPU {
         self.registers.flags.carry = old_bit_zero_data;
 
         4
+    }
+
+    fn ret(self: &mut Self) -> u8 {
+        self.registers.program_counter =
+            match self.mmu.read_word(self.registers.stack_pointer as usize) {
+                Ok(v) => v as i32,
+                Err(e) => panic!("{}", e),
+            };
+
+        self.registers.stack_pointer = self.registers.stack_pointer.wrapping_add(2);
+
+        16
     }
 
     fn interpret_prefix(self: &mut Self) -> u8 {
@@ -1132,5 +1145,18 @@ mod tests {
             assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, false);
         }
+    }
+
+    #[test]
+    fn verify_ret() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! { 65534 => 99 },
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        let cycle = cpu.ret();
+        assert_eq!(cycle, 16);
+        assert_eq!(cpu.registers.program_counter, 99);
+        assert_eq!(cpu.registers.stack_pointer, 0);
     }
 }
