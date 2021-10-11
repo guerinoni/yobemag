@@ -1159,4 +1159,16 @@ mod tests {
         assert_eq!(cpu.registers.program_counter, 99);
         assert_eq!(cpu.registers.stack_pointer, 0);
     }
+
+    #[test]
+    fn verify_ld_dd_nn() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! { 256 => 99 },
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        let cycle = cpu.ld_dd_nn(RegisterWord::SP);
+        assert_eq!(cycle, 12);
+        assert_eq!(cpu.registers.stack_pointer, 99);
+    }
 }
