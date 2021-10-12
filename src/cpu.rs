@@ -108,7 +108,7 @@ impl CPU {
             OpCode::LdHlA => self.ld_hl_r(Register::A),
             OpCode::LdABc => self.ld_a_rr(RegisterWord::BC),
             OpCode::LdADe => self.ld_a_rr(RegisterWord::DE),
-            OpCode::LDNnA => self.ld_nn_a(),
+            OpCode::LdNnA => self.ld_nn_a(),
             OpCode::LdANn => self.ld_a_nn(),
             OpCode::LdHlN => self.ld_hl_next(),
             OpCode::LdBcA => self.ld_rr_a(RegisterWord::BC),
