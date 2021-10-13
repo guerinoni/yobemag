@@ -166,6 +166,10 @@ impl CPU {
             OpCode::RrA => self.rr_a(),
             OpCode::RLCA => self.rlca(),
             OpCode::RET => self.ret(),
+            OpCode::PushBc => self.push_qq(RegisterWord::BC),
+            OpCode::PushDe => self.push_qq(RegisterWord::DE),
+            OpCode::PushHl => self.push_qq(RegisterWord::HL),
+            OpCode::PushAf => self.push_qq(RegisterWord::AF),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
             OpCode::Noop => self.noop(),
@@ -307,6 +311,7 @@ impl CPU {
             RegisterWord::DE => self.registers.de(),
             RegisterWord::HL => self.registers.hl(),
             RegisterWord::SP => self.registers.stack_pointer,
+            _ => panic!("should never go here"),
         };
 
         let v = match self.mmu.read_byte(address as usize) {
@@ -337,6 +342,7 @@ impl CPU {
             RegisterWord::DE => self.registers.de(),
             RegisterWord::HL => self.registers.hl(),
             RegisterWord::SP => self.registers.stack_pointer,
+            _ => panic!("should never go here"),
         };
 
         match self.mmu.write_byte(address as usize, self.registers.a) {
@@ -375,6 +381,7 @@ impl CPU {
             RegisterWord::DE => self.registers.set_de(w),
             RegisterWord::HL => self.registers.set_hl(w),
             RegisterWord::SP => self.registers.stack_pointer = w,
+            _ => panic!("should never go here"),
         };
 
         12
@@ -496,6 +503,7 @@ impl CPU {
             RegisterWord::DE => self.registers.set_de(self.registers.de() + 1),
             RegisterWord::HL => self.registers.set_hl(self.registers.hl() + 1),
             RegisterWord::SP => self.registers.stack_pointer = self.registers.stack_pointer + 1,
+            _ => panic!("should never go here"),
         };
 
         8
@@ -653,6 +661,38 @@ impl CPU {
             };
 
         self.registers.stack_pointer = self.registers.stack_pointer.wrapping_add(2);
+
+        16
+    }
+
+    fn push_qq(self: &mut Self, reg: RegisterWord) -> u8 {
+        let reg = match reg {
+            RegisterWord::BC => self.registers.bc(),
+            RegisterWord::DE => self.registers.de(),
+            RegisterWord::HL => self.registers.hl(),
+            RegisterWord::AF => self.registers.af(),
+            _ => panic!("should never go here"),
+        };
+
+        let high = (reg >> 8) as u8;
+        self.registers.stack_pointer -= 1;
+        match self
+            .mmu
+            .write_byte(self.registers.stack_pointer as usize, high)
+        {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
+
+        let low = (reg & 0xFF) as u8;
+        self.registers.stack_pointer -= 1;
+        match self
+            .mmu
+            .write_byte(self.registers.stack_pointer as usize, low)
+        {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
 
         16
     }
@@ -1170,5 +1210,20 @@ mod tests {
         let cycle = cpu.ld_dd_nn(RegisterWord::SP);
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.stack_pointer, 99);
+    }
+
+    #[test]
+    fn verify_push_qq() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.set_bc(10001);
+        let cycle = cpu.push_qq(RegisterWord::BC);
+        assert_eq!(cycle, 16);
+        assert_eq!(cpu.registers.stack_pointer, 0xFFFE - 2);
+        assert_eq!(cpu.mmu.read_byte(65533).unwrap(), 39);
+        assert_eq!(cpu.mmu.read_byte(65532).unwrap(), 17);
     }
 }

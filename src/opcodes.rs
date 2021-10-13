@@ -1,5 +1,3 @@
-use crate::opcodes;
-
 #[derive(Debug)]
 pub enum Register {
     A,
@@ -16,6 +14,7 @@ pub enum RegisterWord {
     DE,
     HL,
     SP,
+    AF,
 }
 
 pub enum ConditionOperand {
@@ -296,6 +295,19 @@ pub enum OpCode {
     /// Clock cycles: 16
     RET,
 
+    /// PUSH qq
+    /// The contents of the register pair qq are pushed to the stack. First,
+    /// the stack pointer (SP) is decremented, and the high-order byte of qq
+    /// is loaded to the byte at the memory address specified by SP. Then,
+    /// SP is decremented again and the low-order byte of qq is loaded into
+    /// the byte at the memory address specified by SP. The register pair qq
+    /// may be any of BC, DE, HL or AF.
+    /// Clock cycles: 16
+    PushBc,
+    PushDe,
+    PushHl,
+    PushAf,
+
     /// DI
     /// Interrupts are disabled by resetting the Interrupt Master Flag (IME).
     /// Clock cycles: 4
@@ -455,15 +467,19 @@ impl From<u8> for OpCode {
             0xB5 => OpCode::OrL,
             0xB7 => OpCode::OrA,
             0xC3 => OpCode::JpNN,
+            0xC5 => OpCode::PushBc,
             0xC9 => OpCode::RET,
             0xCB => OpCode::CB,
             0xCD => OpCode::CallNn,
+            0xD5 => OpCode::PushDe,
             0xE0 => OpCode::LdFF00nA,
             0xE2 => OpCode::LdFF00CA,
+            0xE5 => OpCode::PushHl,
             0xEA => OpCode::LdNnA,
             0xF0 => OpCode::LdAFF00n,
             0xF2 => OpCode::LdAFF00C,
             0xF3 => OpCode::DI,
+            0xF5 => OpCode::PushAf,
             0xFA => OpCode::LdANn,
             0xFE => OpCode::CpN,
 
