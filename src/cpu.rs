@@ -595,7 +595,7 @@ impl CPU {
 
     fn call_nn(self: &mut Self) -> u8 {
         let nn = self.fetch_word();
-        let high = (nn >> 8) as u8;
+        let high = (self.registers.program_counter >> 8) as u8;
         self.registers.stack_pointer -= 1;
         match self
             .mmu
@@ -605,7 +605,7 @@ impl CPU {
             Err(e) => panic!("{}", e),
         }
 
-        let low = (nn & 0xFF) as u8;
+        let low = (self.registers.program_counter & 0xFF) as u8;
         self.registers.stack_pointer -= 1;
         match self
             .mmu
@@ -1035,8 +1035,8 @@ mod tests {
         let cycle = cpu.call_nn();
         assert_eq!(cycle, 24);
         assert_eq!(cpu.registers.program_counter, 1000);
-        assert_eq!(cpu.mmu.read_byte(1).unwrap(), 3);
-        assert_eq!(cpu.mmu.read_byte(0).unwrap(), 232);
+        assert_eq!(cpu.mmu.read_byte(1).unwrap(), 1);
+        assert_eq!(cpu.mmu.read_byte(0).unwrap(), 2);
     }
 
     #[test]
