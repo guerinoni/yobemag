@@ -308,6 +308,19 @@ pub enum OpCode {
     PushHl,
     PushAf,
 
+    /// POP qq
+    /// The top two bytes of the stack are popped into the register pair qq.
+    /// First, the byte at the memory address specified by SP is loaded into
+    /// the low-order byte of qq. SP is then incremented, and the byte at the
+    /// memory address which it now specifies is loaded into the high-order
+    /// byte of qq, and SP is incremented again. The register pair qq may be
+    /// any of BC, DE, HL or AF.
+    /// Clock cycles: 12
+    PopBc,
+    PopDe,
+    PopHl,
+    PopAf,
+
     /// DI
     /// Interrupts are disabled by resetting the Interrupt Master Flag (IME).
     /// Clock cycles: 4
@@ -466,17 +479,21 @@ impl From<u8> for OpCode {
             0xB4 => OpCode::OrH,
             0xB5 => OpCode::OrL,
             0xB7 => OpCode::OrA,
+            0xC1 => OpCode::PopBc,
             0xC3 => OpCode::JpNN,
             0xC5 => OpCode::PushBc,
             0xC9 => OpCode::RET,
             0xCB => OpCode::CB,
             0xCD => OpCode::CallNn,
+            0xD1 => OpCode::PopDe,
             0xD5 => OpCode::PushDe,
             0xE0 => OpCode::LdFF00nA,
+            0xE1 => OpCode::PopHl,
             0xE2 => OpCode::LdFF00CA,
             0xE5 => OpCode::PushHl,
             0xEA => OpCode::LdNnA,
             0xF0 => OpCode::LdAFF00n,
+            0xF1 => OpCode::PopAf,
             0xF2 => OpCode::LdAFF00C,
             0xF3 => OpCode::DI,
             0xF5 => OpCode::PushAf,

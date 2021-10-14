@@ -170,6 +170,10 @@ impl CPU {
             OpCode::PushDe => self.push_qq(RegisterWord::DE),
             OpCode::PushHl => self.push_qq(RegisterWord::HL),
             OpCode::PushAf => self.push_qq(RegisterWord::AF),
+            OpCode::PopBc => self.pop_qq(RegisterWord::BC),
+            OpCode::PopDe => self.pop_qq(RegisterWord::DE),
+            OpCode::PopHl => self.pop_qq(RegisterWord::HL),
+            OpCode::PopAf => self.pop_qq(RegisterWord::AF),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
             OpCode::Noop => self.noop(),
@@ -695,6 +699,25 @@ impl CPU {
         }
 
         16
+    }
+
+    fn pop_qq(self: &mut Self, reg: RegisterWord) -> u8 {
+        let w = match self.mmu.read_word(self.registers.stack_pointer as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        match reg {
+            RegisterWord::BC => self.registers.set_bc(w),
+            RegisterWord::DE => self.registers.set_de(w),
+            RegisterWord::HL => self.registers.set_hl(w),
+            RegisterWord::AF => self.registers.set_af(w),
+            _ => panic!("should never go here"),
+        };
+
+        self.registers.stack_pointer += 2;
+
+        12
     }
 
     fn interpret_prefix(self: &mut Self) -> u8 {
@@ -1225,5 +1248,19 @@ mod tests {
         assert_eq!(cpu.registers.stack_pointer, 0xFFFE - 2);
         assert_eq!(cpu.mmu.read_byte(65533).unwrap(), 39);
         assert_eq!(cpu.mmu.read_byte(65532).unwrap(), 17);
+    }
+
+    #[test]
+    fn verify_pop_qq() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! { 100 => 99 },
+        };
+        let mut cpu = CPU::new(Box::new(mc));
+        cpu.registers.stack_pointer = 100;
+        let cycle = cpu.pop_qq(RegisterWord::BC);
+        assert_eq!(cycle, 12);
+        assert_eq!(cpu.registers.bc(), 99);
+        assert_eq!(cpu.registers.stack_pointer, 102);
     }
 }

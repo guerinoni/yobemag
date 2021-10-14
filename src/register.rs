@@ -2,6 +2,7 @@ use std::cmp::PartialEq;
 use std::ops::BitXor;
 use std::ops::Shl;
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct CpuFlag {
     pub carry: bool,
     pub half_carry: bool,
@@ -22,6 +23,13 @@ impl CpuFlag {
             0,
         ];
         convert(&bits).unwrap()
+    }
+
+    pub fn from_u8(self: &mut Self, value: u8) {
+        self.zero = value & 0b10000000 == 128;
+        self.negative = value & 0b01000000 == 64;
+        self.half_carry = value & 0b00100000 == 32;
+        self.carry = value & 0b00010000 == 16;
     }
 }
 
@@ -114,6 +122,11 @@ impl Registers {
         let ret = (self.a as u16) << 8;
         ret | self.flags.to_u8() as u16
     }
+
+    pub fn set_af(self: &mut Self, value: u16) {
+        self.a = (value >> 8 as u16) as u8;
+        self.flags.from_u8(value as u8);
+    }
 }
 
 #[cfg(test)]
@@ -166,6 +179,23 @@ mod tests {
         };
 
         assert_eq!(flags.to_u8(), 240);
+
+        let mut flags = CpuFlag {
+            carry: false,
+            half_carry: false,
+            negative: false,
+            zero: false,
+        };
+        flags.from_u8(240);
+        assert_eq!(
+            flags,
+            CpuFlag {
+                carry: true,
+                half_carry: true,
+                negative: true,
+                zero: true,
+            }
+        );
     }
 
     #[test]
