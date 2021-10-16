@@ -2,6 +2,7 @@ use crate::gpu::GPU;
 use crate::internal_memory::InternalMemory;
 use crate::memory_device::ReadWrite;
 use crate::serial_data_transfer::SerialDataTransfer;
+use crate::sound::Sound;
 use crate::timer::Timer;
 
 /// Holds all memory space addressable for emulation.
@@ -11,6 +12,7 @@ pub struct MMU {
     internal: InternalMemory,
     serial: SerialDataTransfer,
     timer: Timer,
+    sound: Sound,
 }
 
 impl MMU {
@@ -21,6 +23,7 @@ impl MMU {
             internal: InternalMemory::new(),
             serial: SerialDataTransfer::new(),
             timer: Timer::new(),
+            sound: Sound::new(),
         }
     }
 }
@@ -50,6 +53,10 @@ impl ReadWrite for MMU {
 
         if self.timer.contains(address) {
             return self.timer.read_byte(address);
+        }
+
+        if self.sound.contains(address) {
+            return self.sound.read_byte(address);
         }
 
         Err(std::io::Error::new(
@@ -83,6 +90,10 @@ impl ReadWrite for MMU {
             return self.timer.read_word(address);
         }
 
+        if self.sound.contains(address) {
+            return self.sound.read_word(address);
+        }
+
         Err(std::io::Error::new(
             std::io::ErrorKind::OutOfMemory,
             format!(
@@ -112,6 +123,10 @@ impl ReadWrite for MMU {
 
         if self.timer.contains(address) {
             return self.timer.write_byte(address, value);
+        }
+
+        if self.sound.contains(address) {
+            return self.sound.write_byte(address, value);
         }
 
         Err(std::io::Error::new(

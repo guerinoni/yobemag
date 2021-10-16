@@ -25,7 +25,10 @@ impl ReadWrite for NoMBCartridge {
     }
 
     fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
-        Ok(u16::from_le_bytes([self.rom[address], self.rom[address + 1]]))
+        Ok(u16::from_le_bytes([
+            self.rom[address],
+            self.rom[address + 1],
+        ]))
     }
 
     fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
