@@ -39,6 +39,72 @@ pub struct GPU {
     /// The LY indicates the vertical line to which the present data is transferred to the LCD Driver.
     /// The LY can take on any value between 0 through 153. The values between 144 and 153 indicate the V-Blank period.
     current_y: u8,
+
+    /// This register assigns gray shades to the color indexes of the BG and Window tiles.
+    /// Bit 7-6 - Color for index 3
+    /// Bit 5-4 - Color for index 2
+    /// Bit 3-2 - Color for index 1
+    /// Bit 1-0 - Color for index 0
+    bg_pallete: Palette,
+
+    /// These registers assigns gray shades to the color indexes of the OBJs that use the corresponding palette.
+    /// They work exactly like BGP, except that the lower two bits are ignored because color index 0 is transparent for OBJs.
+    bgj_pallete_0: Palette,
+    bgj_pallete_1: Palette,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+struct Palette {
+    index_0: Color,
+    index_1: Color,
+    index_2: Color,
+    index_3: Color,
+}
+
+impl Into<u8> for Palette {
+    fn into(self) -> u8 {
+        self.index_0 as u8
+            | (self.index_1 as u8) << 2
+            | (self.index_2 as u8) << 4
+            | (self.index_3 as u8) << 6
+    }
+}
+
+impl From<u8> for Palette {
+    fn from(reg: u8) -> Self {
+        Self {
+            index_0: (reg & 0b11).into(),
+            index_1: (reg >> 2 & 0b11).into(),
+            index_2: (reg >> 4 & 0b11).into(),
+            index_3: (reg >> 6 & 0b11).into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Color {
+    White = 0,
+    LightGray = 1,
+    DarkGray = 2,
+    Black = 3,
+}
+
+impl From<u8> for Color {
+    fn from(val: u8) -> Self {
+        match val {
+            0 => Self::White,
+            1 => Self::LightGray,
+            2 => Self::DarkGray,
+            3 => Self::Black,
+            _ => unreachable!("2 bits value cannot exceed 3"),
+        }
+    }
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self::Black
+    }
 }
 
 impl GPU {
@@ -50,6 +116,9 @@ impl GPU {
             scroll_x: 0,
             control: 0,
             current_y: 0,
+            bg_pallete: Palette::default(),
+            bgj_pallete_0: Palette::default(),
+            bgj_pallete_1: Palette::default(),
         }
     }
 }
@@ -62,6 +131,9 @@ impl ReadWrite for GPU {
             || 0xFF42 == address
             || 0xFF43 == address
             || 0xFF44 == address
+            || 0xFF47 == address
+            || 0xFF48 == address
+            || 0xFF49 == address
     }
 
     fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
@@ -72,6 +144,9 @@ impl ReadWrite for GPU {
             0xFF42 => Ok(self.scroll_y),
             0xFF43 => Ok(self.scroll_x),
             0xFF44 => Ok(self.current_y),
+            0xFF47 => Ok(self.bg_pallete.into()),
+            0xFF48 => Ok(self.bgj_pallete_0.into()),
+            0xFF49 => Ok(self.bgj_pallete_0.into()),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -91,6 +166,9 @@ impl ReadWrite for GPU {
             0xFF42 => Ok(self.scroll_y = value),
             0xFF43 => Ok(self.scroll_x = value),
             0xFF44 => Ok(self.current_y = value),
+            0xFF47 => Ok(self.bg_pallete = value.into()),
+            0xFF48 => Ok(self.bgj_pallete_0 = value.into()),
+            0xFF49 => Ok(self.bgj_pallete_0 = value.into()),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -100,5 +178,35 @@ impl ReadWrite for GPU {
 
     fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
         todo!("implement this func")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::gpu::{Color, Palette};
+
+    #[test]
+    fn palette_from_u8() {
+        let value = 0b00_01_10_11;
+        assert_eq!(
+            Palette::from(value),
+            Palette {
+                index_0: Color::Black,
+                index_1: Color::DarkGray,
+                index_2: Color::LightGray,
+                index_3: Color::White,
+            }
+        );
+    }
+
+    #[test]
+    fn u8_from_palette() {
+        let palette = Palette {
+            index_0: Color::Black,
+            index_1: Color::DarkGray,
+            index_2: Color::LightGray,
+            index_3: Color::White,
+        };
+        assert_eq!(Into::<u8>::into(palette), 0b00_01_10_11);
     }
 }
