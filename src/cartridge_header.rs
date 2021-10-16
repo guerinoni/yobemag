@@ -26,7 +26,7 @@ const NINTENDO_LOGO: [u8; 48] = [
     0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E,
 ];
 
-/// original games have all nintengo logo bytes insiede its cartridge.
+/// original games have all nintengo logo bytes inside its cartridge.
 fn check_logo(data: &[u8]) -> Result<(), std::io::Error> {
     match data[0x104..0x134].iter().cmp(NINTENDO_LOGO.iter()) {
         std::cmp::Ordering::Equal => Ok(()),
