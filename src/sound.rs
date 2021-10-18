@@ -8,22 +8,34 @@ pub struct Sound {
     /// Bit 1 - Sound 2 ON flag (Read Only)
     /// Bit 0 - Sound 1 ON flag (Read Only)
     on: u8, // TODO: create dedicated struct for better reading code.
+
+    /// Each channel can be panned hard left, center, or hard right 0xFF25.
+    /// Bit 7 - Output sound 4 to SO2 terminal
+    /// Bit 6 - Output sound 3 to SO2 terminal
+    /// Bit 5 - Output sound 2 to SO2 terminal
+    /// Bit 4 - Output sound 1 to SO2 terminal
+    /// Bit 3 - Output sound 4 to SO1 terminal
+    /// Bit 2 - Output sound 3 to SO1 terminal
+    /// Bit 1 - Output sound 2 to SO1 terminal
+    /// Bit 0 - Output sound 1 to SO1 terminal
+    sound_output: u8,
 }
 
 impl Sound {
     pub fn new() -> Sound {
-        Sound { on: 0 }
+        Sound { on: 0, sound_output: 0 }
     }
 }
 
 impl ReadWrite for Sound {
     fn contains(self: &Self, address: usize) -> bool {
-        0xFF26 == address
+        0xFF26 == address || 0xFF25 == address
     }
 
     fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
         match address {
             0xFF26 => Ok(self.on),
+            0xFF25 => Ok(self.sound_output),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't read byte here",
@@ -39,6 +51,7 @@ impl ReadWrite for Sound {
         println!("set sound on/off -> {}", value);
         match address {
             0xFF26 => Ok(self.on = value),
+            0xFF25 => Ok(self.sound_output = value),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
