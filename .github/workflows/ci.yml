@@ -24,6 +24,9 @@ jobs:
     - name: tests
       run: cargo test
 
+    - name: clippy
+      run: cargo clippy
+
     - name: run cargo-tarpaulin
       uses: actions-rs/tarpaulin@v0.1
       with:
