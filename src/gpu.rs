@@ -146,7 +146,7 @@ impl ReadWrite for GPU {
             0xFF44 => Ok(self.current_y),
             0xFF47 => Ok(self.bg_pallete.into()),
             0xFF48 => Ok(self.bgj_pallete_0.into()),
-            0xFF49 => Ok(self.bgj_pallete_0.into()),
+            0xFF49 => Ok(self.bgj_pallete_1.into()),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -168,7 +168,7 @@ impl ReadWrite for GPU {
             0xFF44 => Ok(self.current_y = value),
             0xFF47 => Ok(self.bg_pallete = value.into()),
             0xFF48 => Ok(self.bgj_pallete_0 = value.into()),
-            0xFF49 => Ok(self.bgj_pallete_0 = value.into()),
+            0xFF49 => Ok(self.bgj_pallete_1 = value.into()),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
