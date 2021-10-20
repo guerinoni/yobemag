@@ -1,10 +1,10 @@
 use core::panic;
 
-use crate::{memory_device::ReadWrite, mmu::MMU, opcodes::*, prefix_opcodes::*, register::*};
+use crate::{memory_device::ReadWrite, mmu::MemoryManagmentUnit, opcodes::*, register::*};
 
-pub struct CPU {
+pub struct CentralProcessingUnit {
     registers: Registers,
-    mmu: MMU,
+    mmu: MemoryManagmentUnit,
     stop: bool,
     halt: bool,
 
@@ -12,10 +12,10 @@ pub struct CPU {
     ime: bool,
 }
 
-impl CPU {
-    pub fn new(device: Box<dyn ReadWrite>) -> CPU {
-        let mmu = MMU::new(device);
-        CPU {
+impl CentralProcessingUnit {
+    pub fn new(device: Box<dyn ReadWrite>) -> CentralProcessingUnit {
+        let mmu = MemoryManagmentUnit::new(device);
+        CentralProcessingUnit {
             registers: Registers::new(),
             mmu,
             stop: false,
@@ -24,7 +24,7 @@ impl CPU {
         }
     }
 
-    pub fn step(self: &mut Self) -> u8 {
+    pub fn step(&mut self) -> u8 {
         if self.stop {
             return 0;
         }
@@ -164,8 +164,8 @@ impl CPU {
             OpCode::JrPcDd => self.jr_pc_dd(),
             OpCode::CpN => self.cp_n(),
             OpCode::RrA => self.rr_a(),
-            OpCode::RLCA => self.rlca(),
-            OpCode::RET => self.ret(),
+            OpCode::Rlca => self.rlca(),
+            OpCode::Ret => self.ret(),
             OpCode::PushBc => self.push_qq(RegisterWord::BC),
             OpCode::PushDe => self.push_qq(RegisterWord::DE),
             OpCode::PushHl => self.push_qq(RegisterWord::HL),
@@ -183,7 +183,7 @@ impl CPU {
         }
     }
 
-    fn fetch_byte(self: &mut Self) -> u8 {
+    fn fetch_byte(&mut self) -> u8 {
         let address = self.registers.program_counter as usize;
         let byte = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
@@ -195,7 +195,7 @@ impl CPU {
         byte
     }
 
-    fn fetch_word(self: &mut Self) -> u16 {
+    fn fetch_word(&mut self) -> u16 {
         let address = self.registers.program_counter as usize;
         let word = match self.mmu.read_word(address as usize) {
             Ok(v) => v,
@@ -207,16 +207,16 @@ impl CPU {
         word
     }
 
-    fn noop(self: &Self) -> u8 {
+    fn noop(&self) -> u8 {
         4
     }
 
-    fn stop(self: &mut Self) -> u8 {
+    fn stop(&mut self) -> u8 {
         self.stop = true;
         0
     }
 
-    fn halt(self: &mut Self) -> u8 {
+    fn halt(&mut self) -> u8 {
         self.halt = true;
         0
     }
@@ -231,7 +231,7 @@ impl CPU {
         (sa - sb) < 0
     }
 
-    fn ld_r_next(self: &mut Self, reg: Register) -> u8 {
+    fn ld_r_next(&mut self, reg: Register) -> u8 {
         let r = self.fetch_byte();
         match reg {
             Register::B => self.registers.b = r,
@@ -246,7 +246,7 @@ impl CPU {
         8
     }
 
-    fn ld_r_r(self: &mut Self, reg1: Register, reg2: Register) -> u8 {
+    fn ld_r_r(&mut self, reg1: Register, reg2: Register) -> u8 {
         let r2 = match reg2 {
             Register::B => self.registers.b,
             Register::C => self.registers.c,
@@ -270,7 +270,7 @@ impl CPU {
         4
     }
 
-    fn ld_r_hl(self: &mut Self, reg: Register) -> u8 {
+    fn ld_r_hl(&mut self, reg: Register) -> u8 {
         let address = self.registers.hl() as usize;
         let hl = match self.mmu.read_byte(address) {
             Ok(v) => v,
@@ -290,7 +290,7 @@ impl CPU {
         8
     }
 
-    fn ld_hl_r(self: &mut Self, reg: Register) -> u8 {
+    fn ld_hl_r(&mut self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => self.registers.b,
             Register::C => self.registers.c,
@@ -309,7 +309,7 @@ impl CPU {
         8
     }
 
-    fn ld_a_rr(self: &mut Self, reg: RegisterWord) -> u8 {
+    fn ld_a_rr(&mut self, reg: RegisterWord) -> u8 {
         let address = match reg {
             RegisterWord::BC => self.registers.bc(),
             RegisterWord::DE => self.registers.de(),
@@ -328,7 +328,7 @@ impl CPU {
         8
     }
 
-    fn ld_a_nn(self: &mut Self) -> u8 {
+    fn ld_a_nn(&mut self) -> u8 {
         let address = self.fetch_word();
         let v = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
@@ -340,7 +340,7 @@ impl CPU {
         8
     }
 
-    fn ld_rr_a(self: &mut Self, reg: RegisterWord) -> u8 {
+    fn ld_rr_a(&mut self, reg: RegisterWord) -> u8 {
         let address = match reg {
             RegisterWord::BC => self.registers.bc(),
             RegisterWord::DE => self.registers.de(),
@@ -357,7 +357,7 @@ impl CPU {
         8
     }
 
-    fn ld_nn_a(self: &mut Self) -> u8 {
+    fn ld_nn_a(&mut self) -> u8 {
         let address = self.fetch_word();
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
@@ -367,7 +367,7 @@ impl CPU {
         16
     }
 
-    fn ld_hl_next(self: &mut Self) -> u8 {
+    fn ld_hl_next(&mut self) -> u8 {
         let hl = self.registers.hl();
         let next = self.fetch_byte();
         match self.mmu.write_byte(hl as usize, next) {
@@ -378,7 +378,7 @@ impl CPU {
         12
     }
 
-    fn ld_dd_nn(self: &mut Self, reg: RegisterWord) -> u8 {
+    fn ld_dd_nn(&mut self, reg: RegisterWord) -> u8 {
         let w = self.fetch_word();
         match reg {
             RegisterWord::BC => self.registers.set_bc(w),
@@ -391,7 +391,7 @@ impl CPU {
         12
     }
 
-    fn ldd_hl_a(self: &mut Self) -> u8 {
+    fn ldd_hl_a(&mut self) -> u8 {
         let address = self.registers.hl() - 1;
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
@@ -401,8 +401,8 @@ impl CPU {
         8
     }
 
-    fn ld_a_ff00_n(self: &mut Self) -> u8 {
-        let add = 0xFF00 as usize + self.fetch_byte() as usize;
+    fn ld_a_ff00_n(&mut self) -> u8 {
+        let add = 0xFF00_usize + self.fetch_byte() as usize;
         self.registers.a = match self.mmu.read_byte(add) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -411,8 +411,8 @@ impl CPU {
         12
     }
 
-    fn ld_ff00_na(self: &mut Self) -> u8 {
-        let address = 0xFF00 as u16 + self.fetch_byte() as u16;
+    fn ld_ff00_na(&mut self) -> u8 {
+        let address = 0xFF00_u16 + self.fetch_byte() as u16;
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -421,8 +421,8 @@ impl CPU {
         12
     }
 
-    fn ld_a_ff00c(self: &mut Self) -> u8 {
-        let address = 0xFF00 as u16 + self.registers.c as u16;
+    fn ld_a_ff00c(&mut self) -> u8 {
+        let address = 0xFF00_u16 + self.registers.c as u16;
         self.registers.a = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -431,8 +431,8 @@ impl CPU {
         8
     }
 
-    fn ld_ff00_ca(self: &mut Self) -> u8 {
-        let address = 0xFF00 as u16 + self.registers.c as u16;
+    fn ld_ff00_ca(&mut self) -> u8 {
+        let address = 0xFF00_u16 + self.registers.c as u16;
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -441,7 +441,7 @@ impl CPU {
         8
     }
 
-    fn ldd_a_hl(self: &mut Self) -> u8 {
+    fn ldd_a_hl(&mut self) -> u8 {
         self.registers.a = match self.mmu.read_byte(self.registers.hl() as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -452,7 +452,7 @@ impl CPU {
         8
     }
 
-    fn ld_nn_sp(self: &mut Self) -> u8 {
+    fn ld_nn_sp(&mut self) -> u8 {
         let address = self.fetch_word();
         self.mmu
             .write_word(address as usize, self.registers.stack_pointer)
@@ -461,7 +461,7 @@ impl CPU {
         20
     }
 
-    fn or_r(self: &mut Self, reg: Register) -> u8 {
+    fn or_r(&mut self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => self.registers.b,
             Register::C => self.registers.c,
@@ -481,7 +481,7 @@ impl CPU {
         4
     }
 
-    fn xor_r(self: &mut Self, reg: Register) -> u8 {
+    fn xor_r(&mut self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => self.registers.b,
             Register::C => self.registers.c,
@@ -501,19 +501,19 @@ impl CPU {
         4
     }
 
-    fn inc_rr(self: &mut Self, reg: RegisterWord) -> u8 {
+    fn inc_rr(&mut self, reg: RegisterWord) -> u8 {
         match reg {
             RegisterWord::BC => self.registers.set_bc(self.registers.bc() + 1),
             RegisterWord::DE => self.registers.set_de(self.registers.de() + 1),
             RegisterWord::HL => self.registers.set_hl(self.registers.hl() + 1),
-            RegisterWord::SP => self.registers.stack_pointer = self.registers.stack_pointer + 1,
+            RegisterWord::SP => self.registers.stack_pointer += 1,
             _ => panic!("should never go here"),
         };
 
         8
     }
 
-    fn inc_r(self: &mut Self, reg: Register) -> u8 {
+    fn inc_r(&mut self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => &mut self.registers.b,
             Register::C => &mut self.registers.c,
@@ -526,14 +526,15 @@ impl CPU {
 
         let ret = r.wrapping_add(1);
         self.registers.flags.zero = ret == 0;
-        self.registers.flags.half_carry = CPU::check_for_half_carry_first_nible_add(*r, 1);
+        self.registers.flags.half_carry =
+            CentralProcessingUnit::check_for_half_carry_first_nible_add(*r, 1);
         self.registers.flags.negative = false;
         *r = ret;
 
         8
     }
 
-    fn dec_r(self: &mut Self, reg: Register) -> u8 {
+    fn dec_r(&mut self, reg: Register) -> u8 {
         let r = match reg {
             Register::B => &mut self.registers.b,
             Register::C => &mut self.registers.c,
@@ -546,20 +547,21 @@ impl CPU {
 
         let ret = r.wrapping_sub(1);
         self.registers.flags.zero = ret == 0;
-        self.registers.flags.half_carry = CPU::check_for_half_carry_first_nible_sub(*r, ret);
+        self.registers.flags.half_carry =
+            CentralProcessingUnit::check_for_half_carry_first_nible_sub(*r, ret);
         self.registers.flags.negative = true;
         *r = ret;
 
         4
     }
 
-    fn jp_nn(self: &mut Self) -> u8 {
+    fn jp_nn(&mut self) -> u8 {
         let nn = self.fetch_word();
         self.registers.program_counter = nn as i32;
         16
     }
 
-    fn jr_f_pc_dd(self: &mut Self, op: ConditionOperand) -> u8 {
+    fn jr_f_pc_dd(&mut self, op: ConditionOperand) -> u8 {
         let dd = self.fetch_byte() as i8;
         let condition = match op {
             ConditionOperand::NZ => !self.registers.flags.zero,
@@ -576,15 +578,15 @@ impl CPU {
         8
     }
 
-    fn jr_pc_dd(self: &mut Self) -> u8 {
+    fn jr_pc_dd(&mut self) -> u8 {
         let dd = self.fetch_byte();
         self.registers.program_counter += dd as i32;
         12
     }
 
-    fn cp_n(self: &mut Self) -> u8 {
-        let n = self.fetch_byte();
-        let ret = self.registers.a - n;
+    fn cp_n(&mut self) -> u8 {
+        // let n = self.fetch_byte();
+        // let ret = self.registers.a - n;
         // self.registers.flags.evaluate_effect(
         // self.registers.a,
         // self.registers.a,
@@ -600,12 +602,12 @@ impl CPU {
         8
     }
 
-    fn di(self: &mut Self) -> u8 {
+    fn di(&mut self) -> u8 {
         self.ime = false;
         4
     }
 
-    fn call_nn(self: &mut Self) -> u8 {
+    fn call_nn(&mut self) -> u8 {
         let nn = self.fetch_word();
         let high = (self.registers.program_counter >> 8) as u8;
         self.registers.stack_pointer -= 1;
@@ -632,7 +634,7 @@ impl CPU {
         24
     }
 
-    fn rr_a(self: &mut Self) -> u8 {
+    fn rr_a(&mut self) -> u8 {
         let old_bit_zero_data = self.registers.a & 0x01 == 0x01;
         let old_carry = self.registers.flags.carry as u16;
         let big_a = (self.registers.a as u16).rotate_left(1) | old_carry;
@@ -646,7 +648,7 @@ impl CPU {
         4
     }
 
-    fn rlca(self: &mut Self) -> u8 {
+    fn rlca(&mut self) -> u8 {
         let old_bit_zero_data = self.registers.a & 0x01 == 0x01;
         self.registers.a = self.registers.a.rotate_left(1);
         self.registers.flags.half_carry = false;
@@ -657,7 +659,7 @@ impl CPU {
         4
     }
 
-    fn ret(self: &mut Self) -> u8 {
+    fn ret(&mut self) -> u8 {
         self.registers.program_counter =
             match self.mmu.read_word(self.registers.stack_pointer as usize) {
                 Ok(v) => v as i32,
@@ -669,7 +671,7 @@ impl CPU {
         16
     }
 
-    fn push_qq(self: &mut Self, reg: RegisterWord) -> u8 {
+    fn push_qq(&mut self, reg: RegisterWord) -> u8 {
         let reg = match reg {
             RegisterWord::BC => self.registers.bc(),
             RegisterWord::DE => self.registers.de(),
@@ -701,7 +703,7 @@ impl CPU {
         16
     }
 
-    fn pop_qq(self: &mut Self, reg: RegisterWord) -> u8 {
+    fn pop_qq(&mut self, reg: RegisterWord) -> u8 {
         let w = match self.mmu.read_word(self.registers.stack_pointer as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -720,47 +722,48 @@ impl CPU {
         12
     }
 
-    fn interpret_prefix(self: &mut Self) -> u8 {
-        let prefix_opcode = self.fetch_byte();
-        match prefix_opcode.into() {
-            PrefixOpCode::RlcB => self.rlc_r(Register::B),
-            PrefixOpCode::RlcC => self.rlc_r(Register::B),
-            PrefixOpCode::RlcD => self.rlc_r(Register::B),
-            PrefixOpCode::RlcE => self.rlc_r(Register::B),
-            PrefixOpCode::RlcH => self.rlc_r(Register::B),
-            PrefixOpCode::RlcL => self.rlc_r(Register::B),
-            PrefixOpCode::RlcA => self.rlc_r(Register::B),
-        }
+    fn interpret_prefix(&mut self) -> u8 {
+        // let prefix_opcode = self.fetch_byte();
+        // match prefix_opcode.into() {
+        //     PrefixOpCode::RlcB => self.rlc_r(Register::B),
+        //     PrefixOpCode::RlcC => self.rlc_r(Register::B),
+        //     PrefixOpCode::RlcD => self.rlc_r(Register::B),
+        //     PrefixOpCode::RlcE => self.rlc_r(Register::B),
+        //     PrefixOpCode::RlcH => self.rlc_r(Register::B),
+        //     PrefixOpCode::RlcL => self.rlc_r(Register::B),
+        //     PrefixOpCode::RlcA => self.rlc_r(Register::B),
+        // }
+        unimplemented!()
     }
 
-    fn rlc_r(self: &mut Self, reg: Register) -> u8 {
-        let r = match reg {
-            Register::B => &mut self.registers.b,
-            Register::C => &mut self.registers.c,
-            Register::D => &mut self.registers.d,
-            Register::E => &mut self.registers.e,
-            Register::H => &mut self.registers.h,
-            Register::L => &mut self.registers.l,
-            Register::A => &mut self.registers.a,
-        };
+    // fn rlc_r(&mut self, reg: Register) -> u8 {
+    //     let r = match reg {
+    //         Register::B => &mut self.registers.b,
+    //         Register::C => &mut self.registers.c,
+    //         Register::D => &mut self.registers.d,
+    //         Register::E => &mut self.registers.e,
+    //         Register::H => &mut self.registers.h,
+    //         Register::L => &mut self.registers.l,
+    //         Register::A => &mut self.registers.a,
+    // };
 
-        let sign = *r >> 7;
-        let tmp = *r << 1;
-        *r = tmp ^ sign;
+    // let sign = *r >> 7;
+    // let tmp = *r << 1;
+    // *r = tmp ^ sign;
 
-        // self.registers.flags.evaluate_effect(
-        //     *r,
-        //     *r,
-        //     SideEffectsCpuFlags {
-        //         carry: SideEffect::Dependent,
-        //         half_carry: SideEffect::Unset,
-        //         negative: SideEffect::Unset,
-        //         zero: SideEffect::Dependent,
-        //     },
-        // );
+    // self.registers.flags.evaluate_effect(
+    //     *r,
+    //     *r,
+    //     SideEffectsCpuFlags {
+    //         carry: SideEffect::Dependent,
+    //         half_carry: SideEffect::Unset,
+    //         negative: SideEffect::Unset,
+    //         zero: SideEffect::Dependent,
+    //     },
+    // );
 
-        8
-    }
+    // 8
+    // }
 }
 
 #[cfg(test)]
@@ -770,7 +773,7 @@ mod tests {
     use crate::memory_device::ReadWrite;
     use crate::opcodes::{Register, RegisterWord};
 
-    use super::CPU;
+    use super::CentralProcessingUnit;
 
     struct MockDevice {
         bytes: HashMap<usize, u8>,
@@ -778,23 +781,23 @@ mod tests {
     }
 
     impl ReadWrite for MockDevice {
-        fn contains(self: &Self, address: usize) -> bool {
+        fn contains(&self, address: usize) -> bool {
             let _ = address;
             true
         }
 
-        fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+        fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
             Ok(self.bytes[&address])
         }
-        fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+        fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
             Ok(self.words[&address])
         }
 
-        fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+        fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
             self.bytes.insert(address, value);
             Ok(())
         }
-        fn write_word(self: &mut Self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
+        fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
             unimplemented!()
         }
     }
@@ -812,7 +815,7 @@ mod tests {
             bytes: collection! { 256 => 10 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         let cycle = cpu.ld_r_next(Register::A);
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 10);
@@ -824,7 +827,7 @@ mod tests {
             bytes: collection! {},
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.b = 9;
         let cycle = cpu.ld_r_r(Register::A, Register::B);
         assert_eq!(cycle, 4);
@@ -837,7 +840,7 @@ mod tests {
             bytes: collection! { 44 => 10 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.set_hl(44);
         let cycle = cpu.ld_r_hl(Register::B);
         assert_eq!(cycle, 8);
@@ -850,7 +853,7 @@ mod tests {
             bytes: collection! {},
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.set_hl(44);
         cpu.registers.b = 99;
         let cycle = cpu.ld_hl_r(Register::B);
@@ -864,7 +867,7 @@ mod tests {
             bytes: collection! { 44 => 10 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.set_bc(44);
         let cycle = cpu.ld_a_rr(RegisterWord::BC);
         assert_eq!(cycle, 8);
@@ -877,7 +880,7 @@ mod tests {
             bytes: collection! { 44 => 10 },
             words: collection! { 256 => 44 },
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         let cycle = cpu.ld_a_nn();
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 10);
@@ -890,7 +893,7 @@ mod tests {
                 bytes: collection! {},
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.set_bc(11);
             cpu.registers.a = 99;
             let cycle = cpu.ld_rr_a(RegisterWord::BC);
@@ -905,7 +908,7 @@ mod tests {
             bytes: collection! {},
             words: collection! { 256 => 44 },
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.a = 99;
         let cycle = cpu.ld_nn_a();
         assert_eq!(cycle, 16);
@@ -918,7 +921,7 @@ mod tests {
             bytes: collection! { 256 => 94 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.set_hl(99);
         let cycle = cpu.ld_hl_next();
         assert_eq!(cycle, 12);
@@ -931,7 +934,7 @@ mod tests {
             bytes: collection! { 256 => 1, 0xFF01 => 10 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         let cycle = cpu.ld_a_ff00_n();
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.a, 10);
@@ -943,7 +946,7 @@ mod tests {
             bytes: collection! { 256 => 1 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.a = 94;
         let cycle = cpu.ld_ff00_na();
         assert_eq!(cycle, 12);
@@ -956,7 +959,7 @@ mod tests {
             bytes: collection! { 0xFF02 => 10 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.c = 2;
         let cycle = cpu.ld_a_ff00c();
         assert_eq!(cycle, 8);
@@ -969,7 +972,7 @@ mod tests {
             bytes: collection! {},
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.a = 10;
         cpu.registers.c = 2;
         let cycle = cpu.ld_ff00_ca();
@@ -983,7 +986,7 @@ mod tests {
             bytes: collection! { 88 => 10 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.set_hl(88);
         let cycle = cpu.ldd_a_hl();
         assert_eq!(cycle, 8);
@@ -997,7 +1000,7 @@ mod tests {
             bytes: collection! {},
             words: collection! { 256 => 1000 },
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         let cycle = cpu.ld_nn_sp();
         assert_eq!(cycle, 20);
         assert_eq!(cpu.mmu.read_byte(1000).unwrap(), 254);
@@ -1011,7 +1014,7 @@ mod tests {
                 bytes: collection! {},
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 1;
             let cycle = cpu.rlca();
             assert_eq!(cycle, 4);
@@ -1026,7 +1029,7 @@ mod tests {
                 bytes: collection! {},
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 2;
             let cycle = cpu.rlca();
             assert_eq!(cycle, 4);
@@ -1045,7 +1048,7 @@ mod tests {
                 bytes: collection! {},
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 1;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
@@ -1060,7 +1063,7 @@ mod tests {
                 bytes: collection! {},
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 2;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
@@ -1075,7 +1078,7 @@ mod tests {
                 bytes: collection! {},
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 3;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
@@ -1093,7 +1096,7 @@ mod tests {
             bytes: collection! {},
             words: collection! { 256 => 1000 },
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.stack_pointer = 2;
         let cycle = cpu.call_nn();
         assert_eq!(cycle, 24);
@@ -1108,7 +1111,7 @@ mod tests {
             bytes: collection! {},
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.a = 10;
         cpu.registers.b = 5;
         let cycle = cpu.or_r(Register::B);
@@ -1122,7 +1125,7 @@ mod tests {
             bytes: collection! {},
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.a = 10;
         cpu.registers.b = 1;
         let cycle = cpu.xor_r(Register::B);
@@ -1136,7 +1139,7 @@ mod tests {
             bytes: collection! { 256 => 99 },
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         let cycle = cpu.jr_pc_dd();
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.program_counter, 356);
@@ -1149,7 +1152,7 @@ mod tests {
                 bytes: collection! { 256 => 99 },
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 15;
             let cycle = cpu.inc_r(Register::A);
             assert_eq!(cycle, 8);
@@ -1164,7 +1167,7 @@ mod tests {
                 bytes: collection! { 256 => 99 },
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 1;
             let cycle = cpu.inc_r(Register::A);
             assert_eq!(cycle, 8);
@@ -1183,7 +1186,7 @@ mod tests {
                 bytes: collection! { 256 => 99 },
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 16;
             let cycle = cpu.dec_r(Register::A);
             assert_eq!(cycle, 4);
@@ -1198,7 +1201,7 @@ mod tests {
                 bytes: collection! { 256 => 99 },
                 words: collection! {},
             };
-            let mut cpu = CPU::new(Box::new(mc));
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 1;
             let cycle = cpu.dec_r(Register::A);
             assert_eq!(cycle, 4);
@@ -1216,7 +1219,7 @@ mod tests {
             bytes: collection! {},
             words: collection! { 65534 => 99 },
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         let cycle = cpu.ret();
         assert_eq!(cycle, 16);
         assert_eq!(cpu.registers.program_counter, 99);
@@ -1229,7 +1232,7 @@ mod tests {
             bytes: collection! {},
             words: collection! { 256 => 99 },
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         let cycle = cpu.ld_dd_nn(RegisterWord::SP);
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.stack_pointer, 99);
@@ -1241,7 +1244,7 @@ mod tests {
             bytes: collection! {},
             words: collection! {},
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.set_bc(10001);
         let cycle = cpu.push_qq(RegisterWord::BC);
         assert_eq!(cycle, 16);
@@ -1256,7 +1259,7 @@ mod tests {
             bytes: collection! {},
             words: collection! { 100 => 99 },
         };
-        let mut cpu = CPU::new(Box::new(mc));
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.stack_pointer = 100;
         let cycle = cpu.pop_qq(RegisterWord::BC);
         assert_eq!(cycle, 12);

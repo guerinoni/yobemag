@@ -2,6 +2,7 @@ use crate::cartridge_header::*;
 use crate::memory_device::*;
 use std::fs;
 
+#[allow(dead_code)]
 pub struct NoMBCartridge {
     header: CartridgeHeader,
 
@@ -16,30 +17,30 @@ impl NoMBCartridge {
 }
 
 impl ReadWrite for NoMBCartridge {
-    fn contains(self: &Self, address: usize) -> bool {
+    fn contains(&self, address: usize) -> bool {
         (0x0000..=0x3FFF).contains(&address)
     }
 
-    fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         Ok(self.rom[address])
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+    fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
         Ok(u16::from_le_bytes([
             self.rom[address],
             self.rom[address + 1],
         ]))
     }
 
-    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+    fn write_byte(&mut self, _address: usize, _value: u8) -> Result<(), std::io::Error> {
         unimplemented!()
     }
 
-    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
         unimplemented!()
     }
 }
-
+#[allow(dead_code)]
 pub struct MBC1 {
     header: CartridgeHeader,
 
@@ -85,27 +86,27 @@ impl MBC1 {
 }
 
 impl ReadWrite for MBC1 {
-    fn contains(self: &Self, address: usize) -> bool {
+    fn contains(&self, address: usize) -> bool {
         (0x0000..=0x3FFF).contains(&address)
             || (0x4000..=0x7FFF).contains(&address)
             || (0xA000..=0xBFFF).contains(&address)
     }
 
-    fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         Ok(self.rom[address])
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+    fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
         let low = self.rom[address] as u16;
         let high = self.rom[address + 1] as u16;
         Ok(high << 8 | low)
     }
 
-    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+    fn write_byte(&mut self, _address: usize, _value: u8) -> Result<(), std::io::Error> {
         unimplemented!()
     }
 
-    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
         unimplemented!()
     }
 }

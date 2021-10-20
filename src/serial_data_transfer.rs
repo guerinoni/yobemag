@@ -19,11 +19,11 @@ impl SerialDataTransfer {
 }
 
 impl ReadWrite for SerialDataTransfer {
-    fn contains(self: &Self, address: usize) -> bool {
+    fn contains(&self, address: usize) -> bool {
         0xFF01 == address || 0xFF02 == address
     }
 
-    fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         match address {
             0xFF01 => Ok(self.data),
             0xFF02 => Ok(self.control),
@@ -31,19 +31,25 @@ impl ReadWrite for SerialDataTransfer {
         }
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+    fn read_word(&self, _address: usize) -> Result<u16, std::io::Error> {
         unimplemented!()
     }
 
-    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+    fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
-            0xFF01 => Ok(self.data = value),
-            0xFF02 => Ok(self.control = value),
+            0xFF01 => {
+                self.data = value;
+                Ok(())
+            }
+            0xFF02 => {
+                self.control = value;
+                Ok(())
+            }
             _ => unimplemented!(),
         }
     }
 
-    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
         unimplemented!()
     }
 }

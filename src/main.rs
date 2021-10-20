@@ -36,5 +36,5 @@ fn main() -> Result<(), std::io::Error> {
         emu.step();
     }
 
-    Ok(())
+    // Ok(())
 }

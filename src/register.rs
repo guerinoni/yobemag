@@ -11,7 +11,7 @@ pub struct CpuFlag {
 }
 
 impl CpuFlag {
-    pub fn to_u8(self: &Self) -> u8 {
+    pub fn to_u8(&self) -> u8 {
         let bits = [
             self.zero as u8,
             self.negative as u8,
@@ -25,7 +25,7 @@ impl CpuFlag {
         convert(&bits).unwrap()
     }
 
-    pub fn from_u8(self: &mut Self, value: u8) {
+    pub fn from_u8(&mut self, value: u8) {
         self.zero = value & 0b10000000 == 128;
         self.negative = value & 0b01000000 == 64;
         self.half_carry = value & 0b00100000 == 32;
@@ -88,43 +88,45 @@ impl Registers {
         }
     }
 
-    pub fn set_bc(self: &mut Self, value: u16) {
-        self.b = (value >> 8 as u16) as u8;
-        self.c = value as u8;
+    fn set(reg1: &mut u8, reg2: &mut u8, value: u16) {
+        *reg1 = (value >> 8_u16) as u8;
+        *reg2 = value as u8;
     }
 
-    pub fn bc(self: &Self) -> u16 {
+    pub fn set_bc(&mut self, value: u16) {
+        Registers::set(&mut self.b, &mut self.c, value);
+    }
+
+    pub fn bc(&self) -> u16 {
         let ret = (self.b as u16) << 8;
         ret | self.c as u16
     }
 
-    pub fn set_de(self: &mut Self, value: u16) {
-        self.d = (value >> 8 as u16) as u8;
-        self.e = value as u8;
+    pub fn set_de(&mut self, value: u16) {
+        Registers::set(&mut self.d, &mut self.e, value);
     }
 
-    pub fn de(self: &Self) -> u16 {
+    pub fn de(&self) -> u16 {
         let ret = (self.d as u16) << 8;
         ret | self.e as u16
     }
 
-    pub fn set_hl(self: &mut Self, value: u16) {
-        self.h = (value >> 8 as u16) as u8;
-        self.l = value as u8;
+    pub fn set_hl(&mut self, value: u16) {
+        Registers::set(&mut self.h, &mut self.l, value);
     }
 
-    pub fn hl(self: &Self) -> u16 {
+    pub fn hl(&self) -> u16 {
         let ret = (self.h as u16) << 8;
         ret | self.l as u16
     }
 
-    pub fn af(self: &Self) -> u16 {
+    pub fn af(&self) -> u16 {
         let ret = (self.a as u16) << 8;
         ret | self.flags.to_u8() as u16
     }
 
-    pub fn set_af(self: &mut Self, value: u16) {
-        self.a = (value >> 8 as u16) as u8;
+    pub fn set_af(&mut self, value: u16) {
+        self.a = (value >> 8_u16) as u8;
         self.flags.from_u8(value as u8);
     }
 }

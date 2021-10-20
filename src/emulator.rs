@@ -1,18 +1,18 @@
-use crate::{cartridge::make_cartridge, cpu::CPU};
+use crate::{cartridge::make_cartridge, cpu::CentralProcessingUnit};
 
 pub struct Emulator {
-    cpu: CPU,
+    cpu: CentralProcessingUnit,
 }
 
 impl Emulator {
     pub fn new(filename: &str) -> Result<Emulator, std::io::Error> {
         let device = make_cartridge(filename)?;
         Ok(Emulator {
-            cpu: CPU::new(device),
+            cpu: CentralProcessingUnit::new(device),
         })
     }
 
-    pub fn step(self: &mut Self) {
+    pub fn step(&mut self) {
         self.cpu.step();
     }
 }

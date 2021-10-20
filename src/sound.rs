@@ -23,16 +23,19 @@ pub struct Sound {
 
 impl Sound {
     pub fn new() -> Sound {
-        Sound { on: 0, sound_output: 0 }
+        Sound {
+            on: 0,
+            sound_output: 0,
+        }
     }
 }
 
 impl ReadWrite for Sound {
-    fn contains(self: &Self, address: usize) -> bool {
+    fn contains(&self, address: usize) -> bool {
         0xFF26 == address || 0xFF25 == address
     }
 
-    fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         match address {
             0xFF26 => Ok(self.on),
             0xFF25 => Ok(self.sound_output),
@@ -43,15 +46,21 @@ impl ReadWrite for Sound {
         }
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+    fn read_word(&self, _address: usize) -> Result<u16, std::io::Error> {
         unimplemented!()
     }
 
-    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+    fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         println!("set sound on/off -> {}", value);
         match address {
-            0xFF26 => Ok(self.on = value),
-            0xFF25 => Ok(self.sound_output = value),
+            0xFF26 => {
+                self.on = value;
+                Ok(())
+            }
+            0xFF25 => {
+                self.sound_output = value;
+                Ok(())
+            }
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -59,7 +68,7 @@ impl ReadWrite for Sound {
         }
     }
 
-    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
         unimplemented!()
     }
 }

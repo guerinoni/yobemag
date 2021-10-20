@@ -1,4 +1,4 @@
-use crate::gpu::GPU;
+use crate::gpu::GraphicsProcessingUnit;
 use crate::internal_memory::InternalMemory;
 use crate::memory_device::ReadWrite;
 use crate::serial_data_transfer::SerialDataTransfer;
@@ -6,20 +6,20 @@ use crate::sound::Sound;
 use crate::timer::Timer;
 
 /// Holds all memory space addressable for emulation.
-pub struct MMU {
+pub struct MemoryManagmentUnit {
     cartridge: Box<dyn ReadWrite>,
-    gpu: GPU,
+    gpu: GraphicsProcessingUnit,
     internal: InternalMemory,
     serial: SerialDataTransfer,
     timer: Timer,
     sound: Sound,
 }
 
-impl MMU {
-    pub fn new(cartridge: Box<dyn ReadWrite>) -> MMU {
-        MMU {
+impl MemoryManagmentUnit {
+    pub fn new(cartridge: Box<dyn ReadWrite>) -> MemoryManagmentUnit {
+        MemoryManagmentUnit {
             cartridge,
-            gpu: GPU::new(),
+            gpu: GraphicsProcessingUnit::new(),
             internal: InternalMemory::new(),
             serial: SerialDataTransfer::new(),
             timer: Timer::new(),
@@ -28,12 +28,12 @@ impl MMU {
     }
 }
 
-impl ReadWrite for MMU {
-    fn contains(self: &Self, address: usize) -> bool {
+impl ReadWrite for MemoryManagmentUnit {
+    fn contains(&self, _address: usize) -> bool {
         unimplemented!() // FIXME: maybe this should be refactored in better API
     }
 
-    fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         if self.gpu.contains(address) {
             // TODO: refactor this generic func in array of memory devices I think or somethig generic
             return self.gpu.read_byte(address);
@@ -68,7 +68,7 @@ impl ReadWrite for MMU {
         ))
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+    fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
         if self.gpu.contains(address) {
             // TODO: refactor this generic func in array of memory devices I think or somethig generic
             return self.gpu.read_word(address);
@@ -103,7 +103,7 @@ impl ReadWrite for MMU {
         ))
     }
 
-    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+    fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         // TODO: refactor this generic func in array of memory devices I think or somethig generic
         if self.gpu.contains(address) {
             return self.gpu.write_byte(address, value);
@@ -138,7 +138,7 @@ impl ReadWrite for MMU {
         ))
     }
 
-    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(&mut self, address: usize, value: u16) -> Result<(), std::io::Error> {
         match self.write_byte(address, (value & 0xFF) as u8) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),

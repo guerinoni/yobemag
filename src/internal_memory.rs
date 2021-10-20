@@ -32,7 +32,7 @@ impl InternalMemory {
 }
 
 impl ReadWrite for InternalMemory {
-    fn contains(self: &Self, address: usize) -> bool {
+    fn contains(&self, address: usize) -> bool {
         (0xC000..=0xCFFF).contains(&address)
             || (0xD000..=0xDFFF).contains(&address)
             || (0xFF80..=0xFFFE).contains(&address)
@@ -41,7 +41,7 @@ impl ReadWrite for InternalMemory {
             || self.io_reg.contains(address)
     }
 
-    fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         if self.io_reg.contains(address) {
             return self.io_reg.read_byte(address);
         }
@@ -59,7 +59,7 @@ impl ReadWrite for InternalMemory {
         }
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
+    fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
         if self.io_reg.contains(address) {
             return self.io_reg.read_word(address);
         }
@@ -85,13 +85,28 @@ impl ReadWrite for InternalMemory {
         Ok(u16::from_le_bytes(values))
     }
 
-    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+    fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
-            0xC000..=0xCFFF => Ok(self.wram0[address - 0xC000] = value),
-            0xD000..=0xDFFF => Ok(self.wramn[address - 0xD000] = value),
-            0xFF80..=0xFFFE => Ok(self.hram[address - 0xFF80] = value),
-            0xFF0F => Ok(self.interrupt_flag = value),
-            0xFFFF => Ok(self.interrupt_enable = value),
+            0xC000..=0xCFFF => {
+                self.wram0[address - 0xC000] = value;
+                Ok(())
+            }
+            0xD000..=0xDFFF => {
+                self.wramn[address - 0xD000] = value;
+                Ok(())
+            }
+            0xFF80..=0xFFFE => {
+                self.hram[address - 0xFF80] = value;
+                Ok(())
+            }
+            0xFF0F => {
+                self.interrupt_flag = value;
+                Ok(())
+            }
+            0xFFFF => {
+                self.interrupt_enable = value;
+                Ok(())
+            }
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -99,7 +114,7 @@ impl ReadWrite for InternalMemory {
         }
     }
 
-    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
         todo!("implement this func")
     }
 }

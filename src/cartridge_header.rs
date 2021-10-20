@@ -1,10 +1,10 @@
 use std::num::Wrapping;
 
 pub struct CartridgeHeader {
-    title: String,
+    // title: String,
     pub memory_bank_type: MemoryBankType,
     ram_size: RamSize,
-    gameboy_color_support: GameBoyColorFlag,
+    // gameboy_color_support: GameBoyColorFlag,
 }
 
 /// Specifies which Memory Bank Controller (if any) is used in
@@ -102,14 +102,14 @@ enum GameBoyColorFlag {
     /// Uses CGB features but works on GB
     CgbGb = 0x80,
     /// Uses CGB features and does not work on GB
-    CGB = 0xC0,
+    Cgb = 0xC0,
 }
 
 impl From<u8> for GameBoyColorFlag {
     fn from(orig: u8) -> Self {
         match orig {
             0x80 => GameBoyColorFlag::CgbGb,
-            0xC0 => GameBoyColorFlag::CGB,
+            0xC0 => GameBoyColorFlag::Cgb,
             _ => GameBoyColorFlag::GB,
         }
     }
@@ -117,28 +117,22 @@ impl From<u8> for GameBoyColorFlag {
 
 impl CartridgeHeader {
     pub fn new(data: &[u8]) -> Result<Self, std::io::Error> {
-        let t = data[0x134..0x144]
-            .iter()
-            .take_while(|&&v| v > 0)
-            .copied()
-            .collect::<Vec<_>>();
-
         check_logo(data)?;
         valid_checksum(data)?;
 
         Ok(CartridgeHeader {
-            title: String::from_utf8(t).unwrap(),
+            // title: String::from_utf8(t).unwrap(),
             memory_bank_type: decode_memory_bank_type(data),
             ram_size: data[0x149].into(),
-            gameboy_color_support: data[0x149].into(),
+            // gameboy_color_support: data[0x149].into(),
         })
     }
 
     pub fn ram_in_bytes(&self) -> usize {
         match self.ram_size {
             RamSize::None => 0,
-            RamSize::OneBankOf2Kb => 1 * (2 * 1024),
-            RamSize::OneBankOf8Kb => 1 * (8 * 1024),
+            RamSize::OneBankOf2Kb => 2 * 1024,
+            RamSize::OneBankOf8Kb => 8 * 1024,
             RamSize::FourBankOf8Kb => 4 * (8 * 1024),
         }
     }
@@ -162,16 +156,17 @@ mod tests {
         assert_eq!(header.is_err(), false);
     }
 
-    #[test]
-    fn verify_title() {
-        let data = fs::read_to_string("./testdata/tetris")
-            .expect("file not found!")
-            .split(',')
-            .map(|n| n.parse().unwrap())
-            .collect::<Vec<u8>>();
-        let header = CartridgeHeader::new(&data);
-        assert_eq!(header.unwrap().title, "TETRIS");
-    }
+    // FIXME: enable it when title is needed
+    // #[test]
+    // fn verify_title() {
+    //     let data = fs::read_to_string("./testdata/tetris")
+    //         .expect("file not found!")
+    //         .split(',')
+    //         .map(|n| n.parse().unwrap())
+    //         .collect::<Vec<u8>>();
+    //     let header = CartridgeHeader::new(&data);
+    //     assert_eq!(header.unwrap().title, "TETRIS");
+    // }
 
     #[test]
     fn verify_memory_bank_type() {
@@ -198,14 +193,15 @@ mod tests {
         assert_eq!(header.unwrap().ram_in_bytes(), 0);
     }
 
-    #[test]
-    fn verify_gameboy_color_support() {
-        let data = fs::read_to_string("./testdata/tetris")
-            .expect("file not found!")
-            .split(',')
-            .map(|n| n.parse().unwrap())
-            .collect::<Vec<u8>>();
-        let header = CartridgeHeader::new(&data);
-        assert_eq!(header.unwrap().gameboy_color_support, GameBoyColorFlag::GB);
-    }
+    // FIXME: enable it when gameboy_color_support is needed
+    // #[test]
+    // fn verify_gameboy_color_support() {
+    //     let data = fs::read_to_string("./testdata/tetris")
+    //         .expect("file not found!")
+    //         .split(',')
+    //         .map(|n| n.parse().unwrap())
+    //         .collect::<Vec<u8>>();
+    //     let header = CartridgeHeader::new(&data);
+    //     assert_eq!(header.unwrap().gameboy_color_support, GameBoyColorFlag::GB);
+    // }
 }

@@ -287,13 +287,13 @@ pub enum OpCode {
     /// RLCA
     /// The contents of register A are rotated left by 1 bit position, after the sign bit (7) is copied into the carry flag.
     /// Clock cycles: 4
-    RLCA,
+    Rlca,
 
     /// RET
     /// The 16-bit word on top of the stack is popped off, low-order byte first,
     /// and loaded into the program counter, from where execution continues.
     /// Clock cycles: 16
-    RET,
+    Ret,
 
     /// PUSH qq
     /// The contents of the register pair qq are pushed to the stack. First,
@@ -362,7 +362,7 @@ impl From<u8> for OpCode {
             0x04 => OpCode::IncB,
             0x05 => OpCode::DecB,
             0x06 => OpCode::LdBNext,
-            0x07 => OpCode::RLCA,
+            0x07 => OpCode::Rlca,
             0x08 => OpCode::LdNnSP,
             0x0A => OpCode::LdABc,
             0x0C => OpCode::IncC,
@@ -482,7 +482,7 @@ impl From<u8> for OpCode {
             0xC1 => OpCode::PopBc,
             0xC3 => OpCode::JpNN,
             0xC5 => OpCode::PushBc,
-            0xC9 => OpCode::RET,
+            0xC9 => OpCode::Ret,
             0xCB => OpCode::CB,
             0xCD => OpCode::CallNn,
             0xD1 => OpCode::PopDe,

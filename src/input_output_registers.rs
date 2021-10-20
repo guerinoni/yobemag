@@ -20,11 +20,11 @@ impl InputOutputRegisters {
 }
 
 impl ReadWrite for InputOutputRegisters {
-    fn contains(self: &Self, address: usize) -> bool {
+    fn contains(&self, address: usize) -> bool {
         0xFF00 == address
     }
 
-    fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         match address {
             0xFF00 => Ok(self.buttons),
             _ => Err(std::io::Error::new(
@@ -34,13 +34,16 @@ impl ReadWrite for InputOutputRegisters {
         }
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
-        todo!("implement this func")
+    fn read_word(&self, _address: usize) -> Result<u16, std::io::Error> {
+        unimplemented!()
     }
 
-    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+    fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
-            0xFF00 => Ok(self.buttons = value),
+            0xFF00 => {
+                self.buttons = value;
+                Ok(())
+            }
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -48,7 +51,7 @@ impl ReadWrite for InputOutputRegisters {
         }
     }
 
-    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
         todo!("implement this func")
     }
 }

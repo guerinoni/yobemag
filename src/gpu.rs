@@ -1,6 +1,6 @@
 use crate::memory_device::ReadWrite;
 
-pub struct GPU {
+pub struct GraphicsProcessingUnit {
     /// video ram: 0x8000-0x9FFF
     vram: [u8; 0x1FFF + 1],
     /// Current status of LCD displsy: 0xFF41
@@ -61,12 +61,9 @@ struct Palette {
     index_3: Color,
 }
 
-impl Into<u8> for Palette {
-    fn into(self) -> u8 {
-        self.index_0 as u8
-            | (self.index_1 as u8) << 2
-            | (self.index_2 as u8) << 4
-            | (self.index_3 as u8) << 6
+impl From<Palette> for u8 {
+    fn from(p: Palette) -> Self {
+        p.index_0 as u8 | (p.index_1 as u8) << 2 | (p.index_2 as u8) << 4 | (p.index_3 as u8) << 6
     }
 }
 
@@ -107,9 +104,9 @@ impl Default for Color {
     }
 }
 
-impl GPU {
-    pub fn new() -> GPU {
-        GPU {
+impl GraphicsProcessingUnit {
+    pub fn new() -> GraphicsProcessingUnit {
+        GraphicsProcessingUnit {
             vram: [0; 0x1FFF + 1],
             status: 0,
             scroll_y: 0,
@@ -123,9 +120,9 @@ impl GPU {
     }
 }
 
-impl ReadWrite for GPU {
-    fn contains(self: &Self, address: usize) -> bool {
-        (0x8000..=0x1FFF).contains(&address)
+impl ReadWrite for GraphicsProcessingUnit {
+    fn contains(&self, address: usize) -> bool {
+        (0x8000..=0x9FFF).contains(&address)
             || 0xFF40 == address
             || 0xFF41 == address
             || 0xFF42 == address
@@ -136,7 +133,7 @@ impl ReadWrite for GPU {
             || 0xFF49 == address
     }
 
-    fn read_byte(self: &Self, address: usize) -> Result<u8, std::io::Error> {
+    fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         match address {
             0x8000..=0x9FFF => Ok(self.vram[address - 0x8000]),
             0xFF40 => Ok(self.control),
@@ -154,21 +151,48 @@ impl ReadWrite for GPU {
         }
     }
 
-    fn read_word(self: &Self, address: usize) -> Result<u16, std::io::Error> {
-        todo!("implement this func")
+    fn read_word(&self, _address: usize) -> Result<u16, std::io::Error> {
+        unimplemented!()
     }
 
-    fn write_byte(self: &mut Self, address: usize, value: u8) -> Result<(), std::io::Error> {
+    fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
-            0x8000..=0x9FFF => Ok(self.vram[address - 0x8000] = value),
-            0xFF40 => Ok(self.control = value),
-            0xFF41 => Ok(self.status = value),
-            0xFF42 => Ok(self.scroll_y = value),
-            0xFF43 => Ok(self.scroll_x = value),
-            0xFF44 => Ok(self.current_y = value),
-            0xFF47 => Ok(self.bg_pallete = value.into()),
-            0xFF48 => Ok(self.bgj_pallete_0 = value.into()),
-            0xFF49 => Ok(self.bgj_pallete_1 = value.into()),
+            0x8000..=0x9FFF => {
+                self.vram[address - 0x8000] = value;
+                Ok(())
+            }
+            0xFF40 => {
+                self.control = value;
+                Ok(())
+            }
+            0xFF41 => {
+                self.status = value;
+                Ok(())
+            }
+            0xFF42 => {
+                self.scroll_y = value;
+                Ok(())
+            }
+            0xFF43 => {
+                self.scroll_x = value;
+                Ok(())
+            }
+            0xFF44 => {
+                self.current_y = value;
+                Ok(())
+            }
+            0xFF47 => {
+                self.bg_pallete = value.into();
+                Ok(())
+            }
+            0xFF48 => {
+                self.bgj_pallete_0 = value.into();
+                Ok(())
+            }
+            0xFF49 => {
+                self.bgj_pallete_1 = value.into();
+                Ok(())
+            }
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -176,8 +200,8 @@ impl ReadWrite for GPU {
         }
     }
 
-    fn write_word(self: &mut Self, address: usize, value: u16) -> Result<(), std::io::Error> {
-        todo!("implement this func")
+    fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
+        unimplemented!()
     }
 }
 
