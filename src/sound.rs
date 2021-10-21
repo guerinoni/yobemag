@@ -19,6 +19,13 @@ pub struct Sound {
     /// Bit 1 - Output sound 2 to SO1 terminal
     /// Bit 0 - Output sound 1 to SO1 terminal
     sound_output: u8,
+
+    /// Channel volume control 0xFF24
+    /// Bit 7   - Output Vin to SO2 terminal (1=Enable)
+    /// Bit 6-4 - SO2 output level (volume)  (0-7)
+    /// Bit 3   - Output Vin to SO1 terminal (1=Enable)
+    /// Bit 2-0 - SO1 output level (volume)  (0-7)
+    channel_control: u8,
 }
 
 impl Sound {
@@ -26,19 +33,21 @@ impl Sound {
         Sound {
             on: 0,
             sound_output: 0,
+            channel_control:0,
         }
     }
 }
 
 impl ReadWrite for Sound {
     fn contains(&self, address: usize) -> bool {
-        0xFF26 == address || 0xFF25 == address
+        0xFF26 == address || 0xFF25 == address || 0xFF24 == address
     }
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         match address {
             0xFF26 => Ok(self.on),
             0xFF25 => Ok(self.sound_output),
+            0xFF24 => Ok(self.channel_control),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't read byte here",
@@ -51,7 +60,6 @@ impl ReadWrite for Sound {
     }
 
     fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
-        println!("set sound on/off -> {}", value);
         match address {
             0xFF26 => {
                 self.on = value;
@@ -59,6 +67,10 @@ impl ReadWrite for Sound {
             }
             0xFF25 => {
                 self.sound_output = value;
+                Ok(())
+            }
+            0xFF24 => {
+                self.channel_control = value;
                 Ok(())
             }
             _ => Err(std::io::Error::new(
