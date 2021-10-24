@@ -124,6 +124,7 @@ impl CentralProcessingUnit {
             OpCode::LdFF00CA => self.ld_ff00_ca(),
             OpCode::LddAHl => self.ldd_a_hl(),
             OpCode::LdNnSP => self.ld_nn_sp(),
+            OpCode::LdiAHl => self.ldi_a_hl(),
             OpCode::OrB => self.or_r(Register::B),
             OpCode::OrC => self.or_r(Register::C),
             OpCode::OrD => self.or_r(Register::D),
@@ -459,6 +460,18 @@ impl CentralProcessingUnit {
             .unwrap();
 
         20
+    }
+
+    fn ldi_a_hl(&mut self) -> u8 {
+        let hl = self.registers.hl();
+        self.registers.a = match self.mmu.read_byte(hl as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        self.registers.set_hl(hl + 1);
+
+        8
     }
 
     fn or_r(&mut self, reg: Register) -> u8 {
@@ -1265,5 +1278,19 @@ mod tests {
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.bc(), 99);
         assert_eq!(cpu.registers.stack_pointer, 102);
+    }
+
+    #[test]
+    fn verify_ldi_a_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 99 => 8 },
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(99);
+        let cycle = cpu.ldi_a_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 8);
+        assert_eq!(cpu.registers.hl(), 100);
     }
 }

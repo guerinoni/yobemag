@@ -33,7 +33,7 @@ impl Sound {
         Sound {
             on: 0,
             sound_output: 0,
-            channel_control:0,
+            channel_control: 0,
         }
     }
 }

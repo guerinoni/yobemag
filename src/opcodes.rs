@@ -199,6 +199,11 @@ pub enum OpCode {
     /// Clock cycles: 20
     LdNnSP,
 
+    /// LDI A, (HL)
+    /// The byte at the memory address specified by the register pair HL is loaded into the register A. HL is then incremented by 1.
+    /// Clock cycles: 8
+    LdiAHl,
+
     /// OR r
     /// A bitwise OR operation is performed between the contents of the register r and the contents of the register A, and the result is  stored in register A.
     /// Clock cycles: 4
@@ -387,6 +392,7 @@ impl From<u8> for OpCode {
             0x24 => OpCode::IncH,
             0x25 => OpCode::DecH,
             0x26 => OpCode::LdHNext,
+            0x2A => OpCode::LdiAHl,
             0x28 => OpCode::JrZPcDd,
             0x2C => OpCode::IncL,
             0x2D => OpCode::DecL,
