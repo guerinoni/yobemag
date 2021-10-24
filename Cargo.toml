@@ -3,6 +3,4 @@ name = "yobemag"
 version = "0.1.0"
 authors = ["Federico Guerinoni <guerinoni.federico@gmail.com>"]
 license = "MIT"
-edition = "2018"
-
-[dependencies]
+edition = "2021"
