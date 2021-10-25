@@ -175,6 +175,13 @@ impl CentralProcessingUnit {
             OpCode::PopDe => self.pop_qq(RegisterWord::DE),
             OpCode::PopHl => self.pop_qq(RegisterWord::HL),
             OpCode::PopAf => self.pop_qq(RegisterWord::AF),
+            OpCode::SubB => self.sub_r(Register::B),
+            OpCode::SubC => self.sub_r(Register::C),
+            OpCode::SubD => self.sub_r(Register::D),
+            OpCode::SubE => self.sub_r(Register::E),
+            OpCode::SubH => self.sub_r(Register::H),
+            OpCode::SubL => self.sub_r(Register::L),
+            OpCode::SubA => self.sub_r(Register::A),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
             OpCode::Noop => self.noop(),
@@ -735,6 +742,29 @@ impl CentralProcessingUnit {
         12
     }
 
+    fn sub_r(&mut self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => self.registers.b,
+            Register::C => self.registers.c,
+            Register::D => self.registers.d,
+            Register::E => self.registers.e,
+            Register::H => self.registers.h,
+            Register::L => self.registers.l,
+            Register::A => self.registers.a,
+        };
+
+        let (result, overflow) = self.registers.a.overflowing_sub(r);
+        self.registers.flags.zero = result == 0;
+        self.registers.flags.negative = true;
+        self.registers.flags.half_carry =
+            CentralProcessingUnit::check_for_half_carry_first_nible_sub(self.registers.a, r);
+        self.registers.flags.carry = overflow;
+
+        self.registers.a = result;
+
+        4
+    }
+
     fn interpret_prefix(&mut self) -> u8 {
         // let prefix_opcode = self.fetch_byte();
         // match prefix_opcode.into() {
@@ -1292,5 +1322,24 @@ mod tests {
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 8);
         assert_eq!(cpu.registers.hl(), 100);
+    }
+
+    #[test]
+    fn verify_sub_r() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 80;
+        cpu.registers.b = 20;
+        let cycle = cpu.sub_r(Register::B);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 60);
+        assert_eq!(cpu.registers.b, 20);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, true);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }

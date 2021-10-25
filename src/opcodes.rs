@@ -326,6 +326,18 @@ pub enum OpCode {
     PopHl,
     PopAf,
 
+    /// SUB r
+    /// The contents of the register r are subtracted from the contents of register A, and the result is stored in register A.
+    /// Register r may be any of B, C, D, E, H, L, or A.
+    /// Clock cycles: 4
+    SubB,
+    SubC,
+    SubD,
+    SubE,
+    SubH,
+    SubL,
+    SubA,
+
     /// DI
     /// Interrupts are disabled by resetting the Interrupt Master Flag (IME).
     /// Clock cycles: 4
@@ -471,6 +483,13 @@ impl From<u8> for OpCode {
             0x7D => OpCode::LdAL,
             0x7E => OpCode::LdAHL,
             0x7F => OpCode::LdAA,
+            0x90 => OpCode::SubB,
+            0x91 => OpCode::SubC,
+            0x92 => OpCode::SubD,
+            0x93 => OpCode::SubE,
+            0x94 => OpCode::SubH,
+            0x95 => OpCode::SubL,
+            0x97 => OpCode::SubA,
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
             0xAA => OpCode::XorD,
