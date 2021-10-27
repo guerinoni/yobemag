@@ -182,6 +182,7 @@ impl CentralProcessingUnit {
             OpCode::SubH => self.sub_r(Register::H),
             OpCode::SubL => self.sub_r(Register::L),
             OpCode::SubA => self.sub_r(Register::A),
+            OpCode::AndN => self.and_n(),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
             OpCode::Noop => self.noop(),
@@ -765,6 +766,18 @@ impl CentralProcessingUnit {
         4
     }
 
+    fn and_n(&mut self) -> u8 {
+        let n = self.fetch_byte();
+        let result = self.registers.a & n;
+        self.registers.flags.zero = result == 0;
+        self.registers.flags.negative = false;
+        self.registers.flags.half_carry = true;
+        self.registers.flags.carry = false;
+        self.registers.a = result;
+
+        8
+    }
+
     fn interpret_prefix(&mut self) -> u8 {
         // let prefix_opcode = self.fetch_byte();
         // match prefix_opcode.into() {
@@ -1341,5 +1354,39 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_and_n() {
+        {
+            let mc = MockDevice {
+                bytes: collection! { 256 => 2 },
+                words: collection! {},
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            cpu.registers.a = 1;
+            let cycle = cpu.and_n();
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.a, 0);
+            assert_eq!(cpu.registers.flags.zero, true);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, true);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
+        {
+            let mc = MockDevice {
+                bytes: collection! { 256 => 7 },
+                words: collection! {},
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            cpu.registers.a = 3;
+            let cycle = cpu.and_n();
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.a, 3);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, true);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
     }
 }

@@ -338,6 +338,11 @@ pub enum OpCode {
     SubL,
     SubA,
 
+    /// AND n
+    /// A bitwise AND operation is performed between the byte n and the contents of register A, and the result is stored in register A.
+    /// Clock cycles: 8
+    AndN,
+
     /// DI
     /// Interrupts are disabled by resetting the Interrupt Master Flag (IME).
     /// Clock cycles: 4
@@ -516,6 +521,7 @@ impl From<u8> for OpCode {
             0xE1 => OpCode::PopHl,
             0xE2 => OpCode::LdFF00CA,
             0xE5 => OpCode::PushHl,
+            0xE6 => OpCode::AndN,
             0xEA => OpCode::LdNnA,
             0xF0 => OpCode::LdAFF00n,
             0xF1 => OpCode::PopAf,
