@@ -523,9 +523,9 @@ impl CentralProcessingUnit {
 
     fn inc_rr(&mut self, reg: RegisterWord) -> u8 {
         match reg {
-            RegisterWord::BC => self.registers.set_bc(self.registers.bc() + 1),
-            RegisterWord::DE => self.registers.set_de(self.registers.de() + 1),
-            RegisterWord::HL => self.registers.set_hl(self.registers.hl() + 1),
+            RegisterWord::BC => self.registers.set_bc(self.registers.bc().wrapping_add(1)),
+            RegisterWord::DE => self.registers.set_de(self.registers.de().wrapping_add(1)),
+            RegisterWord::HL => self.registers.set_hl(self.registers.hl().wrapping_add(1)),
             RegisterWord::SP => self.registers.stack_pointer += 1,
             _ => panic!("should never go here"),
         };
