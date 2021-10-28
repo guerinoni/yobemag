@@ -610,19 +610,15 @@ impl CentralProcessingUnit {
     }
 
     fn cp_n(&mut self) -> u8 {
-        // let n = self.fetch_byte();
-        // let ret = self.registers.a - n;
-        // self.registers.flags.evaluate_effect(
-        // self.registers.a,
-        // self.registers.a,
-        // SideEffectsCpuFlags {
-        // carry: SideEffect::Dependent,
-        // half_carry: SideEffect::Dependent,
-        // negative: SideEffect::Set,
-        // zero: SideEffect::Dependent,
-        // },
-        // );
-        // FIXME: finish this consistent on comment in evaluate_effect
+        let n = self.fetch_byte();
+        let ret = self.registers.a;
+        let (result, overflow) = self.registers.a.overflowing_sub(n);
+        self.registers.flags.zero = result == 0;
+        self.registers.flags.negative = true;
+        self.registers.flags.half_carry =
+            CentralProcessingUnit::check_for_half_carry_first_nible_sub(self.registers.a, n);
+        self.registers.flags.carry = overflow;
+        self.registers.a = ret;
 
         8
     }
@@ -1458,5 +1454,18 @@ mod tests {
             assert_eq!(cpu.mmu.read_byte(1).unwrap(), 1);
             assert_eq!(cpu.mmu.read_byte(0).unwrap(), 2);
         }
+    }
+
+    #[test]
+    fn verify_cp_n() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 99 },
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 100;
+        let cycle = cpu.cp_n();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 100);
     }
 }
