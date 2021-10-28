@@ -2,6 +2,32 @@ use std::cmp::PartialEq;
 use std::ops::BitXor;
 use std::ops::Shl;
 
+#[derive(Debug)]
+pub enum Register {
+    A,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+}
+
+pub enum RegisterWord {
+    BC,
+    DE,
+    HL,
+    SP,
+    AF,
+}
+
+pub enum ConditionOperand {
+    NZ,
+    Z,
+    NC,
+    C,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct CpuFlag {
     pub carry: bool,

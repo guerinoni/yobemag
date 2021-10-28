@@ -164,6 +164,10 @@ impl CentralProcessingUnit {
             OpCode::JrCPcDd => self.jr_f_pc_dd(ConditionOperand::C),
             OpCode::JrPcDd => self.jr_pc_dd(),
             OpCode::CpN => self.cp_n(),
+            OpCode::CallNzNn => self.call_flag_nn(ConditionOperand::NZ),
+            OpCode::CallZNn => self.call_flag_nn(ConditionOperand::Z),
+            OpCode::CallNcNn => self.call_flag_nn(ConditionOperand::NC),
+            OpCode::CallCNn => self.call_flag_nn(ConditionOperand::C),
             OpCode::RrA => self.rr_a(),
             OpCode::Rlca => self.rlca(),
             OpCode::Ret => self.ret(),
@@ -623,6 +627,43 @@ impl CentralProcessingUnit {
         8
     }
 
+    fn call_flag_nn(&mut self, operator: ConditionOperand) -> u8 {
+        let nn = self.fetch_word();
+        let flag = match operator {
+            ConditionOperand::Z => self.registers.flags.zero,
+            ConditionOperand::NZ => !self.registers.flags.zero,
+            ConditionOperand::C => self.registers.flags.carry,
+            ConditionOperand::NC => !self.registers.flags.carry,
+        };
+
+        if flag {
+            let high = (self.registers.program_counter >> 8) as u8;
+            self.registers.stack_pointer -= 1;
+            match self
+                .mmu
+                .write_byte(self.registers.stack_pointer as usize, high)
+            {
+                Ok(v) => v,
+                Err(e) => panic!("{}", e),
+            }
+
+            let low = (self.registers.program_counter & 0xFF) as u8;
+            self.registers.stack_pointer -= 1;
+            match self
+                .mmu
+                .write_byte(self.registers.stack_pointer as usize, low)
+            {
+                Ok(v) => v,
+                Err(e) => panic!("{}", e),
+            }
+
+            self.registers.program_counter = nn as i32;
+            return 24;
+        }
+
+        12
+    }
+
     fn di(&mut self) -> u8 {
         self.ime = false;
         4
@@ -827,7 +868,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::memory_device::ReadWrite;
-    use crate::opcodes::{Register, RegisterWord};
+    use crate::register::{ConditionOperand, Register, RegisterWord};
 
     use super::CentralProcessingUnit;
 
@@ -1387,6 +1428,35 @@ mod tests {
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, true);
             assert_eq!(cpu.registers.flags.carry, false);
+        }
+    }
+
+    #[test]
+    fn verify_call_flag_nn() {
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! { 256 => 1000 },
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            cpu.registers.stack_pointer = 2;
+            let cycle = cpu.call_flag_nn(ConditionOperand::Z);
+            assert_eq!(cycle, 12);
+            assert_eq!(cpu.registers.program_counter, 258);
+        }
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! { 256 => 1000 },
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            cpu.registers.stack_pointer = 2;
+            cpu.registers.flags.zero = true;
+            let cycle = cpu.call_flag_nn(ConditionOperand::Z);
+            assert_eq!(cycle, 24);
+            assert_eq!(cpu.registers.program_counter, 1000);
+            assert_eq!(cpu.mmu.read_byte(1).unwrap(), 1);
+            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 2);
         }
     }
 }

@@ -1,29 +1,3 @@
-#[derive(Debug)]
-pub enum Register {
-    A,
-    B,
-    C,
-    D,
-    E,
-    H,
-    L,
-}
-
-pub enum RegisterWord {
-    BC,
-    DE,
-    HL,
-    SP,
-    AF,
-}
-
-pub enum ConditionOperand {
-    NZ,
-    Z,
-    NC,
-    C,
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum OpCode {
     /// LD r, n
@@ -278,6 +252,17 @@ pub enum OpCode {
     /// Clock cycles: 12
     JrPcDd,
 
+    /// CALL f, nn
+    /// Only if the condition f is true is the current program counter (return
+    /// address) pushed to the stack, high-order byte first, and the 16-bit word
+    /// nn loaded into the program counter. Execution will them continue from
+    /// the program counter. Condition f may be any of nz, z, nc or c.
+    /// Clock cycles: 24 if condition is met, otherwise 12
+    CallNzNn,
+    CallZNn,
+    CallNcNn,
+    CallCNn,
+
     /// CP n
     /// The byte n is compared with (subtracted from) the register A, setting
     /// the appropriate flags but not storing the result.
@@ -511,12 +496,16 @@ impl From<u8> for OpCode {
             0xB7 => OpCode::OrA,
             0xC1 => OpCode::PopBc,
             0xC3 => OpCode::JpNN,
+            0xC4 => OpCode::CallNzNn,
             0xC5 => OpCode::PushBc,
             0xC9 => OpCode::Ret,
             0xCB => OpCode::CB,
+            0xCC => OpCode::CallZNn,
             0xCD => OpCode::CallNn,
             0xD1 => OpCode::PopDe,
+            0xD4 => OpCode::CallNcNn,
             0xD5 => OpCode::PushDe,
+            0xDC => OpCode::CallCNn,
             0xE0 => OpCode::LdFF00nA,
             0xE1 => OpCode::PopHl,
             0xE2 => OpCode::LdFF00CA,
