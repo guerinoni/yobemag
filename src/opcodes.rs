@@ -317,6 +317,11 @@ pub enum OpCode {
     PopHl,
     PopAf,
 
+    /// ADD A, n
+    /// Byte n is read as an integer and added to the contents of register A, and the result is stored in register A.
+    /// Clock cycles: 8
+    AddaN,
+
     /// SUB r
     /// The contents of the register r are subtracted from the contents of register A, and the result is stored in register A.
     /// Register r may be any of B, C, D, E, H, L, or A.
@@ -505,6 +510,7 @@ impl From<u8> for OpCode {
             0xC3 => OpCode::JpNN,
             0xC4 => OpCode::CallNzNn,
             0xC5 => OpCode::PushBc,
+            0xC6 => OpCode::AddaN,
             0xC9 => OpCode::Ret,
             0xCB => OpCode::CB,
             0xCC => OpCode::CallZNn,
