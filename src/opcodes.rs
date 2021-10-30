@@ -334,6 +334,11 @@ pub enum OpCode {
     SubL,
     SubA,
 
+    /// SUB n
+    /// Byte n is read as an integer and subtracted from the contents of register A, and the result is stored in register A.
+    /// Clock cycles: 8
+    SubN,
+
     /// AND n
     /// A bitwise AND operation is performed between the byte n and the contents of register A, and the result is stored in register A.
     /// Clock cycles: 8
@@ -518,6 +523,7 @@ impl From<u8> for OpCode {
             0xD1 => OpCode::PopDe,
             0xD4 => OpCode::CallNcNn,
             0xD5 => OpCode::PushDe,
+            0xD6 => OpCode::SubN,
             0xDC => OpCode::CallCNn,
             0xE0 => OpCode::LdFF00nA,
             0xE1 => OpCode::PopHl,
