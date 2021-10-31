@@ -207,6 +207,12 @@ pub enum OpCode {
     XorL,
     XorA,
 
+    /// XOR (HL)
+    /// A bitwise XOR operation is performed between the byte at the memory address specified in the virtual 16-bit register HL and the contents
+    /// of register A, and the result is stored in register A.
+    /// Clock cycles: 8
+    XorHl,
+
     /// INC rr
     /// The register pair rr is incremented by 1.
     /// Clock cycles: 8
@@ -503,6 +509,7 @@ impl From<u8> for OpCode {
             0xAB => OpCode::XorE,
             0xAC => OpCode::XorH,
             0xAD => OpCode::XorL,
+            0xAE => OpCode::XorHl,
             0xAF => OpCode::XorA,
             0xB0 => OpCode::OrB,
             0xB1 => OpCode::OrC,

@@ -140,6 +140,7 @@ impl CentralProcessingUnit {
             OpCode::XorH => self.xor_r(Register::H),
             OpCode::XorL => self.xor_r(Register::L),
             OpCode::XorA => self.xor_r(Register::A),
+            OpCode::XorHl => self.xor_hl(),
             OpCode::IncBC => self.inc_rr(RegisterWord::BC),
             OpCode::IncDE => self.inc_rr(RegisterWord::DE),
             OpCode::IncHL => self.inc_rr(RegisterWord::HL),
@@ -536,12 +537,27 @@ impl CentralProcessingUnit {
         };
 
         self.registers.a ^= r;
+        self.registers.flags.zero = self.registers.a == 0;
         self.registers.flags.carry = false;
         self.registers.flags.half_carry = false;
         self.registers.flags.negative = false;
-        self.registers.flags.zero = self.registers.a == 0;
 
         4
+    }
+
+    fn xor_hl(&mut self) -> u8 {
+        let n = match self.mmu.read_byte(self.registers.hl() as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        self.registers.a ^= n;
+        self.registers.flags.zero = self.registers.a == 0;
+        self.registers.flags.carry = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+
+        8
     }
 
     fn inc_rr(&mut self, reg: RegisterWord) -> u8 {
@@ -1592,5 +1608,23 @@ mod tests {
             assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, false);
         }
+    }
+
+    #[test]
+    fn verify_xor_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 100 => 90 },
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(100);
+        cpu.registers.a = 1;
+        let cycle = cpu.xor_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 91);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }
