@@ -1,6 +1,9 @@
 use core::panic;
 
-use crate::{memory_device::ReadWrite, mmu::MemoryManagmentUnit, opcodes::*, register::*};
+use crate::{
+    memory_device::ReadWrite, mmu::MemoryManagmentUnit, opcodes::*, prefix_opcodes::PrefixOpCode,
+    register::*,
+};
 
 pub struct CentralProcessingUnit {
     registers: Registers,
@@ -874,47 +877,37 @@ impl CentralProcessingUnit {
     }
 
     fn interpret_prefix(&mut self) -> u8 {
-        // let prefix_opcode = self.fetch_byte();
-        // match prefix_opcode.into() {
-        //     PrefixOpCode::RlcB => self.rlc_r(Register::B),
-        //     PrefixOpCode::RlcC => self.rlc_r(Register::B),
-        //     PrefixOpCode::RlcD => self.rlc_r(Register::B),
-        //     PrefixOpCode::RlcE => self.rlc_r(Register::B),
-        //     PrefixOpCode::RlcH => self.rlc_r(Register::B),
-        //     PrefixOpCode::RlcL => self.rlc_r(Register::B),
-        //     PrefixOpCode::RlcA => self.rlc_r(Register::B),
-        // }
-        unimplemented!()
+        let prefix_opcode = self.fetch_byte();
+        match prefix_opcode.into() {
+            PrefixOpCode::RlcB => self.rlc_r(Register::B),
+            PrefixOpCode::RlcC => self.rlc_r(Register::C),
+            PrefixOpCode::RlcD => self.rlc_r(Register::D),
+            PrefixOpCode::RlcE => self.rlc_r(Register::E),
+            PrefixOpCode::RlcH => self.rlc_r(Register::H),
+            PrefixOpCode::RlcL => self.rlc_r(Register::L),
+            PrefixOpCode::RlcA => self.rlc_r(Register::A),
+        }
     }
 
-    // fn rlc_r(&mut self, reg: Register) -> u8 {
-    //     let r = match reg {
-    //         Register::B => &mut self.registers.b,
-    //         Register::C => &mut self.registers.c,
-    //         Register::D => &mut self.registers.d,
-    //         Register::E => &mut self.registers.e,
-    //         Register::H => &mut self.registers.h,
-    //         Register::L => &mut self.registers.l,
-    //         Register::A => &mut self.registers.a,
-    // };
+    fn rlc_r(&mut self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => &mut self.registers.b,
+            Register::C => &mut self.registers.c,
+            Register::D => &mut self.registers.d,
+            Register::E => &mut self.registers.e,
+            Register::H => &mut self.registers.h,
+            Register::L => &mut self.registers.l,
+            Register::A => &mut self.registers.a,
+        };
 
-    // let sign = *r >> 7;
-    // let tmp = *r << 1;
-    // *r = tmp ^ sign;
-
-    // self.registers.flags.evaluate_effect(
-    //     *r,
-    //     *r,
-    //     SideEffectsCpuFlags {
-    //         carry: SideEffect::Dependent,
-    //         half_carry: SideEffect::Unset,
-    //         negative: SideEffect::Unset,
-    //         zero: SideEffect::Dependent,
-    //     },
-    // );
-
-    // 8
-    // }
+        let sign = *r >> 7;
+        *r = (*r << 1) ^ sign;
+        self.registers.flags.zero = *r == 0;
+        self.registers.flags.negative = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.carry = sign != 0;
+        8
+    }
 }
 
 #[cfg(test)]
@@ -1622,6 +1615,23 @@ mod tests {
         let cycle = cpu.xor_hl();
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 91);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_rlc_r() {
+        let mc = MockDevice {
+            bytes: collection! { 100 => 90 },
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.c = 3;
+        let cycle = cpu.rlc_r(Register::C);
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.c, 6);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
