@@ -22,6 +22,18 @@ pub enum PrefixOpCode {
     SrlH,
     SrlL,
     SrlA,
+
+    /// RR r
+    /// The contents of the register r are rotated right by 1 bit position through the carry flag.
+    /// Register r may be any of B, C, D, E, H, L or A.
+    /// Clock cycles: 8
+    RrB,
+    RrC,
+    RrD,
+    RrE,
+    RrH,
+    RrL,
+    RrA,
 }
 
 impl From<u8> for PrefixOpCode {
@@ -34,6 +46,13 @@ impl From<u8> for PrefixOpCode {
             0x04 => PrefixOpCode::RlcH,
             0x05 => PrefixOpCode::RlcL,
             0x07 => PrefixOpCode::RlcA,
+            0x18 => PrefixOpCode::RrB,
+            0x19 => PrefixOpCode::RrC,
+            0x1A => PrefixOpCode::RrD,
+            0x1B => PrefixOpCode::RrE,
+            0x1C => PrefixOpCode::RrH,
+            0x1D => PrefixOpCode::RrL,
+            0x1F => PrefixOpCode::RrA,
             0x38 => PrefixOpCode::SrlB,
             0x39 => PrefixOpCode::SrlC,
             0x3A => PrefixOpCode::SrlD,

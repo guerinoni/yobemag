@@ -894,6 +894,14 @@ impl CentralProcessingUnit {
             PrefixOpCode::SrlH => self.srl_r(Register::H),
             PrefixOpCode::SrlL => self.srl_r(Register::L),
             PrefixOpCode::SrlA => self.srl_r(Register::A),
+
+            PrefixOpCode::RrB => self.rr_r(Register::B),
+            PrefixOpCode::RrC => self.rr_r(Register::C),
+            PrefixOpCode::RrD => self.rr_r(Register::D),
+            PrefixOpCode::RrE => self.rr_r(Register::E),
+            PrefixOpCode::RrH => self.rr_r(Register::H),
+            PrefixOpCode::RrL => self.rr_r(Register::L),
+            PrefixOpCode::RrA => self.rr_r(Register::A),
         }
     }
 
@@ -934,6 +942,31 @@ impl CentralProcessingUnit {
         self.registers.flags.negative = false;
         self.registers.flags.half_carry = false;
         self.registers.flags.carry = c;
+
+        8
+    }
+
+    fn rr_r(&mut self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => &mut self.registers.b,
+            Register::C => &mut self.registers.c,
+            Register::D => &mut self.registers.d,
+            Register::E => &mut self.registers.e,
+            Register::H => &mut self.registers.h,
+            Register::L => &mut self.registers.l,
+            Register::A => &mut self.registers.a,
+        };
+
+        let temp = *r;
+        *r = *r >> 1;
+        if self.registers.flags.carry {
+            *r |= 0x80;
+        }
+
+        self.registers.flags.zero = *r == 0;
+        self.registers.flags.negative = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.carry = (temp & 0x01) != 0;
 
         8
     }
@@ -1682,5 +1715,24 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_rr_r() {
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! {},
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            cpu.registers.b = 3;
+            let cycle = cpu.rr_r(Register::B);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.b, 1);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, true);
+        }
     }
 }
