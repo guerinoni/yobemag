@@ -730,15 +730,9 @@ impl CentralProcessingUnit {
     }
 
     fn rr_a(&mut self) -> u8 {
-        let old_bit_zero_data = self.registers.a & 0x01 == 0x01;
-        let old_carry = self.registers.flags.carry as u16;
-        let big_a = (self.registers.a as u16).rotate_left(1) | old_carry;
-        self.registers.flags.carry = big_a & (1 << 1) != 0;
-        self.registers.a = ((big_a.rotate_right(1) ^ (old_carry << 8)) >> 1) as u8;
-        self.registers.flags.zero = self.registers.a == 0;
-        self.registers.flags.half_carry = false;
-        self.registers.flags.negative = false;
-        self.registers.flags.carry = old_bit_zero_data;
+        let mut v = self.registers.a;
+        self.rotate_right_through_carry(&mut v);
+        self.registers.a = v;
 
         4
     }
@@ -947,28 +941,41 @@ impl CentralProcessingUnit {
     }
 
     fn rr_r(&mut self, reg: Register) -> u8 {
-        let r = match reg {
-            Register::B => &mut self.registers.b,
-            Register::C => &mut self.registers.c,
-            Register::D => &mut self.registers.d,
-            Register::E => &mut self.registers.e,
-            Register::H => &mut self.registers.h,
-            Register::L => &mut self.registers.l,
-            Register::A => &mut self.registers.a,
+        let mut r = match reg {
+            Register::B => self.registers.b,
+            Register::C => self.registers.c,
+            Register::D => self.registers.d,
+            Register::E => self.registers.e,
+            Register::H => self.registers.h,
+            Register::L => self.registers.l,
+            Register::A => self.registers.a,
         };
 
-        let temp = *r;
-        *r = *r >> 1;
+        self.rotate_right_through_carry(&mut r);
+        match reg {
+            Register::B => self.registers.b = r,
+            Register::C => self.registers.c = r,
+            Register::D => self.registers.d = r,
+            Register::E => self.registers.e = r,
+            Register::H => self.registers.h = r,
+            Register::L => self.registers.l = r,
+            Register::A => self.registers.a = r,
+        };
+
+        8
+    }
+
+    fn rotate_right_through_carry(&mut self, value: &mut u8) {
+        let temp = *value;
+        *value = *value >> 1;
         if self.registers.flags.carry {
-            *r |= 0x80;
+            *value |= 0x80;
         }
 
-        self.registers.flags.zero = *r == 0;
+        self.registers.flags.zero = *value == 0;
         self.registers.flags.negative = false;
         self.registers.flags.half_carry = false;
         self.registers.flags.carry = (temp & 0x01) != 0;
-
-        8
     }
 }
 
