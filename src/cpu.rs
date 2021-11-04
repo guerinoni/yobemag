@@ -144,6 +144,7 @@ impl CentralProcessingUnit {
             OpCode::XorL => self.xor_r(Register::L),
             OpCode::XorA => self.xor_r(Register::A),
             OpCode::XorHl => self.xor_hl(),
+            OpCode::XorN => self.xor_n(),
             OpCode::IncBC => self.inc_rr(RegisterWord::BC),
             OpCode::IncDE => self.inc_rr(RegisterWord::DE),
             OpCode::IncHL => self.inc_rr(RegisterWord::HL),
@@ -554,6 +555,17 @@ impl CentralProcessingUnit {
             Err(e) => panic!("{}", e),
         };
 
+        self.registers.a ^= n;
+        self.registers.flags.zero = self.registers.a == 0;
+        self.registers.flags.carry = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+
+        8
+    }
+
+    fn xor_n(&mut self) -> u8 {
+        let n = self.fetch_byte();
         self.registers.a ^= n;
         self.registers.flags.zero = self.registers.a == 0;
         self.registers.flags.carry = false;
@@ -1741,5 +1753,22 @@ mod tests {
             assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, true);
         }
+    }
+
+    #[test]
+    fn verify_xor_n() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 10 },
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 1;
+        let cycle = cpu.xor_n();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 11);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }
