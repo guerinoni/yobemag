@@ -334,6 +334,12 @@ pub enum OpCode {
     /// Clock cycles: 8
     AddaN,
 
+    /// ADC A, n
+    /// Byte n is read as an integer and added to the contents of register
+    /// A along with the value of the carry flag. The result is then stored in register A.
+    /// Clock cycles: 8
+    AdcaN,
+
     /// SUB r
     /// The contents of the register r are subtracted from the contents of register A, and the result is stored in register A.
     /// Register r may be any of B, C, D, E, H, L, or A.
@@ -533,6 +539,7 @@ impl From<u8> for OpCode {
             0xCB => OpCode::CB,
             0xCC => OpCode::CallZNn,
             0xCD => OpCode::CallNn,
+            0xCE => OpCode::AdcaN,
             0xD1 => OpCode::PopDe,
             0xD4 => OpCode::CallNcNn,
             0xD5 => OpCode::PushDe,
