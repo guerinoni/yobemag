@@ -114,6 +114,18 @@ impl Registers {
         }
     }
 
+    pub fn set_register(&mut self, reg: Register, value: u8) {
+        match reg {
+            Register::B => self.b = value,
+            Register::C => self.c = value,
+            Register::D => self.d = value,
+            Register::E => self.e = value,
+            Register::H => self.h = value,
+            Register::L => self.l = value,
+            Register::A => self.a = value,
+        };
+    }
+
     fn set(reg1: &mut u8, reg2: &mut u8, value: u16) {
         *reg1 = (value >> 8_u16) as u8;
         *reg2 = value as u8;

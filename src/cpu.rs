@@ -255,15 +255,7 @@ impl CentralProcessingUnit {
 
     fn ld_r_next(&mut self, reg: Register) -> u8 {
         let r = self.fetch_byte();
-        match reg {
-            Register::B => self.registers.b = r,
-            Register::C => self.registers.c = r,
-            Register::D => self.registers.d = r,
-            Register::E => self.registers.e = r,
-            Register::H => self.registers.h = r,
-            Register::L => self.registers.l = r,
-            Register::A => self.registers.a = r,
-        };
+        self.registers.set_register(reg, r);
 
         8
     }
@@ -279,15 +271,7 @@ impl CentralProcessingUnit {
             Register::A => self.registers.a,
         };
 
-        match reg1 {
-            Register::B => self.registers.b = r2,
-            Register::C => self.registers.c = r2,
-            Register::D => self.registers.d = r2,
-            Register::E => self.registers.e = r2,
-            Register::H => self.registers.h = r2,
-            Register::L => self.registers.l = r2,
-            Register::A => self.registers.a = r2,
-        };
+        self.registers.set_register(reg1, r2);
 
         4
     }
@@ -299,15 +283,7 @@ impl CentralProcessingUnit {
             Err(e) => panic!("{}", e),
         };
 
-        match reg {
-            Register::B => self.registers.b = hl,
-            Register::C => self.registers.c = hl,
-            Register::D => self.registers.d = hl,
-            Register::E => self.registers.e = hl,
-            Register::H => self.registers.h = hl,
-            Register::L => self.registers.l = hl,
-            Register::A => self.registers.a = hl,
-        };
+        self.registers.set_register(reg, hl);
 
         8
     }
@@ -979,15 +955,7 @@ impl CentralProcessingUnit {
         };
 
         self.rotate_right_through_carry(&mut r);
-        match reg {
-            Register::B => self.registers.b = r,
-            Register::C => self.registers.c = r,
-            Register::D => self.registers.d = r,
-            Register::E => self.registers.e = r,
-            Register::H => self.registers.h = r,
-            Register::L => self.registers.l = r,
-            Register::A => self.registers.a = r,
-        };
+        self.registers.set_register(reg, r);
 
         8
     }
