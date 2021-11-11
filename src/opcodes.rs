@@ -303,6 +303,16 @@ pub enum OpCode {
     /// Clock cycles: 16
     Ret,
 
+    /// RET f
+    /// Only if the condition f is true is the 16-bit word on top of the stack
+    /// popped off and loaded into the program counter. Execution will then
+    /// continue from the program counter.
+    /// Clock cycles: 20 if condition is met, otherwise 8
+    RetNz,
+    RetZ,
+    RetNc,
+    RetC,
+
     /// PUSH qq
     /// The contents of the register pair qq are pushed to the stack. First,
     /// the stack pointer (SP) is decremented, and the high-order byte of qq
@@ -530,20 +540,24 @@ impl From<u8> for OpCode {
             0xB4 => OpCode::OrH,
             0xB5 => OpCode::OrL,
             0xB7 => OpCode::OrA,
+            0xC0 => OpCode::RetNz,
             0xC1 => OpCode::PopBc,
             0xC3 => OpCode::JpNN,
             0xC4 => OpCode::CallNzNn,
             0xC5 => OpCode::PushBc,
             0xC6 => OpCode::AddaN,
+            0xc8 => OpCode::RetZ,
             0xC9 => OpCode::Ret,
             0xCB => OpCode::CB,
             0xCC => OpCode::CallZNn,
             0xCD => OpCode::CallNn,
             0xCE => OpCode::AdcaN,
+            0xD0 => OpCode::RetNc,
             0xD1 => OpCode::PopDe,
             0xD4 => OpCode::CallNcNn,
             0xD5 => OpCode::PushDe,
             0xD6 => OpCode::SubN,
+            0xD8 => OpCode::RetC,
             0xDC => OpCode::CallCNn,
             0xE0 => OpCode::LdFF00nA,
             0xE1 => OpCode::PopHl,

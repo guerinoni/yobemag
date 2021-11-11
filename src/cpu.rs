@@ -177,6 +177,10 @@ impl CentralProcessingUnit {
             OpCode::RrA => self.rr_a(),
             OpCode::Rlca => self.rlca(),
             OpCode::Ret => self.ret(),
+            OpCode::RetNz => self.ret_f(ConditionOperand::NZ),
+            OpCode::RetZ => self.ret_f(ConditionOperand::Z),
+            OpCode::RetNc => self.ret_f(ConditionOperand::NC),
+            OpCode::RetC => self.ret_f(ConditionOperand::C),
             OpCode::PushBc => self.push_qq(RegisterWord::BC),
             OpCode::PushDe => self.push_qq(RegisterWord::DE),
             OpCode::PushHl => self.push_qq(RegisterWord::HL),
@@ -747,6 +751,22 @@ impl CentralProcessingUnit {
         self.registers.stack_pointer = self.registers.stack_pointer.wrapping_add(2);
 
         16
+    }
+
+    fn ret_f(&mut self, flag: ConditionOperand) -> u8 {
+        let condition = match flag {
+            ConditionOperand::NZ => !self.registers.flags.zero,
+            ConditionOperand::Z => self.registers.flags.zero,
+            ConditionOperand::NC => !self.registers.flags.carry,
+            ConditionOperand::C => self.registers.flags.carry,
+        };
+
+        if condition {
+            self.ret();
+            return 20;
+        }
+
+        8
     }
 
     fn push_qq(&mut self, reg: RegisterWord) -> u8 {
@@ -1786,6 +1806,32 @@ mod tests {
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, true);
             assert_eq!(cpu.registers.flags.carry, true);
+        }
+    }
+
+    #[test]
+    fn verify_ret_f() {
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! { 65534 => 99 },
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            let cycle = cpu.ret_f(ConditionOperand::NZ);
+            assert_eq!(cycle, 20);
+            assert_eq!(cpu.registers.stack_pointer, 0);
+            assert_eq!(cpu.registers.program_counter, 99);
+        }
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! { 65534 => 99 },
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            let cycle = cpu.ret_f(ConditionOperand::Z);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.stack_pointer, 65534);
+            assert_eq!(cpu.registers.program_counter, 256);
         }
     }
 }
