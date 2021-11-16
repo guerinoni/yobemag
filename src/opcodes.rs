@@ -195,6 +195,13 @@ pub enum OpCode {
     OrL,
     OrA,
 
+    /// OR (HL)
+    /// A bitwise OR operation is performed between the byte at the memory
+    /// address specified in the virtual 16-bit register HL and the contents
+    /// of register A, and the result is stored in register A.
+    /// Clock cycles: 8
+    OrHl,
+
     /// XOR r
     /// A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
     /// stored in register A.
@@ -539,6 +546,7 @@ impl From<u8> for OpCode {
             0xB3 => OpCode::OrE,
             0xB4 => OpCode::OrH,
             0xB5 => OpCode::OrL,
+            0xB6 => OpCode::OrHl,
             0xB7 => OpCode::OrA,
             0xC0 => OpCode::RetNz,
             0xC1 => OpCode::PopBc,

@@ -136,6 +136,7 @@ impl CentralProcessingUnit {
             OpCode::OrH => self.or_r(Register::H),
             OpCode::OrL => self.or_r(Register::L),
             OpCode::OrA => self.or_r(Register::A),
+            OpCode::OrHl => self.or_hl(),
             OpCode::XorB => self.xor_r(Register::B),
             OpCode::XorC => self.xor_r(Register::C),
             OpCode::XorD => self.xor_r(Register::D),
@@ -490,8 +491,16 @@ impl CentralProcessingUnit {
         8
     }
 
+    fn or(&mut self, value: u8) {
+        self.registers.a |= value;
+        self.registers.flags.carry = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = self.registers.a == 0;
+    }
+
     fn or_r(&mut self, reg: Register) -> u8 {
-        let r = match reg {
+        self.or(match reg {
             Register::B => self.registers.b,
             Register::C => self.registers.c,
             Register::D => self.registers.d,
@@ -499,15 +508,18 @@ impl CentralProcessingUnit {
             Register::H => self.registers.h,
             Register::L => self.registers.l,
             Register::A => self.registers.a,
-        };
-
-        self.registers.a |= r;
-        self.registers.flags.carry = false;
-        self.registers.flags.half_carry = false;
-        self.registers.flags.negative = false;
-        self.registers.flags.zero = self.registers.a == 0;
+        });
 
         4
+    }
+
+    fn or_hl(&mut self) -> u8 {
+        self.or(match self.mmu.read_byte(self.registers.hl() as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        });
+
+        8
     }
 
     fn xor_r(&mut self, reg: Register) -> u8 {
@@ -982,7 +994,7 @@ impl CentralProcessingUnit {
 
     fn rotate_right_through_carry(&mut self, value: &mut u8) {
         let temp = *value;
-        *value = *value >> 1;
+        *value >>= 1;
         if self.registers.flags.carry {
             *value |= 0x80;
         }
@@ -1833,5 +1845,23 @@ mod tests {
             assert_eq!(cpu.registers.stack_pointer, 65534);
             assert_eq!(cpu.registers.program_counter, 256);
         }
+    }
+
+    #[test]
+    fn verify_or_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 33 => 5},
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 10;
+        cpu.registers.set_hl(33);
+        let cycle = cpu.or_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 15);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }
