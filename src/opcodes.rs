@@ -226,6 +226,15 @@ pub enum OpCode {
     /// Clock cycles: 8
     XorN,
 
+    /// ADD HL, rr
+    /// The contents of the register pair rr are added to the contents of the
+    /// register pair HL and the result is stored in HL. Register pair rr may be any of BC, DE, HL or SP.
+    /// Clock cycles: 8
+    AddHlBc,
+    AddHlDe,
+    AddHlHl,
+    AddHlSp,
+
     /// INC rr
     /// The register pair rr is incremented by 1.
     /// Clock cycles: 8
@@ -431,6 +440,7 @@ impl From<u8> for OpCode {
             0x0C => OpCode::IncC,
             0x0D => OpCode::DecC,
             0x0E => OpCode::LdCNext,
+            0x09 => OpCode::AddHlBc,
             0x10 => OpCode::Stop,
             0x11 => OpCode::LdDeNn,
             0x13 => OpCode::IncDE,
@@ -444,6 +454,7 @@ impl From<u8> for OpCode {
             0x1D => OpCode::DecE,
             0x1E => OpCode::LdENext,
             0x1F => OpCode::RrA,
+            0x19 => OpCode::AddHlDe,
             0x20 => OpCode::JrNzPcDd,
             0x21 => OpCode::LdHlNn,
             0x22 => OpCode::LdiHlA,
@@ -451,6 +462,7 @@ impl From<u8> for OpCode {
             0x24 => OpCode::IncH,
             0x25 => OpCode::DecH,
             0x26 => OpCode::LdHNext,
+            0x29 => OpCode::AddHlHl,
             0x2A => OpCode::LdiAHl,
             0x28 => OpCode::JrZPcDd,
             0x2C => OpCode::IncL,
@@ -467,6 +479,7 @@ impl From<u8> for OpCode {
             0x3C => OpCode::IncA,
             0x3D => OpCode::DecA,
             0x3E => OpCode::LdANext,
+            0x39 => OpCode::AddHlSp,
             0x40 => OpCode::LdBB,
             0x41 => OpCode::LdBC,
             0x42 => OpCode::LdBD,

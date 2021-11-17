@@ -146,6 +146,10 @@ impl CentralProcessingUnit {
             OpCode::XorA => self.xor_r(Register::A),
             OpCode::XorHl => self.xor_hl(),
             OpCode::XorN => self.xor_n(),
+            OpCode::AddHlBc => self.add_hl_rr(RegisterWord::BC),
+            OpCode::AddHlDe => self.add_hl_rr(RegisterWord::DE),
+            OpCode::AddHlHl => self.add_hl_rr(RegisterWord::HL),
+            OpCode::AddHlSp => self.add_hl_rr(RegisterWord::SP),
             OpCode::IncBC => self.inc_rr(RegisterWord::BC),
             OpCode::IncDE => self.inc_rr(RegisterWord::DE),
             OpCode::IncHL => self.inc_rr(RegisterWord::HL),
@@ -565,6 +569,27 @@ impl CentralProcessingUnit {
         self.registers.flags.carry = false;
         self.registers.flags.half_carry = false;
         self.registers.flags.negative = false;
+
+        8
+    }
+
+    fn add_hl_rr(&mut self, reg: RegisterWord) -> u8 {
+        let rr = match reg {
+            RegisterWord::BC => self.registers.bc(),
+            RegisterWord::DE => self.registers.de(),
+            RegisterWord::HL => self.registers.hl(),
+            RegisterWord::SP => self.registers.stack_pointer,
+            _ => panic!("should never go here"),
+        };
+
+        let hl = self.registers.hl();
+
+        let result = hl + rr;
+        self.registers.flags.zero = false;
+        self.registers.flags.carry = (result & 0xFF) < (hl & 0xFF);
+        self.registers.flags.half_carry = (result & 0xF) < (hl & 0xF);
+        self.registers.flags.negative = false;
+        self.registers.set_hl(result);
 
         8
     }
@@ -1899,6 +1924,24 @@ mod tests {
         assert_eq!(cpu.mmu.read_byte(16).unwrap(), 98);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, true);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_add_hl_rr() {
+        let mc = MockDevice {
+            bytes: collection! { 16 => 99 },
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(10);
+        cpu.registers.set_bc(100);
+        let cycle = cpu.add_hl_rr(RegisterWord::BC);
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.hl(), 110);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, false);
     }
