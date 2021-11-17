@@ -256,6 +256,11 @@ pub enum OpCode {
     DecL,
     DecA,
 
+    /// DEC (HL)
+    /// The byte at the memory address specified in the register HL is decremented by 1.
+    /// Clock cycles: 12
+    DecHl,
+
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
     /// Clock cycles: 16
@@ -456,6 +461,7 @@ impl From<u8> for OpCode {
             0x32 => OpCode::LddHlA,
             0x33 => OpCode::IncSP,
             0x36 => OpCode::LdHlN,
+            0x35 => OpCode::DecHl,
             0x38 => OpCode::JrCPcDd,
             0x3A => OpCode::LddAHl,
             0x3C => OpCode::IncA,
