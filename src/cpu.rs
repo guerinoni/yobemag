@@ -627,40 +627,36 @@ impl CentralProcessingUnit {
         8
     }
 
-    fn dec_r(&mut self, reg: Register) -> u8 {
-        let r = match reg {
-            Register::B => &mut self.registers.b,
-            Register::C => &mut self.registers.c,
-            Register::D => &mut self.registers.d,
-            Register::E => &mut self.registers.e,
-            Register::H => &mut self.registers.h,
-            Register::L => &mut self.registers.l,
-            Register::A => &mut self.registers.a,
-        };
-
-        let ret = r.wrapping_sub(1);
-        self.registers.flags.zero = ret == 0;
+    fn dec(&mut self, input: u8) -> u8 {
+        let result = input.wrapping_sub(1);
+        self.registers.flags.zero = result == 0;
         self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_sub(*r, ret);
+            CentralProcessingUnit::check_for_half_carry_first_nible_sub(input, result);
         self.registers.flags.negative = true;
-        *r = ret;
+        result
+    }
+
+    fn dec_r(&mut self, reg: Register) -> u8 {
+        match reg {
+            Register::B => self.registers.b = self.dec(self.registers.b),
+            Register::C => self.registers.c = self.dec(self.registers.c),
+            Register::D => self.registers.d = self.dec(self.registers.d),
+            Register::E => self.registers.e = self.dec(self.registers.e),
+            Register::H => self.registers.h = self.dec(self.registers.h),
+            Register::L => self.registers.l = self.dec(self.registers.l),
+            Register::A => self.registers.a = self.dec(self.registers.a),
+        };
 
         4
     }
 
     fn dec_hl(&mut self) -> u8 {
-        let mut n = match self.mmu.read_byte(self.registers.hl() as usize) {
+        let addr = self.registers.hl() as usize;
+        let result = self.dec(match self.mmu.read_byte(addr) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
-        };
-
-        let ret = n.wrapping_sub(1);
-        self.registers.flags.zero = ret == 0;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_sub(n, ret);
-        self.registers.flags.negative = true;
-        n = ret;
-        match self.mmu.write_byte(self.registers.hl() as usize, n) {
+        });
+        match self.mmu.write_byte(addr, result) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
