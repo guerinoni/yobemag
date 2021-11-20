@@ -48,23 +48,23 @@ pub struct MBC1 {
     rom: Vec<u8>,
     ram: Vec<u8>,
 
-    /// 0X0000-0X1FFF: RAM Enable (write only lower 4 bits)
+    /// 0x0000-0x1FFF: RAM Enable (write only lower 4 bits)
     ///  - 00: Disable RAM (default)
     ///  - 0A: Enable RAM
     ram_enable: bool,
 
-    /// 6000-7FFF: ROM/RAM Mode Select (write only)
+    /// 0x6000-0x7FFF: ROM/RAM Mode Select (write only)
     /// Selects whether the above register should be used as the upper 2 bits
     /// of the ROM Bank Number or as the RAM Bank Number.
     ///  - 00 = ROM Banking Mode (up to 8KB RAM, 2MB ROM) (default)
     ///  - 01 = RAM Banking Mode (up to 32KB RAM, 512KB ROM)
     romram_mode: bool,
 
-    /// 2000-3FFF: ROM Bank Number (write only)
+    /// 0x2000-0x3FFF: ROM Bank Number (write only)
     /// Selects the lower 5 bits of the ROM Bank Number (in range 01-1F)
     rombank: usize,
 
-    /// 4000-5FFF: RAM Bank Number / Upper Bits of ROM Bank Number (write only)
+    /// 0x4000-0x5FFF: RAM Bank Number / Upper Bits of ROM Bank Number (write only)
     /// Selects the 2-bit RAM Bank Number (in range 00-03) or the upper 2 bits
     /// of the ROM Bank Number, depending on the ROM/RAM Mode Select.
     rambank: usize,
@@ -93,7 +93,10 @@ impl ReadWrite for MBC1 {
     }
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
-        Ok(self.rom[address])
+        match address {
+            0x0000..=0x3FFF=>Ok(self.rom[address]),
+            _=> unimplemented!(),
+        }
     }
 
     fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
@@ -102,8 +105,19 @@ impl ReadWrite for MBC1 {
         Ok(high << 8 | low)
     }
 
-    fn write_byte(&mut self, _address: usize, _value: u8) -> Result<(), std::io::Error> {
-        unimplemented!()
+    fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
+        match address {
+            (0x2000..=0x3FFF) => {
+                self.rombank = if value == 0x00 {
+                    1
+                } else {
+                    (value & 0x1F) as usize
+                }
+            },
+            _=> unimplemented!(),
+        }
+
+        Ok(())
     }
 
     fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
