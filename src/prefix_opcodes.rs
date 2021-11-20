@@ -34,6 +34,17 @@ pub enum PrefixOpCode {
     RrH,
     RrL,
     RrA,
+
+    /// SWAP r
+    /// The upper and lower nibbles of the register r are swapped. Register r may be any of B, C, D, E, H, L or A.
+    /// Clock cycles: 8
+    SwapB,
+    SwapC,
+    SwapD,
+    SwapE,
+    SwapH,
+    SwapL,
+    SwapA,
 }
 
 impl From<u8> for PrefixOpCode {
@@ -53,6 +64,13 @@ impl From<u8> for PrefixOpCode {
             0x1C => PrefixOpCode::RrH,
             0x1D => PrefixOpCode::RrL,
             0x1F => PrefixOpCode::RrA,
+            0x30 => PrefixOpCode::SwapB,
+            0x31 => PrefixOpCode::SwapC,
+            0x32 => PrefixOpCode::SwapD,
+            0x33 => PrefixOpCode::SwapE,
+            0x34 => PrefixOpCode::SwapH,
+            0x35 => PrefixOpCode::SwapL,
+            0x37 => PrefixOpCode::SwapA,
             0x38 => PrefixOpCode::SrlB,
             0x39 => PrefixOpCode::SrlC,
             0x3A => PrefixOpCode::SrlD,

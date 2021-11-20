@@ -979,6 +979,14 @@ impl CentralProcessingUnit {
             PrefixOpCode::RrH => self.rr_r(Register::H),
             PrefixOpCode::RrL => self.rr_r(Register::L),
             PrefixOpCode::RrA => self.rr_r(Register::A),
+
+            PrefixOpCode::SwapB => self.swap_r(Register::B),
+            PrefixOpCode::SwapC => self.swap_r(Register::C),
+            PrefixOpCode::SwapD => self.swap_r(Register::D),
+            PrefixOpCode::SwapE => self.swap_r(Register::E),
+            PrefixOpCode::SwapH => self.swap_r(Register::H),
+            PrefixOpCode::SwapL => self.swap_r(Register::L),
+            PrefixOpCode::SwapA => self.swap_r(Register::A),
         }
     }
 
@@ -1036,6 +1044,27 @@ impl CentralProcessingUnit {
 
         self.rotate_right_through_carry(&mut r);
         self.registers.set_register(reg, r);
+
+        8
+    }
+
+    fn swap_r(&mut self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => &mut self.registers.b,
+            Register::C => &mut self.registers.c,
+            Register::D => &mut self.registers.d,
+            Register::E => &mut self.registers.e,
+            Register::H => &mut self.registers.h,
+            Register::L => &mut self.registers.l,
+            Register::A => &mut self.registers.a,
+        };
+
+        let result = (*r >> 4) | (*r << 4);
+        self.registers.flags.zero = result == 0;
+        self.registers.flags.negative = false;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.carry = false;
+        *r = result;
 
         8
     }
@@ -1973,5 +2002,26 @@ mod tests {
         assert_eq!(cycle, 4);
         assert_eq!(cpu.registers.hl(), 10);
         assert_eq!(cpu.registers.program_counter, 10);
+    }
+
+    #[test]
+    fn verify_swap_r() {
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! {},
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            cpu.registers.a = 5;
+            cpu.registers.b = 10;
+            let cycle = cpu.swap_r(Register::B);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.a, 5);
+            assert_eq!(cpu.registers.b, 160);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
     }
 }

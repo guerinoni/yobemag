@@ -94,8 +94,8 @@ impl ReadWrite for MBC1 {
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         match address {
-            0x0000..=0x3FFF=>Ok(self.rom[address]),
-            _=> unimplemented!(),
+            0x0000..=0x3FFF => Ok(self.rom[address]),
+            _ => unimplemented!(),
         }
     }
 
@@ -113,8 +113,8 @@ impl ReadWrite for MBC1 {
                 } else {
                     (value & 0x1F) as usize
                 }
-            },
-            _=> unimplemented!(),
+            }
+            _ => unimplemented!(),
         }
 
         Ok(())
