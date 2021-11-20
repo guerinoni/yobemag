@@ -275,6 +275,12 @@ pub enum OpCode {
     /// Clock cycles: 16
     JpNN,
 
+    /// JP HL
+    /// The contents of the register pair HL are loaded into the program
+    /// counter, from where execution continues.
+    /// Clock cycles: 4
+    JpHl,
+
     /// JR f, PC+dd
     /// The 8-bit signed integer dd is added to the program counter and the result is stored in the program counter only if the condition f is true.
     /// Execution will then continue from the program counter.
@@ -591,6 +597,7 @@ impl From<u8> for OpCode {
             0xE2 => OpCode::LdFF00CA,
             0xE5 => OpCode::PushHl,
             0xE6 => OpCode::AndN,
+            0xE9 => OpCode::JpHl,
             0xEA => OpCode::LdNnA,
             0xEE => OpCode::XorN,
             0xF0 => OpCode::LdAFF00n,

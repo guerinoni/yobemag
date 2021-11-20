@@ -170,6 +170,7 @@ impl CentralProcessingUnit {
             OpCode::DecA => self.dec_r(Register::A),
             OpCode::DecHl => self.dec_hl(),
             OpCode::JpNN => self.jp_nn(),
+            OpCode::JpHl => self.jp_hl(),
             OpCode::JrNzPcDd => self.jr_f_pc_dd(ConditionOperand::NZ),
             OpCode::JrZPcDd => self.jr_f_pc_dd(ConditionOperand::Z),
             OpCode::JrNcPcDd => self.jr_f_pc_dd(ConditionOperand::NC),
@@ -668,6 +669,11 @@ impl CentralProcessingUnit {
         let nn = self.fetch_word();
         self.registers.program_counter = nn as i32;
         16
+    }
+
+    fn jp_hl(&mut self) -> u8 {
+        self.registers.program_counter = self.registers.hl() as i32;
+        4
     }
 
     fn jr_f_pc_dd(&mut self, op: ConditionOperand) -> u8 {
@@ -1940,5 +1946,32 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_jp_nn() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! { 256 => 99 },
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        dbg!(cpu.registers.program_counter);
+        let cycle = cpu.jp_nn();
+        assert_eq!(cycle, 16);
+        assert_eq!(cpu.registers.program_counter, 99);
+    }
+
+    #[test]
+    fn verify_jp_hl() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(10);
+        let cycle = cpu.jp_hl();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.hl(), 10);
+        assert_eq!(cpu.registers.program_counter, 10);
     }
 }
