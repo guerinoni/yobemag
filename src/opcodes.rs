@@ -303,6 +303,16 @@ pub enum OpCode {
     /// Clock cycles: 12
     JrPcDd,
 
+    /// JP f, nn
+    /// The 16-bit word nn is loaded into the program counter only if the
+    /// condition f is true. Execution will then continue from the program
+    /// counter. Condition f may be any of nz, z, nc or c.
+    /// Clock cycles: 16 if condition is met, otherwise 12
+    JpNzNn,
+    JpZNn,
+    JpNcNn,
+    JpCNn,
+
     /// CALL f, nn
     /// Only if the condition f is true is the current program counter (return
     /// address) pushed to the stack, high-order byte first, and the 16-bit word
@@ -581,22 +591,26 @@ impl From<u8> for OpCode {
             0xB7 => OpCode::OrA,
             0xC0 => OpCode::RetNz,
             0xC1 => OpCode::PopBc,
+            0xC2 => OpCode::JpNzNn,
             0xC3 => OpCode::JpNN,
             0xC4 => OpCode::CallNzNn,
             0xC5 => OpCode::PushBc,
             0xC6 => OpCode::AddaN,
             0xc8 => OpCode::RetZ,
             0xC9 => OpCode::Ret,
+            0xCA => OpCode::JpZNn,
             0xCB => OpCode::CB,
             0xCC => OpCode::CallZNn,
             0xCD => OpCode::CallNn,
             0xCE => OpCode::AdcaN,
             0xD0 => OpCode::RetNc,
             0xD1 => OpCode::PopDe,
+            0xD2 => OpCode::JpNcNn,
             0xD4 => OpCode::CallNcNn,
             0xD5 => OpCode::PushDe,
             0xD6 => OpCode::SubN,
             0xD8 => OpCode::RetC,
+            0xDA => OpCode::JpCNn,
             0xDC => OpCode::CallCNn,
             0xE0 => OpCode::LdFF00nA,
             0xE1 => OpCode::PopHl,

@@ -177,6 +177,10 @@ impl CentralProcessingUnit {
             OpCode::JrNcPcDd => self.jr_f_pc_dd(ConditionOperand::NC),
             OpCode::JrCPcDd => self.jr_f_pc_dd(ConditionOperand::C),
             OpCode::JrPcDd => self.jr_pc_dd(),
+            OpCode::JpNzNn => self.jp_f_nn(ConditionOperand::NZ),
+            OpCode::JpZNn => self.jp_f_nn(ConditionOperand::Z),
+            OpCode::JpNcNn => self.jp_f_nn(ConditionOperand::NC),
+            OpCode::JpCNn => self.jp_f_nn(ConditionOperand::C),
             OpCode::CpN => self.cp_n(),
             OpCode::CallNzNn => self.call_flag_nn(ConditionOperand::NZ),
             OpCode::CallZNn => self.call_flag_nn(ConditionOperand::Z),
@@ -703,6 +707,23 @@ impl CentralProcessingUnit {
     fn jr_pc_dd(&mut self) -> u8 {
         let dd = self.fetch_byte();
         self.registers.program_counter += dd as i32;
+        12
+    }
+
+    fn jp_f_nn(&mut self, op: ConditionOperand) -> u8 {
+        let condition = match op {
+            ConditionOperand::NZ => !self.registers.flags.zero,
+            ConditionOperand::Z => self.registers.flags.zero,
+            ConditionOperand::NC => !self.registers.flags.carry,
+            ConditionOperand::C => self.registers.flags.carry,
+        };
+
+        if condition {
+            let nn = self.fetch_word();
+            self.registers.program_counter += nn as i32;
+            return 16;
+        }
+
         12
     }
 
@@ -2044,6 +2065,38 @@ mod tests {
             let cycle = cpu.or_n();
             assert_eq!(cycle, 8);
             assert_eq!(cpu.registers.a, 11);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
+    }
+
+    #[test]
+    fn verify_jp_f_nn() {
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! { 256 => 300 },
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            let cycle = cpu.jp_f_nn(ConditionOperand::NZ);
+            assert_eq!(cycle, 16);
+            assert_eq!(cpu.registers.program_counter, 558);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
+        {
+            let mc = MockDevice {
+                bytes: collection! {},
+                words: collection! {},
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            let cycle = cpu.jp_f_nn(ConditionOperand::Z);
+            assert_eq!(cycle, 12);
+            assert_eq!(cpu.registers.program_counter, 256);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);

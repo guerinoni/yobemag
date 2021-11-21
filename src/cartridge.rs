@@ -97,13 +97,13 @@ impl ReadWrite for MBC1 {
             0x0000..=0x3FFF => Ok(self.rom[address]),
             0x4000..=0x5FFF => {
                 let rom_bank_number = if self.romram_mode {
-                    (self.rambank << 0x5)  | self.rombank
+                    (self.rambank << 0x5) | self.rombank
                 } else {
                     self.rombank
                 };
 
                 Ok(self.rom[address - 0x4000 + 0x4000 * rom_bank_number])
-            },
+            }
             _ => unimplemented!(),
         }
     }
