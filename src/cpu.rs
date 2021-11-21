@@ -915,14 +915,19 @@ impl CentralProcessingUnit {
         12
     }
 
-    fn add_a_n(&mut self) -> u8 {
-        let (result, overflow) = self.registers.a.overflowing_add(self.fetch_byte());
+    fn add(&mut self, value0: u8, value1: u8) -> u8 {
+        let (result, overflow) = value0.overflowing_add(value1);
         self.registers.flags.zero = result == 0;
         self.registers.flags.negative = false;
         self.registers.flags.carry = overflow;
         self.registers.flags.half_carry =
             CentralProcessingUnit::check_for_half_carry_first_nible_add(result, 1);
-        self.registers.a = result;
+        result
+    }
+
+    fn add_a_n(&mut self) -> u8 {
+        let n = self.fetch_byte();
+        self.registers.a = self.add(self.registers.a, n);
         8
     }
 
@@ -951,13 +956,7 @@ impl CentralProcessingUnit {
             Register::A => self.registers.a,
         };
 
-        let (result, overflow) = self.registers.a.overflowing_add(r);
-        self.registers.flags.zero = result == 0;
-        self.registers.flags.negative = false;
-        self.registers.flags.carry = overflow;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_add(result, 1);
-        self.registers.a = result;
+        self.registers.a = self.add(self.registers.a, r);
 
         4
     }
