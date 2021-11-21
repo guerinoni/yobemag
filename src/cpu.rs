@@ -203,6 +203,13 @@ impl CentralProcessingUnit {
             OpCode::PopAf => self.pop_qq(RegisterWord::AF),
             OpCode::AddaN => self.add_a_n(),
             OpCode::AdcaN => self.adca_n(),
+            OpCode::AddaB => self.add_a_r(Register::B),
+            OpCode::AddaC => self.add_a_r(Register::C),
+            OpCode::AddaD => self.add_a_r(Register::D),
+            OpCode::AddaE => self.add_a_r(Register::E),
+            OpCode::AddaH => self.add_a_r(Register::H),
+            OpCode::AddaL => self.add_a_r(Register::L),
+            OpCode::AddaA => self.add_a_r(Register::A),
             OpCode::SubB => self.sub_r(Register::B),
             OpCode::SubC => self.sub_r(Register::C),
             OpCode::SubD => self.sub_r(Register::D),
@@ -931,6 +938,28 @@ impl CentralProcessingUnit {
         self.registers.a = result;
 
         8
+    }
+
+    fn add_a_r(&mut self, reg: Register) -> u8 {
+        let r = match reg {
+            Register::B => self.registers.b,
+            Register::C => self.registers.c,
+            Register::D => self.registers.d,
+            Register::E => self.registers.e,
+            Register::H => self.registers.h,
+            Register::L => self.registers.l,
+            Register::A => self.registers.a,
+        };
+
+        let (result, overflow) = self.registers.a.overflowing_add(r);
+        self.registers.flags.zero = result == 0;
+        self.registers.flags.negative = false;
+        self.registers.flags.carry = overflow;
+        self.registers.flags.half_carry =
+            CentralProcessingUnit::check_for_half_carry_first_nible_add(result, 1);
+        self.registers.a = result;
+
+        4
     }
 
     fn sub_r(&mut self, reg: Register) -> u8 {
@@ -2102,5 +2131,23 @@ mod tests {
             assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, false);
         }
+    }
+
+    #[test]
+    fn verify_add_a_r() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 5;
+        cpu.registers.b = 10;
+        let cycle = cpu.add_a_r(Register::B);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 15);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }
