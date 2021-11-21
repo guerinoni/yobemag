@@ -137,6 +137,7 @@ impl CentralProcessingUnit {
             OpCode::OrL => self.or_r(Register::L),
             OpCode::OrA => self.or_r(Register::A),
             OpCode::OrHl => self.or_hl(),
+            OpCode::OrN => self.or_n(),
             OpCode::XorB => self.xor_r(Register::B),
             OpCode::XorC => self.xor_r(Register::C),
             OpCode::XorD => self.xor_r(Register::D),
@@ -525,6 +526,12 @@ impl CentralProcessingUnit {
             Err(e) => panic!("{}", e),
         });
 
+        8
+    }
+
+    fn or_n(&mut self) -> u8 {
+        let n = self.fetch_byte();
+        self.or(n);
         8
     }
 
@@ -2018,6 +2025,25 @@ mod tests {
             assert_eq!(cycle, 8);
             assert_eq!(cpu.registers.a, 5);
             assert_eq!(cpu.registers.b, 160);
+            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cpu.registers.flags.negative, false);
+            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.carry, false);
+        }
+    }
+
+    #[test]
+    fn verify_or_n() {
+        {
+            let mc = MockDevice {
+                bytes: collection! { 256 => 1 },
+                words: collection! {},
+            };
+            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            cpu.registers.a = 10;
+            let cycle = cpu.or_n();
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.a, 11);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
