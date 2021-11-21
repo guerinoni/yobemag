@@ -452,6 +452,22 @@ pub enum OpCode {
     /// Clock cycles: 24
     CallNn,
 
+    /// RST n
+    /// The current program counter is pushed onto the stack, high-order byte
+    /// first.
+    /// The value of the operand n is then loaded into the program counter, from
+    /// where execution continues. Operand n may be any of 0x00, 0x08, 0x10, 0x18,
+    /// 0x20, 0x28, 0x30 or 0x38.
+    /// Clock cycles: 16
+    Rst00,
+    Rst08,
+    Rst10,
+    Rst18,
+    Rst20,
+    Rst28,
+    Rst30,
+    Rst38,
+
     /// The CPU performs no operation during this cycle.
     /// Clock cycles: 4
     Noop,
@@ -633,6 +649,7 @@ impl From<u8> for OpCode {
             0xC4 => OpCode::CallNzNn,
             0xC5 => OpCode::PushBc,
             0xC6 => OpCode::AddaN,
+            0xC7 => OpCode::Rst00,
             0xc8 => OpCode::RetZ,
             0xC9 => OpCode::Ret,
             0xCA => OpCode::JpZNn,
@@ -640,32 +657,39 @@ impl From<u8> for OpCode {
             0xCC => OpCode::CallZNn,
             0xCD => OpCode::CallNn,
             0xCE => OpCode::AdcaN,
+            0xCF => OpCode::Rst08,
             0xD0 => OpCode::RetNc,
             0xD1 => OpCode::PopDe,
             0xD2 => OpCode::JpNcNn,
             0xD4 => OpCode::CallNcNn,
             0xD5 => OpCode::PushDe,
             0xD6 => OpCode::SubN,
+            0xD7 => OpCode::Rst10,
             0xD8 => OpCode::RetC,
             0xDA => OpCode::JpCNn,
             0xDC => OpCode::CallCNn,
+            0xDF => OpCode::Rst18,
             0xE0 => OpCode::LdFF00nA,
             0xE1 => OpCode::PopHl,
             0xE2 => OpCode::LdFF00CA,
             0xE5 => OpCode::PushHl,
             0xE6 => OpCode::AndN,
+            0xE7 => OpCode::Rst20,
             0xE9 => OpCode::JpHl,
             0xEA => OpCode::LdNnA,
             0xEE => OpCode::XorN,
+            0xEF => OpCode::Rst28,
             0xF0 => OpCode::LdAFF00n,
             0xF1 => OpCode::PopAf,
             0xF2 => OpCode::LdAFF00C,
             0xF3 => OpCode::DI,
             0xF5 => OpCode::PushAf,
             0xF6 => OpCode::OrN,
+            0xF7 => OpCode::Rst30,
             0xF8 => OpCode::LdHlSps,
             0xFA => OpCode::LdANn,
             0xFE => OpCode::CpN,
+            0xFF => OpCode::Rst38,
 
             _ => panic!("unknown opcode"),
         }

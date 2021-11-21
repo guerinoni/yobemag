@@ -226,6 +226,14 @@ impl CentralProcessingUnit {
             OpCode::AndN => self.and_n(),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
+            OpCode::Rst00 => self.rst(0x00),
+            OpCode::Rst08 => self.rst(0x08),
+            OpCode::Rst10 => self.rst(0x10),
+            OpCode::Rst18 => self.rst(0x18),
+            OpCode::Rst20 => self.rst(0x20),
+            OpCode::Rst28 => self.rst(0x28),
+            OpCode::Rst30 => self.rst(0x30),
+            OpCode::Rst38 => self.rst(0x38),
             OpCode::Noop => self.noop(),
             OpCode::Stop => self.stop(),
             OpCode::Halt => self.halt(),
@@ -836,6 +844,12 @@ impl CentralProcessingUnit {
         24
     }
 
+    fn rst(&mut self, value: u8) -> u8 {
+        self.push(self.registers.program_counter as u16);
+        self.registers.program_counter = value as i32;
+        16
+    }
+
     fn rr_a(&mut self) -> u8 {
         let mut v = self.registers.a;
         self.rotate_right_through_carry(&mut v);
@@ -896,16 +910,8 @@ impl CentralProcessingUnit {
         8
     }
 
-    fn push_qq(&mut self, reg: RegisterWord) -> u8 {
-        let reg = match reg {
-            RegisterWord::BC => self.registers.bc(),
-            RegisterWord::DE => self.registers.de(),
-            RegisterWord::HL => self.registers.hl(),
-            RegisterWord::AF => self.registers.af(),
-            _ => panic!("should never go here"),
-        };
-
-        let high = (reg >> 8) as u8;
+    fn push(&mut self, value: u16) {
+        let high = (value >> 8) as u8;
         self.registers.stack_pointer -= 1;
         match self
             .mmu
@@ -915,7 +921,7 @@ impl CentralProcessingUnit {
             Err(e) => panic!("{}", e),
         }
 
-        let low = (reg & 0xFF) as u8;
+        let low = (value & 0xFF) as u8;
         self.registers.stack_pointer -= 1;
         match self
             .mmu
@@ -924,6 +930,18 @@ impl CentralProcessingUnit {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
+    }
+
+    fn push_qq(&mut self, reg: RegisterWord) -> u8 {
+        let reg = match reg {
+            RegisterWord::BC => self.registers.bc(),
+            RegisterWord::DE => self.registers.de(),
+            RegisterWord::HL => self.registers.hl(),
+            RegisterWord::AF => self.registers.af(),
+            _ => panic!("should never go here"),
+        };
+
+        self.push(reg);
 
         16
     }
@@ -1199,6 +1217,7 @@ mod tests {
         }
 
         fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
+            dbg!(address, value);
             self.bytes.insert(address, value);
             Ok(())
         }
@@ -2072,7 +2091,6 @@ mod tests {
             words: collection! { 256 => 99 },
         };
         let mut cpu = CentralProcessingUnit::new(Box::new(mc));
-        dbg!(cpu.registers.program_counter);
         let cycle = cpu.jp_nn();
         assert_eq!(cycle, 16);
         assert_eq!(cpu.registers.program_counter, 99);
@@ -2210,5 +2228,19 @@ mod tests {
         let cycle = cpu.dec_rr(RegisterWord::DE);
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.de(), 99);
+    }
+
+    #[test]
+    fn verify_rst() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        let cycle = cpu.rst(0x08);
+        assert_eq!(cycle, 16);
+        assert_eq!(cpu.registers.program_counter, 0x08);
+        assert_eq!(cpu.mmu.read_byte(65533).unwrap(), 1);
+        assert_eq!(cpu.mmu.read_byte(65532).unwrap(), 0);
     }
 }
