@@ -335,6 +335,12 @@ pub enum OpCode {
     /// Clock cycles: 4
     RrA,
 
+    /// LD HL, SP+s
+    /// The byte s is read as a signed integer and added to the register pair SP.
+    /// The result is then loaded into the register pair HL.
+    /// Clock cycles: 12
+    LdHlSps,
+
     /// RLCA
     /// The contents of register A are rotated left by 1 bit position, after the sign bit (7) is copied into the carry flag.
     /// Clock cycles: 4
@@ -645,6 +651,7 @@ impl From<u8> for OpCode {
             0xF3 => OpCode::DI,
             0xF5 => OpCode::PushAf,
             0xF6 => OpCode::OrN,
+            0xF8 => OpCode::LdHlSps,
             0xFA => OpCode::LdANn,
             0xFE => OpCode::CpN,
 

@@ -188,6 +188,7 @@ impl CentralProcessingUnit {
             OpCode::CallCNn => self.call_flag_nn(ConditionOperand::C),
             OpCode::RrA => self.rr_a(),
             OpCode::Rlca => self.rlca(),
+            OpCode::LdHlSps => self.ld_hl_sp(),
             OpCode::Ret => self.ret(),
             OpCode::RetNz => self.ret_f(ConditionOperand::NZ),
             OpCode::RetZ => self.ret_f(ConditionOperand::Z),
@@ -266,7 +267,7 @@ impl CentralProcessingUnit {
         0
     }
 
-    pub fn check_for_half_carry_first_nible_add(a: u8, b: u8) -> bool {
+    pub fn check_for_half_carry_first_nible_add(a: u16, b: u16) -> bool {
         (((a & 0xF) + (b & 0xF)) & 0x10) != 0
     }
 
@@ -639,7 +640,7 @@ impl CentralProcessingUnit {
         let ret = r.wrapping_add(1);
         self.registers.flags.zero = ret == 0;
         self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_add(*r, 1);
+            CentralProcessingUnit::check_for_half_carry_first_nible_add(*r as u16, 1);
         self.registers.flags.negative = false;
         *r = ret;
 
@@ -836,6 +837,19 @@ impl CentralProcessingUnit {
         4
     }
 
+    fn ld_hl_sp(&mut self) -> u8 {
+        let n = self.fetch_byte();
+        let (result, overflow) = self.registers.stack_pointer.overflowing_add(n as u16);
+        self.registers.flags.zero = result == 0;
+        self.registers.flags.negative = false;
+        self.registers.flags.carry = overflow;
+        self.registers.flags.half_carry =
+            CentralProcessingUnit::check_for_half_carry_first_nible_add(result, 1);
+        self.registers.stack_pointer = result;
+        self.registers.set_hl(self.registers.stack_pointer);
+        12
+    }
+
     fn ret(&mut self) -> u8 {
         self.registers.program_counter =
             match self.mmu.read_word(self.registers.stack_pointer as usize) {
@@ -921,7 +935,7 @@ impl CentralProcessingUnit {
         self.registers.flags.negative = false;
         self.registers.flags.carry = overflow;
         self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_add(result, 1);
+            CentralProcessingUnit::check_for_half_carry_first_nible_add(result as u16, 1);
         result
     }
 
@@ -2148,5 +2162,23 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_ld_hl_sp() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 20 },
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        dbg!(cpu.registers.stack_pointer);
+        let cycle = cpu.ld_hl_sp();
+        assert_eq!(cycle, 12);
+        assert_eq!(cpu.registers.stack_pointer, 18);
+        assert_eq!(cpu.registers.hl(), 18);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, true);
     }
 }
