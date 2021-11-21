@@ -162,6 +162,10 @@ impl CentralProcessingUnit {
             OpCode::IncH => self.inc_r(Register::H),
             OpCode::IncL => self.inc_r(Register::L),
             OpCode::IncA => self.inc_r(Register::A),
+            OpCode::DecBc => self.dec_rr(RegisterWord::BC),
+            OpCode::DecDe => self.dec_rr(RegisterWord::DE),
+            OpCode::DecHl => self.dec_rr(RegisterWord::HL),
+            OpCode::DecSp => self.dec_rr(RegisterWord::SP),
             OpCode::DecB => self.dec_r(Register::B),
             OpCode::DecC => self.dec_r(Register::C),
             OpCode::DecD => self.dec_r(Register::D),
@@ -169,7 +173,7 @@ impl CentralProcessingUnit {
             OpCode::DecH => self.dec_r(Register::H),
             OpCode::DecL => self.dec_r(Register::L),
             OpCode::DecA => self.dec_r(Register::A),
-            OpCode::DecHl => self.dec_hl(),
+            OpCode::DecHlSpecific => self.dec_hl(),
             OpCode::JpNN => self.jp_nn(),
             OpCode::JpHl => self.jp_hl(),
             OpCode::JrNzPcDd => self.jr_f_pc_dd(ConditionOperand::NZ),
@@ -654,6 +658,20 @@ impl CentralProcessingUnit {
             CentralProcessingUnit::check_for_half_carry_first_nible_sub(input, result);
         self.registers.flags.negative = true;
         result
+    }
+
+    fn dec_rr(&mut self, reg: RegisterWord) -> u8 {
+        match reg {
+            RegisterWord::BC => self.registers.set_bc(self.registers.bc().wrapping_sub(1)),
+            RegisterWord::DE => self.registers.set_de(self.registers.de().wrapping_sub(1)),
+            RegisterWord::HL => self.registers.set_hl(self.registers.hl().wrapping_sub(1)),
+            RegisterWord::SP => {
+                self.registers.stack_pointer = self.registers.stack_pointer.wrapping_sub(1)
+            }
+            _ => panic!("should never go here"),
+        };
+
+        8
     }
 
     fn dec_r(&mut self, reg: Register) -> u8 {
@@ -2171,7 +2189,6 @@ mod tests {
             words: collection! {},
         };
         let mut cpu = CentralProcessingUnit::new(Box::new(mc));
-        dbg!(cpu.registers.stack_pointer);
         let cycle = cpu.ld_hl_sp();
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.stack_pointer, 18);
@@ -2180,5 +2197,18 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_dec_rr() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_de(100);
+        let cycle = cpu.dec_rr(RegisterWord::DE);
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.de(), 99);
     }
 }

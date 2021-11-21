@@ -260,6 +260,14 @@ pub enum OpCode {
     IncL,
     IncA,
 
+    /// DEC rr
+    /// The register pair rr is decremented by 1. Register pair rr may be any of BC, DE, HL or SP.
+    /// Clock cycles: 8
+    DecBc,
+    DecDe,
+    DecHl,
+    DecSp,
+
     /// DEC r
     /// The register r is decremented by 1.
     /// Clock cycles: 4
@@ -274,7 +282,7 @@ pub enum OpCode {
     /// DEC (HL)
     /// The byte at the memory address specified in the register HL is decremented by 1.
     /// Clock cycles: 12
-    DecHl,
+    DecHlSpecific,
 
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
@@ -477,6 +485,7 @@ impl From<u8> for OpCode {
             0x07 => OpCode::Rlca,
             0x08 => OpCode::LdNnSP,
             0x0A => OpCode::LdABc,
+            0x0B => OpCode::DecBc,
             0x0C => OpCode::IncC,
             0x0D => OpCode::DecC,
             0x0E => OpCode::LdCNext,
@@ -490,6 +499,7 @@ impl From<u8> for OpCode {
             0x16 => OpCode::LdDNext,
             0x18 => OpCode::JrPcDd,
             0x1A => OpCode::LdADe,
+            0x1B => OpCode::DecDe,
             0x1C => OpCode::IncE,
             0x1D => OpCode::DecE,
             0x1E => OpCode::LdENext,
@@ -504,6 +514,7 @@ impl From<u8> for OpCode {
             0x26 => OpCode::LdHNext,
             0x29 => OpCode::AddHlHl,
             0x2A => OpCode::LdiAHl,
+            0x2B => OpCode::DecHl,
             0x28 => OpCode::JrZPcDd,
             0x2C => OpCode::IncL,
             0x2D => OpCode::DecL,
@@ -513,9 +524,10 @@ impl From<u8> for OpCode {
             0x32 => OpCode::LddHlA,
             0x33 => OpCode::IncSP,
             0x36 => OpCode::LdHlN,
-            0x35 => OpCode::DecHl,
+            0x35 => OpCode::DecHlSpecific,
             0x38 => OpCode::JrCPcDd,
             0x3A => OpCode::LddAHl,
+            0x3B => OpCode::DecSp,
             0x3C => OpCode::IncA,
             0x3D => OpCode::DecA,
             0x3E => OpCode::LdANext,
