@@ -89,7 +89,7 @@ pub struct Registers {
     pub e: u8,
     pub h: u8,
     pub l: u8,
-    pub program_counter: i32,
+    pub program_counter: u16,
     pub stack_pointer: u16,
 }
 

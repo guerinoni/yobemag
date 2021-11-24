@@ -711,13 +711,12 @@ impl CentralProcessingUnit {
     }
 
     fn jp_nn(&mut self) -> u8 {
-        let nn = self.fetch_word();
-        self.registers.program_counter = nn as i32;
+        self.registers.program_counter = self.fetch_word();
         16
     }
 
     fn jp_hl(&mut self) -> u8 {
-        self.registers.program_counter = self.registers.hl() as i32;
+        self.registers.program_counter = self.registers.hl();
         4
     }
 
@@ -731,7 +730,7 @@ impl CentralProcessingUnit {
         };
 
         if condition {
-            self.registers.program_counter += dd as i32;
+            self.registers.program_counter += dd as u16;
             return 12;
         }
 
@@ -739,8 +738,7 @@ impl CentralProcessingUnit {
     }
 
     fn jr_pc_dd(&mut self) -> u8 {
-        let dd = self.fetch_byte();
-        self.registers.program_counter += dd as i32;
+        self.registers.program_counter += self.fetch_byte() as u16;
         12
     }
 
@@ -753,8 +751,7 @@ impl CentralProcessingUnit {
         };
 
         if condition {
-            let nn = self.fetch_word();
-            self.registers.program_counter += nn as i32;
+            self.registers.program_counter += self.fetch_word();
             return 16;
         }
 
@@ -805,7 +802,7 @@ impl CentralProcessingUnit {
                 Err(e) => panic!("{}", e),
             }
 
-            self.registers.program_counter = nn as i32;
+            self.registers.program_counter = nn;
             return 24;
         }
 
@@ -839,14 +836,14 @@ impl CentralProcessingUnit {
             Err(e) => panic!("{}", e),
         }
 
-        self.registers.program_counter = nn as i32;
+        self.registers.program_counter = nn;
 
         24
     }
 
     fn rst(&mut self, value: u8) -> u8 {
         self.push(self.registers.program_counter as u16);
-        self.registers.program_counter = value as i32;
+        self.registers.program_counter = value as u16;
         16
     }
 
@@ -885,7 +882,7 @@ impl CentralProcessingUnit {
     fn ret(&mut self) -> u8 {
         self.registers.program_counter =
             match self.mmu.read_word(self.registers.stack_pointer as usize) {
-                Ok(v) => v as i32,
+                Ok(v) => v,
                 Err(e) => panic!("{}", e),
             };
 
