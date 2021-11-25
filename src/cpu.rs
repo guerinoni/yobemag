@@ -413,12 +413,12 @@ impl CentralProcessingUnit {
     }
 
     fn ld_dd_nn(&mut self, reg: RegisterWord) -> u8 {
-        let w = self.fetch_word();
+        let nn = self.fetch_word();
         match reg {
-            RegisterWord::BC => self.registers.set_bc(w),
-            RegisterWord::DE => self.registers.set_de(w),
-            RegisterWord::HL => self.registers.set_hl(w),
-            RegisterWord::SP => self.registers.stack_pointer = w,
+            RegisterWord::BC => self.registers.set_bc(nn),
+            RegisterWord::DE => self.registers.set_de(nn),
+            RegisterWord::HL => self.registers.set_hl(nn),
+            RegisterWord::SP => self.registers.stack_pointer = nn,
             _ => panic!("should never go here"),
         };
 
@@ -721,15 +721,15 @@ impl CentralProcessingUnit {
     }
 
     fn jr_f_pc_dd(&mut self, op: ConditionOperand) -> u8 {
-        let dd = self.fetch_byte() as i8;
         let condition = match op {
             ConditionOperand::NZ => !self.registers.flags.zero,
             ConditionOperand::Z => self.registers.flags.zero,
             ConditionOperand::NC => !self.registers.flags.carry,
             ConditionOperand::C => self.registers.flags.carry,
         };
-
+        
         if condition {
+            let dd = self.fetch_byte();
             self.registers.program_counter += dd as u16;
             return 12;
         }
