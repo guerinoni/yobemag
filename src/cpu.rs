@@ -606,16 +606,8 @@ impl CentralProcessingUnit {
     }
 
     fn add_hl_rr(&mut self, reg: RegisterWord) -> u8 {
-        let rr = match reg {
-            RegisterWord::BC => self.registers.bc(),
-            RegisterWord::DE => self.registers.de(),
-            RegisterWord::HL => self.registers.hl(),
-            RegisterWord::SP => self.registers.stack_pointer,
-            _ => panic!("should never go here"),
-        };
-
+        let rr = self.registers.get_register_word(&reg);
         let hl = self.registers.hl();
-
         let result = hl + rr;
         self.registers.flags.zero = false;
         self.registers.flags.carry = (result & 0xFF) < (hl & 0xFF);
@@ -627,14 +619,8 @@ impl CentralProcessingUnit {
     }
 
     fn inc_rr(&mut self, reg: RegisterWord) -> u8 {
-        match reg {
-            RegisterWord::BC => self.registers.set_bc(self.registers.bc().wrapping_add(1)),
-            RegisterWord::DE => self.registers.set_de(self.registers.de().wrapping_add(1)),
-            RegisterWord::HL => self.registers.set_hl(self.registers.hl().wrapping_add(1)),
-            RegisterWord::SP => self.registers.stack_pointer += 1,
-            _ => panic!("should never go here"),
-        };
-
+        let rr = self.registers.get_register_word(&reg);
+        self.registers.set_register_word(&reg, rr.wrapping_add(1));
         8
     }
 
@@ -669,16 +655,8 @@ impl CentralProcessingUnit {
     }
 
     fn dec_rr(&mut self, reg: RegisterWord) -> u8 {
-        match reg {
-            RegisterWord::BC => self.registers.set_bc(self.registers.bc().wrapping_sub(1)),
-            RegisterWord::DE => self.registers.set_de(self.registers.de().wrapping_sub(1)),
-            RegisterWord::HL => self.registers.set_hl(self.registers.hl().wrapping_sub(1)),
-            RegisterWord::SP => {
-                self.registers.stack_pointer = self.registers.stack_pointer.wrapping_sub(1)
-            }
-            _ => panic!("should never go here"),
-        };
-
+        let rr = self.registers.get_register_word(&reg);
+        self.registers.set_register_word(&reg, rr.wrapping_sub(1));
         8
     }
 

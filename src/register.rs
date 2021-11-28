@@ -126,6 +126,27 @@ impl Registers {
         };
     }
 
+    pub fn get_register_word(&mut self, reg: &RegisterWord) -> u16 {
+        match reg {
+            RegisterWord::BC => self.bc(),
+            RegisterWord::DE => self.de(),
+            RegisterWord::HL => self.hl(),
+            RegisterWord::AF => self.af(),
+            RegisterWord::SP => self.stack_pointer,
+        }
+    }
+
+
+    pub fn set_register_word(&mut self, reg: &RegisterWord, value: u16) {
+        match reg {
+            RegisterWord::BC => self.set_bc(value),
+            RegisterWord::DE => self.set_de(value),
+            RegisterWord::HL => self.set_hl(value),
+            RegisterWord::AF => self.set_af(value),
+            RegisterWord::SP => self.stack_pointer = value,
+        }
+    }
+
     fn set(reg1: &mut u8, reg2: &mut u8, value: u16) {
         *reg1 = (value >> 8_u16) as u8;
         *reg2 = value as u8;
@@ -248,7 +269,6 @@ mod tests {
             zero: true,
         };
 
-        dbg!(r.a, r.flags.to_u8());
         assert_eq!(r.af(), 496);
     }
 }
