@@ -295,45 +295,27 @@ impl CentralProcessingUnit {
     }
 
     fn ld_r_r(&mut self, reg1: Register, reg2: Register) -> u8 {
-        let r2 = match reg2 {
-            Register::B => self.registers.b,
-            Register::C => self.registers.c,
-            Register::D => self.registers.d,
-            Register::E => self.registers.e,
-            Register::H => self.registers.h,
-            Register::L => self.registers.l,
-            Register::A => self.registers.a,
-        };
-
-        self.registers.set_register(reg1, r2);
+        let v = self.registers.get_register(reg2);
+        self.registers.set_register(reg1, v);
 
         4
     }
 
     fn ld_r_hl(&mut self, reg: Register) -> u8 {
         let address = self.registers.hl() as usize;
-        let hl = match self.mmu.read_byte(address) {
+        let v = match self.mmu.read_byte(address) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
 
-        self.registers.set_register(reg, hl);
+        self.registers.set_register(reg, v);
 
         8
     }
 
     fn ld_hl_r(&mut self, reg: Register) -> u8 {
-        let r = match reg {
-            Register::B => self.registers.b,
-            Register::C => self.registers.c,
-            Register::D => self.registers.d,
-            Register::E => self.registers.e,
-            Register::H => self.registers.h,
-            Register::L => self.registers.l,
-            Register::A => self.registers.a,
-        };
-
-        match self.mmu.write_byte(self.registers.hl() as usize, r) {
+        let v = self.registers.get_register(reg);
+        match self.mmu.write_byte(self.registers.hl() as usize, v) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -462,12 +444,13 @@ impl CentralProcessingUnit {
     }
 
     fn ldd_a_hl(&mut self) -> u8 {
-        self.registers.a = match self.mmu.read_byte(self.registers.hl() as usize) {
+        let address = self.registers.hl();
+        self.registers.a = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
 
-        self.registers.set_hl(self.registers.hl() - 1);
+        self.registers.set_hl(address - 1);
 
         8
     }
