@@ -11,7 +11,8 @@ pub struct CentralProcessingUnit {
     stop: bool,
     halt: bool,
 
-    /// Interrupt master enable flag. EI/DI will set/reset this.
+    // Interrupt master enable flag is reset by DI and prohibits all interrupts.
+    // It is set by EI and acknowledges the interrupt setting by the IE register.
     ime: bool,
 }
 
@@ -243,14 +244,11 @@ impl CentralProcessingUnit {
 
     fn fetch_byte(&mut self) -> u8 {
         let address = self.registers.program_counter as usize;
-        let byte = match self.mmu.read_byte(address as usize) {
+        self.registers.program_counter += 1;
+        match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
-        };
-
-        self.registers.program_counter += 1;
-
-        byte
+        }
     }
 
     fn fetch_word(&mut self) -> u16 {
@@ -344,14 +342,7 @@ impl CentralProcessingUnit {
     }
 
     fn ld_a_rr(&mut self, reg: RegisterWord) -> u8 {
-        let address = match reg {
-            RegisterWord::BC => self.registers.bc(),
-            RegisterWord::DE => self.registers.de(),
-            RegisterWord::HL => self.registers.hl(),
-            RegisterWord::SP => self.registers.stack_pointer,
-            _ => panic!("should never go here"),
-        };
-
+        let address = self.registers.get_register_word(&reg);
         let v = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -375,14 +366,7 @@ impl CentralProcessingUnit {
     }
 
     fn ld_rr_a(&mut self, reg: RegisterWord) -> u8 {
-        let address = match reg {
-            RegisterWord::BC => self.registers.bc(),
-            RegisterWord::DE => self.registers.de(),
-            RegisterWord::HL => self.registers.hl(),
-            RegisterWord::SP => self.registers.stack_pointer,
-            _ => panic!("should never go here"),
-        };
-
+        let address = self.registers.get_register_word(&reg);
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -426,11 +410,13 @@ impl CentralProcessingUnit {
     }
 
     fn ldd_hl_a(&mut self) -> u8 {
-        let address = self.registers.hl() - 1;
+        let address = self.registers.hl();
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
+
+        self.registers.set_hl(address - 1);
 
         8
     }
@@ -508,16 +494,13 @@ impl CentralProcessingUnit {
     }
 
     fn ldi_hl_a(&mut self) -> u8 {
-        match self
-            .mmu
-            .write_byte(self.registers.hl() as usize, self.registers.a)
-        {
+        let address = self.registers.hl();
+        match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
 
-        let hl = self.registers.hl() + 1;
-        self.registers.set_hl(hl);
+        self.registers.set_hl(address + 1);
 
         8
     }
@@ -1788,6 +1771,21 @@ mod tests {
         assert_eq!(cycle, 8);
         assert_eq!(cpu.mmu.read_byte(10).unwrap(), 11);
         assert_eq!(cpu.registers.hl(), 11);
+    }
+
+    #[test]
+    fn verify_ldd_hl_a() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(10);
+        cpu.registers.a = 11;
+        let cycle = cpu.ldd_hl_a();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.mmu.read_byte(10).unwrap(), 11);
+        assert_eq!(cpu.registers.hl(), 9);
     }
 
     #[test]
