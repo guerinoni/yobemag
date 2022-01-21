@@ -2,6 +2,16 @@ use std::cmp::PartialEq;
 use std::ops::BitXor;
 use std::ops::Shl;
 
+// Description of register of GB.
+// -------------
+// | A   Flags |  ---> Program Status Word
+// | B       C |  ---> B
+// | D       E |  ---> D
+// | H       L |  ---> H
+// |    SP     |  ---> Stack Pointer
+// |    PC     |  ---> Program Counter
+// -------------
+
 #[derive(Debug)]
 pub enum Register {
     A,
@@ -30,9 +40,13 @@ pub enum ConditionOperand {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CpuFlag {
+    // Carry Flag. This bit is set if a carry occurred from the last math operation or if register A is the smaller valuewhen executing the CP instruction.
     pub carry: bool,
+    // Half Carry Flag. This bit is set if a carry occurred from the lowernibble in the last math operation.
     pub half_carry: bool,
+    // Negative Flag. This bit is set if a subtraction was performed in the last math instruction.
     pub negative: bool,
+    // Zero Flag. This bit is set when the result of a math operations zero or two values match when using the CP instruction.
     pub zero: bool,
 }
 
