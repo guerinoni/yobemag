@@ -705,7 +705,7 @@ impl CentralProcessingUnit {
             ConditionOperand::NC => !self.registers.flags.carry,
             ConditionOperand::C => self.registers.flags.carry,
         };
-        
+
         if condition {
             let dd = self.fetch_byte();
             self.registers.program_counter += dd as u16;

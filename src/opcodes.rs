@@ -691,7 +691,7 @@ impl From<u8> for OpCode {
             0xFE => OpCode::CpN,
             0xFF => OpCode::Rst38,
 
-            _ => panic!("unknown opcode"),
+            _ => panic!("unknown opcode {}", orig),
         }
     }
 }

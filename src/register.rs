@@ -150,7 +150,6 @@ impl Registers {
         }
     }
 
-
     pub fn set_register_word(&mut self, reg: &RegisterWord, value: u16) {
         match reg {
             RegisterWord::BC => self.set_bc(value),
@@ -166,17 +165,13 @@ impl Registers {
         *reg2 = value as u8;
     }
 
-    pub fn set_bc(&mut self, value: u16) {
-        Registers::set(&mut self.b, &mut self.c, value);
-    }
-
     pub fn bc(&self) -> u16 {
         let ret = (self.b as u16) << 8;
         ret | self.c as u16
     }
 
-    pub fn set_de(&mut self, value: u16) {
-        Registers::set(&mut self.d, &mut self.e, value);
+    pub fn set_bc(&mut self, value: u16) {
+        Registers::set(&mut self.b, &mut self.c, value);
     }
 
     pub fn de(&self) -> u16 {
@@ -184,13 +179,17 @@ impl Registers {
         ret | self.e as u16
     }
 
-    pub fn set_hl(&mut self, value: u16) {
-        Registers::set(&mut self.h, &mut self.l, value);
+    pub fn set_de(&mut self, value: u16) {
+        Registers::set(&mut self.d, &mut self.e, value);
     }
 
     pub fn hl(&self) -> u16 {
         let ret = (self.h as u16) << 8;
         ret | self.l as u16
+    }
+
+    pub fn set_hl(&mut self, value: u16) {
+        Registers::set(&mut self.h, &mut self.l, value);
     }
 
     pub fn af(&self) -> u16 {
