@@ -218,6 +218,7 @@ impl CentralProcessingUnit {
             OpCode::AddaL => self.add_a_r(Register::L),
             OpCode::AddaA => self.add_a_r(Register::A),
             OpCode::AddAHl => self.add_a_hl(),
+            OpCode::AdcB => self.adc_r(Register::B),
             OpCode::SubB => self.sub_r(Register::B),
             OpCode::SubC => self.sub_r(Register::C),
             OpCode::SubD => self.sub_r(Register::D),
@@ -951,6 +952,31 @@ impl CentralProcessingUnit {
         self.alu_add(v);
 
         8
+    }
+
+    // Add n + Carry flag to A.
+    // n = A,B,C,D,E,H,L,(HL),#
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Set if carry from bit 3.
+    // C - Set if carry from bit 7.
+    fn alu_adc(&mut self, n: u8) {
+        let a = self.registers.a;
+        let c = u8::from(self.registers.flags.carry);
+        let result = a.wrapping_add(n).wrapping_add(c);
+        self.registers.flags.carry = u16::from(a) + u16::from(n) + u16::from(c) > 0xFF;
+        self.registers.flags.half_carry = (a & 0x0f) + (n & 0x0F) + (c & 0x0F) > 0x0F;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = result == 0x00;
+        self.registers.a = result;
+    }
+
+    fn adc_r(&mut self, reg: Register) -> u8 {
+        self.alu_adc(self.registers.get_register(reg));
+
+        4
     }
 
     fn sub_r(&mut self, reg: Register) -> u8 {
@@ -2232,6 +2258,26 @@ mod tests {
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_adc_r() {
+        let mc = MockDevice {
+            bytes: collection! { 99 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.flags.carry = true;
+        cpu.registers.a = 11;
+        cpu.registers.b = 5;
+        let cycle = cpu.adc_r(Register::B);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 17);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, false);
     }
 }
