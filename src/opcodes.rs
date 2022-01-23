@@ -356,10 +356,10 @@ pub enum OpCode {
     /// Clock cycles: 4
     RrA,
 
-    /// LD HL, SP+s
-    /// The byte s is read as a signed integer and added to the register pair SP.
-    /// The result is then loaded into the register pair HL.
-    /// Clock cycles: 12
+    // LD HL, SP+s
+    // The byte s is read as a signed integer and added to the register pair SP.
+    // The result is then loaded into the register pair HL.
+    // Clock cycles: 12
     LdHlSps,
 
     /// RLCA

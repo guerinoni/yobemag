@@ -810,15 +810,14 @@ impl CentralProcessingUnit {
     }
 
     fn ld_hl_sp(&mut self) -> u8 {
-        let n = self.fetch_byte();
-        let (result, overflow) = self.registers.stack_pointer.overflowing_add(n as u16);
-        self.registers.flags.zero = result == 0;
+        let a = self.registers.stack_pointer;
+        let b = i16::from(self.fetch_byte() as i8) as u16;
+        self.registers.flags.carry = (a & 0x00FF) + (b & 0x00FF) > 0x00FF;
+        self.registers.flags.half_carry = (a & 0x000F) + (b & 0x000F) > 0x000F;
         self.registers.flags.negative = false;
-        self.registers.flags.carry = overflow;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_add(result, 1);
-        self.registers.stack_pointer = result;
-        self.registers.set_hl(self.registers.stack_pointer);
+        self.registers.flags.zero = false;
+        self.registers.set_hl(a.wrapping_add(b));
+
         12
     }
 
@@ -2162,13 +2161,14 @@ mod tests {
             words: collection! {},
         };
         let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        dbg!(cpu.registers.stack_pointer);
         let cycle = cpu.ld_hl_sp();
         assert_eq!(cycle, 12);
-        assert_eq!(cpu.registers.stack_pointer, 18);
+        assert_eq!(cpu.registers.stack_pointer, 65534);
         assert_eq!(cpu.registers.hl(), 18);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
-        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, true);
     }
 
