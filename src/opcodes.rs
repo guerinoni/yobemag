@@ -155,10 +155,12 @@ pub enum OpCode {
     // Clock cycles: 12
     LdHnA,
 
-    /// LD A, (FF00+C)
-    /// The byte at the memory address (FF00 + register C) - the Cth I/O port - is loaded into the register A.
-    /// Clock cycles: 8
-    LdAFF00C,
+    // LDH A, (C)
+    // Load to the 8-bit A register, data from the address specified by the 8-bit C register. The full 16-bit absolute
+    // address is obtained by setting the most significant byte to 0xFF and the least significant byte to the value of C,
+    // so the possible range is 0xFF00-0xFFFF.
+    // Clock cycles: 8
+    LdHAC,
 
     // LDH (C), A
     // Load to the address specified by the 8-bit C register, data from the 8-bit A register. The full 16-bit absolute
@@ -687,7 +689,7 @@ impl From<u8> for OpCode {
             0xEF => OpCode::Rst28,
             0xF0 => OpCode::LdHAn,
             0xF1 => OpCode::PopAf,
-            0xF2 => OpCode::LdAFF00C,
+            0xF2 => OpCode::LdHAC,
             0xF3 => OpCode::DI,
             0xF5 => OpCode::PushAf,
             0xF6 => OpCode::OrN,
