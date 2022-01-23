@@ -125,7 +125,7 @@ impl CentralProcessingUnit {
             OpCode::LdHAn => self.ld_a_ff00_n(),
             OpCode::LdHnA => self.ld_ff00_na(),
             OpCode::LdAFF00C => self.ld_a_ff00c(),
-            OpCode::LdFF00CA => self.ld_ff00_ca(),
+            OpCode::LdHCA => self.ld_ff00_ca(),
             OpCode::LddAHl => self.ldd_a_hl(),
             OpCode::LdNnSP => self.ld_nn_sp(),
             OpCode::LdiAHl => self.ldi_a_hl(),
@@ -434,7 +434,7 @@ impl CentralProcessingUnit {
     }
 
     fn ld_ff00_ca(&mut self) -> u8 {
-        let address = 0xFF00_u16 + self.registers.c as u16;
+        let address = 0xFF00 | self.registers.c as u16;
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
