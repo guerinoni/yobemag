@@ -219,6 +219,7 @@ impl CentralProcessingUnit {
             OpCode::AddaA => self.add_a_r(Register::A),
             OpCode::AddAHl => self.add_a_hl(),
             OpCode::AdcB => self.adc_r(Register::B),
+            OpCode::AdcC => self.adc_r(Register::C),
             OpCode::SubB => self.sub_r(Register::B),
             OpCode::SubC => self.sub_r(Register::C),
             OpCode::SubD => self.sub_r(Register::D),

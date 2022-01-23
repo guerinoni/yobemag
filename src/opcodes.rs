@@ -437,6 +437,7 @@ pub enum OpCode {
     // ADC r
     // Clock cycles: 4
     AdcB,
+    AdcC,
 
     /// ADC A, n
     /// Byte n is read as an integer and added to the contents of register
@@ -645,6 +646,7 @@ impl From<u8> for OpCode {
             0x85 => OpCode::AddaL,
             0x86 => OpCode::AddAHl,
             0x88 => OpCode::AdcB,
+            0x89 => OpCode::AdcC,
             0x87 => OpCode::AddaA,
             0x90 => OpCode::SubB,
             0x91 => OpCode::SubC,
