@@ -175,9 +175,9 @@ pub enum OpCode {
     // Clock cycles: 8
     LddAHl,
 
-    /// LD (nn), SP
-    /// The contents of the 16-bit SP register are loaded to the word at the memory address specified in the 16-bit operand nn.
-    /// Clock cycles: 20
+    // LD (nn), SP
+    // Load to the absolute address specified by the 16-bit operand nn, data from the 16-bit SP register.
+    // Clock cycles: 20
     LdNnSP,
 
     // LD A, (HL+)
@@ -383,27 +383,31 @@ pub enum OpCode {
     RetNc,
     RetC,
 
-    /// PUSH qq
-    /// The contents of the register pair qq are pushed to the stack. First,
-    /// the stack pointer (SP) is decremented, and the high-order byte of qq
-    /// is loaded to the byte at the memory address specified by SP. Then,
-    /// SP is decremented again and the low-order byte of qq is loaded into
-    /// the byte at the memory address specified by SP. The register pair qq
-    /// may be any of BC, DE, HL or AF.
-    /// Clock cycles: 16
+    // PUSH rr
+    // Push to the stack memory, data from the 16-bit register rr.
+    // The contents of the register pair qq are pushed to the stack. First,
+    // the stack pointer (SP) is decremented, and the high-order byte of qq
+    // is loaded to the byte at the memory address specified by SP. Then,
+    // SP is decremented again and the low-order byte of qq is loaded into
+    // the byte at the memory address specified by SP. The register pair qq
+    // may be any of BC, DE, HL or AF.
+    // Clock cycles: 16
     PushBc,
     PushDe,
     PushHl,
     PushAf,
 
-    /// POP qq
-    /// The top two bytes of the stack are popped into the register pair qq.
-    /// First, the byte at the memory address specified by SP is loaded into
-    /// the low-order byte of qq. SP is then incremented, and the byte at the
-    /// memory address which it now specifies is loaded into the high-order
-    /// byte of qq, and SP is incremented again. The register pair qq may be
-    /// any of BC, DE, HL or AF.
-    /// Clock cycles: 12
+    // POP rr
+    // Pops to the 16-bit register rr, data from the stack memory.
+    // This instruction does not do calculations that affect flags, but POP AF completely replaces the F register
+    // value, so all flags are changed based on the 8-bit data that is read from memory.
+    // The top two bytes of the stack are popped into the register pair qq.
+    // First, the byte at the memory address specified by SP is loaded into
+    // the low-order byte of qq. SP is then incremented, and the byte at the
+    // memory address which it now specifies is loaded into the high-order
+    // byte of qq, and SP is incremented again. The register pair qq may be
+    // any of BC, DE, HL or AF.
+    // Clock cycles: 12
     PopBc,
     PopDe,
     PopHl,
