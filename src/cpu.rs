@@ -122,8 +122,8 @@ impl CentralProcessingUnit {
             OpCode::LdHlNn => self.ld_dd_nn(RegisterWord::HL),
             OpCode::LdSpNn => self.ld_dd_nn(RegisterWord::SP),
             OpCode::LddHlA => self.ldd_hl_a(),
-            OpCode::LdAFF00n => self.ld_a_ff00_n(),
-            OpCode::LdFF00nA => self.ld_ff00_na(),
+            OpCode::LdHAn => self.ld_a_ff00_n(),
+            OpCode::LdHnA => self.ld_ff00_na(),
             OpCode::LdAFF00C => self.ld_a_ff00c(),
             OpCode::LdFF00CA => self.ld_ff00_ca(),
             OpCode::LddAHl => self.ldd_a_hl(),
@@ -404,8 +404,8 @@ impl CentralProcessingUnit {
     }
 
     fn ld_a_ff00_n(&mut self) -> u8 {
-        let add = 0xFF00_usize + self.fetch_byte() as usize;
-        self.registers.a = match self.mmu.read_byte(add) {
+        let address = 0xFF00_u16 | u16::from(self.fetch_byte());
+        self.registers.a = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -414,7 +414,7 @@ impl CentralProcessingUnit {
     }
 
     fn ld_ff00_na(&mut self) -> u8 {
-        let address = 0xFF00_u16 + self.fetch_byte() as u16;
+        let address = 0xFF00_u16 | u16::from(self.fetch_byte());
         match self.mmu.write_byte(address as usize, self.registers.a) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -465,13 +465,13 @@ impl CentralProcessingUnit {
     }
 
     fn ldi_a_hl(&mut self) -> u8 {
-        let hl = self.registers.hl();
-        self.registers.a = match self.mmu.read_byte(hl as usize) {
+        let address = self.registers.hl();
+        self.registers.a = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
 
-        self.registers.set_hl(hl + 1);
+        self.registers.set_hl(address + 1);
 
         8
     }

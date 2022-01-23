@@ -128,7 +128,7 @@ impl Registers {
         }
     }
 
-    pub fn get_register(&self, reg: Register) -> u8{
+    pub fn get_register(&self, reg: Register) -> u8 {
         match reg {
             Register::B => self.b,
             Register::C => self.c,

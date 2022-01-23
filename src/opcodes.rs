@@ -1,8 +1,8 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum OpCode {
-    /// LD r, n
-    /// Byte n is read as an integer and loaded into register r.
-    /// Clock cycles: 8
+    // LD r, n
+    // Load to the 8-bit register r, the immediate data n.
+    // Clock cycles: 8
     LdBNext,
     LdCNext,
     LdDNext,
@@ -11,9 +11,9 @@ pub enum OpCode {
     LdLNext,
     LdANext,
 
-    /// LD r, r'
-    /// The contents of the register r' are loaded to the register r.
-    /// Clock cycles: 4
+    // LD r, r’
+    // Load to the 8-bit register r, data from the 8-bit register r’.
+    // Clock cycles: 4
     LdBB,
     LdBC,
     LdBD,
@@ -70,9 +70,9 @@ pub enum OpCode {
     LdAL,
     LdAA,
 
-    /// LD r, (HL)
-    /// The byte at the memory address stored in the register pair HL is loaded into register r.
-    /// Clock cycles: 8
+    // LD r, (HL)
+    // Load to the 8-bit register r, data from the absolute address specified by the 16-bit register HL.
+    // Clock cycles: 8
     LdBHL,
     LdCHL,
     LdDHL,
@@ -81,9 +81,9 @@ pub enum OpCode {
     LdLHL,
     LdAHL,
 
-    /// LD (HL), r
-    /// The contents of register r are loaded into the byte at the memory address specified in the register pair HL.
-    /// Clock cycles: 8
+    // LD (HL), r
+    // Load to the absolute address specified by the 16-bit register HL, data from the 8-bit register r.
+    // Clock cycles: 8
     LdHlB,
     LdHlC,
     LdHlD,
@@ -92,14 +92,14 @@ pub enum OpCode {
     LdHlL,
     LdHlA,
 
-    /// LD A, (BC)
-    /// The byte at the memory address specified in the register pair BC is loaded in to the register A.
-    /// Clock cycles: 8
+    // LD A, (BC)
+    // Load to the 8-bit A register, data from the absolute address specified by the 16-bit register BC.
+    // Clock cycles: 8
     LdABc,
 
-    /// LD A, (DE)
-    /// The byte at the memory address specified in the register pair DE is loaded in to the register A.
-    /// Clock cycles: 8
+    // LD A, (DE)
+    // Load to the 8-bit A register, data from the absolute address specified by the 16-bit register DE.
+    // Clock cycles: 8
     LdADe,
 
     /// LD A, (nn)
@@ -107,20 +107,19 @@ pub enum OpCode {
     /// Clock cycles: 16
     LdANn,
 
-    /// LD (HL), n
-    /// Byte n is read as an integer and loaded into the memory address specified in the register pair HL.
-    /// Clock cycles: 12
+    // LD r, (HL)
+    // Load to the 8-bit register r, data from the absolute address specified by the 16-bit register HL.
+    // Duration 2 machine cycles
     LdHlN,
 
-    /// LD (BC), A
-    /// The contents of the register A are loaded into the byte at the
-    /// memory address specified in the register pair BC.
-    /// Clock cycles: 8
+    // LD (BC), a
+    // Load to the absolute address specified by the 16-bit register BC, data from the 8-bit A register.
+    // Clock cycles: 8
     LdBcA,
 
-    /// LD (DE), A
-    /// The contents of the register A are loaded into the byte at the memory address specified in the register pair BC.
-    /// Clock cycles: 8
+    // LD (DE), a
+    // Load to the absolute address specified by the 16-bit register DE, data from the 8-bit A register.
+    // Clock cycles: 8
     LdDeA,
 
     /// LD (nn), A
@@ -136,22 +135,25 @@ pub enum OpCode {
     LdHlNn,
     LdSpNn,
 
-    /// LDD (HL), A
-    /// The contents of the register A are loaded into the byte at the memory address specified by the register pair HL.
-    /// HL is then decremented by 1.
-    /// Clock cycles: 8
+    // LD (HL-), A
+    // Load to the absolute address specified by the 16-bit register HL, data from the 8-bit A register. The value of
+    // HL is decremented after the memory write.
+    // Clock cycles: 8
     LddHlA,
 
-    /// LD A, (FF00+n)
-    /// The byte at the memory address (FF00+n) - the nth I/O port - is
-    /// loaded into the register A.
-    /// Clock cycles: 12
-    LdAFF00n,
+    // LDH A, (n)
+    // Load to the 8-bit A register, data from the address specified by the 8-bit immediate data n. The full 16-bit
+    // absolute address is obtained by setting the most significant byte to 0xFF and the least significant byte to the
+    // value of n, so the possible range is 0xFF00-0xFFFF.
+    // Clock cycles: 12
+    LdHAn,
 
-    /// LD (FF00+n), A
-    /// The contents of the register A are loaded into the byte at the  memory address (FF00+n) - the nth I/O port.
-    /// Clock cycles: 12
-    LdFF00nA,
+    // LDH (n), A
+    // Load to the address specified by the 8-bit immediate data n, data from the 8-bit A register. The full 16-bit
+    // absolute address is obtained by setting the most significant byte to 0xFF and the least significant byte to the
+    // value of n, so the possible range is 0xFF00-0xFFFF.
+    // Clock cycles: 12
+    LdHnA,
 
     /// LD A, (FF00+C)
     /// The byte at the memory address (FF00 + register C) - the Cth I/O port - is loaded into the register A.
@@ -163,9 +165,10 @@ pub enum OpCode {
     /// Clock cycles: 8
     LdFF00CA,
 
-    /// LDD A, (HL)
-    /// The byte at the memory address specified by the register pair HL is loaded into the register A. HL is then decremented by 1.
-    /// Clock cycles: 8
+    // LD A, (HL-)
+    // Load to the 8-bit A register, data from the absolute address specified by the 16-bit register HL. The value of
+    // HL is decremented after the memory read.
+    // Clock cycles: 8
     LddAHl,
 
     /// LD (nn), SP
@@ -173,15 +176,16 @@ pub enum OpCode {
     /// Clock cycles: 20
     LdNnSP,
 
-    /// LDI A, (HL)
-    /// The byte at the memory address specified by the register pair HL is loaded into the register A. HL is then incremented by 1.
-    /// Clock cycles: 8
+    // LD A, (HL+)
+    // Load to the 8-bit A register, data from the absolute address specified by the 16-bit register HL. The value of
+    // HL is incremented after the memory read.
+    // Clock cycles: 8
     LdiAHl,
 
-    /// LDI (HL), A
-    /// The contents of the register A are loaded into the byte at the memory address specified by the register pair HL.
-    /// HL is then incremented by 1.
-    /// Clock cycles: 8
+    // LD (HL+), A
+    // Load to the absolute address specified by the 16-bit register HL, data from the 8-bit A register. The value of
+    // HL is incremented after the memory write.
+    // Clock cycles: 8
     LdiHlA,
 
     /// OR r
@@ -669,7 +673,7 @@ impl From<u8> for OpCode {
             0xDA => OpCode::JpCNn,
             0xDC => OpCode::CallCNn,
             0xDF => OpCode::Rst18,
-            0xE0 => OpCode::LdFF00nA,
+            0xE0 => OpCode::LdHnA,
             0xE1 => OpCode::PopHl,
             0xE2 => OpCode::LdFF00CA,
             0xE5 => OpCode::PushHl,
@@ -679,7 +683,7 @@ impl From<u8> for OpCode {
             0xEA => OpCode::LdNnA,
             0xEE => OpCode::XorN,
             0xEF => OpCode::Rst28,
-            0xF0 => OpCode::LdAFF00n,
+            0xF0 => OpCode::LdHAn,
             0xF1 => OpCode::PopAf,
             0xF2 => OpCode::LdAFF00C,
             0xF3 => OpCode::DI,
