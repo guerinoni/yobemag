@@ -896,19 +896,10 @@ impl CentralProcessingUnit {
         12
     }
 
-    fn add(&mut self, value0: u8, value1: u8) -> u8 {
-        let (result, overflow) = value0.overflowing_add(value1);
-        self.registers.flags.zero = result == 0;
-        self.registers.flags.negative = false;
-        self.registers.flags.carry = overflow;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_add(result as u16, 1);
-        result
-    }
-
     fn add_a_n(&mut self) -> u8 {
-        let n = self.fetch_byte();
-        self.registers.a = self.add(self.registers.a, n);
+        let v = self.fetch_byte();
+        self.alu_add(v);
+
         8
     }
 
@@ -1795,7 +1786,7 @@ mod tests {
             assert_eq!(cpu.registers.a, 21);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
-            assert_eq!(cpu.registers.flags.half_carry, false);
+            assert_eq!(cpu.registers.flags.half_carry, true);
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
@@ -1810,7 +1801,7 @@ mod tests {
             assert_eq!(cpu.registers.a, 255);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
-            assert_eq!(cpu.registers.flags.half_carry, true);
+            assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, false);
         }
     }

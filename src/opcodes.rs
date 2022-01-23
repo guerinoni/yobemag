@@ -413,9 +413,9 @@ pub enum OpCode {
     PopHl,
     PopAf,
 
-    /// ADD A, n
-    /// Byte n is read as an integer and added to the contents of register A, and the result is stored in register A.
-    /// Clock cycles: 8
+    // ADD A, n
+    // Byte n is read as an integer and added to the contents of register A, and the result is stored in register A.
+    // Clock cycles: 8
     AddaN,
 
     // ADD A, r:
