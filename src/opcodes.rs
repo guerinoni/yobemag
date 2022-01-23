@@ -418,10 +418,10 @@ pub enum OpCode {
     /// Clock cycles: 8
     AddaN,
 
-    /// ADD A, r:
-    /// The contents of register r are added to the contents of register A
-    /// (the Accumulator) and the result is stored in register A.
-    /// Clock cycles: 4
+    // ADD A, r:
+    // The contents of register r are added to the contents of register A
+    // (the Accumulator) and the result is stored in register A.
+    // Clock cycles: 4
     AddaB,
     AddaC,
     AddaD,

@@ -925,18 +925,26 @@ impl CentralProcessingUnit {
         8
     }
 
-    fn add_a_r(&mut self, reg: Register) -> u8 {
-        let r = match reg {
-            Register::B => self.registers.b,
-            Register::C => self.registers.c,
-            Register::D => self.registers.d,
-            Register::E => self.registers.e,
-            Register::H => self.registers.h,
-            Register::L => self.registers.l,
-            Register::A => self.registers.a,
-        };
+    // Add n to A.
+    // n = A,B,C,D,E,H,L,(HL),#
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Set if carry from bit 3.
+    // C - Set if carry from bit 7.
+    fn alu_add(&mut self, n: u8) {
+        let a = self.registers.a;
+        let result = a.wrapping_add(n);
+        self.registers.flags.negative = false;
+        self.registers.flags.carry = u16::from(a) + u16::from(n) > 0xFF;
+        self.registers.flags.half_carry = (a & 0x0F) + (n & 0x0F) > 0x0F;
+        self.registers.flags.zero = result == 0x00;
+        self.registers.a = result;
+    }
 
-        self.registers.a = self.add(self.registers.a, r);
+    fn add_a_r(&mut self, reg: Register) -> u8 {
+        self.alu_add(self.registers.get_register(reg));
 
         4
     }
@@ -2141,7 +2149,7 @@ mod tests {
         assert_eq!(cpu.registers.a, 15);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
-        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, false);
     }
 
@@ -2189,7 +2197,6 @@ mod tests {
         assert_eq!(cpu.mmu.read_byte(65533).unwrap(), 1);
         assert_eq!(cpu.mmu.read_byte(65532).unwrap(), 0);
     }
-
 
     #[test]
     fn verify_ld_sp_hl() {
