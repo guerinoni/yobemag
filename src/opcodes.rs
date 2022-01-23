@@ -430,6 +430,10 @@ pub enum OpCode {
     AddaL,
     AddaA,
 
+    // ADD A,(HL)
+    // Clock cycles: 8
+    AddAHl,
+
     /// ADC A, n
     /// Byte n is read as an integer and added to the contents of register
     /// A along with the value of the carry flag. The result is then stored in register A.
@@ -635,6 +639,7 @@ impl From<u8> for OpCode {
             0x83 => OpCode::AddaE,
             0x84 => OpCode::AddaH,
             0x85 => OpCode::AddaL,
+            0x86 => OpCode::AddAHl,
             0x87 => OpCode::AddaA,
             0x90 => OpCode::SubB,
             0x91 => OpCode::SubC,

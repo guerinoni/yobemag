@@ -217,6 +217,7 @@ impl CentralProcessingUnit {
             OpCode::AddaH => self.add_a_r(Register::H),
             OpCode::AddaL => self.add_a_r(Register::L),
             OpCode::AddaA => self.add_a_r(Register::A),
+            OpCode::AddAHl => self.add_a_hl(),
             OpCode::SubB => self.sub_r(Register::B),
             OpCode::SubC => self.sub_r(Register::C),
             OpCode::SubD => self.sub_r(Register::D),
@@ -947,6 +948,18 @@ impl CentralProcessingUnit {
         self.alu_add(self.registers.get_register(reg));
 
         4
+    }
+
+    fn add_a_hl(&mut self) -> u8 {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        self.alu_add(v);
+
+        8
     }
 
     fn sub_r(&mut self, reg: Register) -> u8 {
@@ -2210,5 +2223,24 @@ mod tests {
         let cycle = cpu.ld_sp_hl();
         assert_eq!(cycle, 4);
         assert_eq!(cpu.registers.stack_pointer, 99);
+    }
+
+    #[test]
+    fn verify_add_a_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 99 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(99);
+        cpu.registers.a = 1;
+        let cycle = cpu.add_a_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 11);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }
