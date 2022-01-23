@@ -102,9 +102,9 @@ pub enum OpCode {
     // Clock cycles: 8
     LdADe,
 
-    /// LD A, (nn)
-    /// The byte at the memory address specified by the 16-bit short nn is loaded into the register A.
-    /// Clock cycles: 16
+    // LD A, (nn)
+    // Load to the 8-bit A register, data from the absolute address specified by the 16-bit operand nn.
+    // Clock cycles: 16
     LdANn,
 
     // LD r, (HL)
@@ -122,14 +122,14 @@ pub enum OpCode {
     // Clock cycles: 8
     LdDeA,
 
-    /// LD (nn), A
-    /// The contents of the register A are loaded into the byte at the memory address specified by the 16-bit short nn.
-    /// Clock cycles: 16
+    // LD (nn), A
+    // Load to the absolute address specified by the 16-bit operand nn, data from the 8-bit A register.
+    // Clock cycles: 16
     LdNnA,
 
-    /// LD dd, nn
-    /// The 16-bit short nn is read as an integer and loaded into the register pair dd.
-    /// Clock cycles: 12
+    // LD rr, nn
+    // Load to the 16-bit register rr, the immediate 16-bit data nn.
+    // Clock cycles: 12
     LdBcNn,
     LdDeNn,
     LdHlNn,
@@ -191,6 +191,11 @@ pub enum OpCode {
     // HL is incremented after the memory write.
     // Clock cycles: 8
     LdiHlA,
+
+    // LD SP, HL
+    // Load to the 16-bit SP register, data from the 16-bit HL register.
+    // Clock cycles: 4
+    LdSpHl,
 
     /// OR r
     /// A bitwise OR operation is performed between the contents of the register r and the contents of the register A, and the result is  stored in register A.
@@ -695,6 +700,7 @@ impl From<u8> for OpCode {
             0xF6 => OpCode::OrN,
             0xF7 => OpCode::Rst30,
             0xF8 => OpCode::LdHlSps,
+            0xF9 => OpCode::LdSpHl,
             0xFA => OpCode::LdANn,
             0xFE => OpCode::CpN,
             0xFF => OpCode::Rst38,

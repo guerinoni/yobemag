@@ -130,6 +130,7 @@ impl CentralProcessingUnit {
             OpCode::LdNnSP => self.ld_nn_sp(),
             OpCode::LdiAHl => self.ldi_a_hl(),
             OpCode::LdiHlA => self.ldi_hl_a(),
+            OpCode::LdSpHl => self.ld_sp_hl(),
             OpCode::OrB => self.or_r(Register::B),
             OpCode::OrC => self.or_r(Register::C),
             OpCode::OrD => self.or_r(Register::D),
@@ -337,12 +338,10 @@ impl CentralProcessingUnit {
 
     fn ld_a_nn(&mut self) -> u8 {
         let address = self.fetch_word();
-        let v = match self.mmu.read_byte(address as usize) {
+        self.registers.a = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
-
-        self.registers.a = v;
 
         8
     }
@@ -379,14 +378,8 @@ impl CentralProcessingUnit {
     }
 
     fn ld_dd_nn(&mut self, reg: RegisterWord) -> u8 {
-        let nn = self.fetch_word();
-        match reg {
-            RegisterWord::BC => self.registers.set_bc(nn),
-            RegisterWord::DE => self.registers.set_de(nn),
-            RegisterWord::HL => self.registers.set_hl(nn),
-            RegisterWord::SP => self.registers.stack_pointer = nn,
-            _ => panic!("should never go here"),
-        };
+        let v = self.fetch_word();
+        self.registers.set_register_word(&reg, v);
 
         12
     }
@@ -486,6 +479,12 @@ impl CentralProcessingUnit {
         self.registers.set_hl(address + 1);
 
         8
+    }
+
+    fn ld_sp_hl(&mut self) -> u8 {
+        self.registers.stack_pointer = self.registers.hl();
+
+        4
     }
 
     fn or(&mut self, value: u8) {
@@ -2198,5 +2197,20 @@ mod tests {
         assert_eq!(cpu.registers.program_counter, 0x08);
         assert_eq!(cpu.mmu.read_byte(65533).unwrap(), 1);
         assert_eq!(cpu.mmu.read_byte(65532).unwrap(), 0);
+    }
+
+
+    #[test]
+    fn verify_ld_sp_hl() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(99);
+        let cycle = cpu.ld_sp_hl();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.stack_pointer, 99);
     }
 }
