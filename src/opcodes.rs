@@ -221,10 +221,10 @@ pub enum OpCode {
     // Clock cycles: 8
     OrN,
 
-    /// XOR r
-    /// A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
-    /// stored in register A.
-    /// Clock cycles: 4
+    // XOR r
+    // A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
+    // stored in register A.
+    // Clock cycles: 4
     XorB,
     XorC,
     XorD,
@@ -233,10 +233,10 @@ pub enum OpCode {
     XorL,
     XorA,
 
-    /// XOR (HL)
-    /// A bitwise XOR operation is performed between the byte at the memory address specified in the virtual 16-bit register HL and the contents
-    /// of register A, and the result is stored in register A.
-    /// Clock cycles: 8
+    // XOR (HL)
+    // A bitwise XOR operation is performed between the byte at the memory address specified in the virtual 16-bit register HL and the contents
+    // of register A, and the result is stored in register A.
+    // Clock cycles: 8
     XorHl,
 
     /// XOR n

@@ -557,48 +557,45 @@ impl CentralProcessingUnit {
         8
     }
 
-    fn xor_r(&mut self, reg: Register) -> u8 {
-        let r = match reg {
-            Register::B => self.registers.b,
-            Register::C => self.registers.c,
-            Register::D => self.registers.d,
-            Register::E => self.registers.e,
-            Register::H => self.registers.h,
-            Register::L => self.registers.l,
-            Register::A => self.registers.a,
-        };
-
-        self.registers.a ^= r;
-        self.registers.flags.zero = self.registers.a == 0;
+    // Logical exclusive OR n with register A, result in A.
+    // n = A,B,C,D,E,H,L,(HL),#
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Reset.
+    // C - Reset.
+    fn alu_xor(&mut self, n: u8) {
+        let result = self.registers.a ^ n;
         self.registers.flags.carry = false;
         self.registers.flags.half_carry = false;
         self.registers.flags.negative = false;
+        self.registers.flags.zero = result == 0x00;
+        self.registers.a = result;
+    }
+
+    fn xor_r(&mut self, reg: Register) -> u8 {
+        let v = self.registers.get_register(reg);
+        self.alu_xor(v);
 
         4
     }
 
     fn xor_hl(&mut self) -> u8 {
-        let n = match self.mmu.read_byte(self.registers.hl() as usize) {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
 
-        self.registers.a ^= n;
-        self.registers.flags.zero = self.registers.a == 0;
-        self.registers.flags.carry = false;
-        self.registers.flags.half_carry = false;
-        self.registers.flags.negative = false;
+        self.alu_xor(v);
 
         8
     }
 
     fn xor_n(&mut self) -> u8 {
-        let n = self.fetch_byte();
-        self.registers.a ^= n;
-        self.registers.flags.zero = self.registers.a == 0;
-        self.registers.flags.carry = false;
-        self.registers.flags.half_carry = false;
-        self.registers.flags.negative = false;
+        let v = self.fetch_byte();
+        self.alu_xor(v);
 
         8
     }
