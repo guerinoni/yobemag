@@ -235,6 +235,13 @@ impl CentralProcessingUnit {
             OpCode::SubA => self.sub_r(Register::A),
             OpCode::SubHl => self.sub_hl(),
             OpCode::SubN => self.sub_n(),
+            OpCode::SbcAB => self.sbc_a_r(Register::B),
+            OpCode::SbcAC => self.sbc_a_r(Register::C),
+            OpCode::SbcAD => self.sbc_a_r(Register::D),
+            OpCode::SbcAE => self.sbc_a_r(Register::E),
+            OpCode::SbcAH => self.sbc_a_r(Register::H),
+            OpCode::SbcAL => self.sbc_a_r(Register::L),
+            OpCode::SbcAA => self.sbc_a_r(Register::A),
             OpCode::AndN => self.and_n(),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
@@ -1004,8 +1011,8 @@ impl CentralProcessingUnit {
         let a = self.registers.a;
         let result = a.wrapping_sub(n);
         self.registers.flags.carry = u16::from(a) < u16::from(n);
-        self.registers.flags.half_carry =  (a & 0x0F) < (n & 0x0F);
-        self.registers.flags.negative= true;
+        self.registers.flags.half_carry = (a & 0x0F) < (n & 0x0F);
+        self.registers.flags.negative = true;
         self.registers.flags.zero = result == 0x00;
         self.registers.a = result;
     }
@@ -1030,16 +1037,36 @@ impl CentralProcessingUnit {
     }
 
     fn sub_n(&mut self) -> u8 {
-        let n = self.fetch_byte();
-        let (result, overflow) = self.registers.a.overflowing_sub(n);
-        self.registers.flags.zero = result == 0;
-        self.registers.flags.negative = true;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_sub(self.registers.a, n);
-        self.registers.flags.carry = overflow;
+        let v = self.fetch_byte();
+        self.alu_sub(v);
 
-        self.registers.a = result;
         8
+    }
+
+    // Subtract n + Carry flag from A.
+    // n = A,B,C,D,E,H,L,(HL),#
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Set.
+    // H - Set if no borrow from bit 4.
+    // C - Set if no borrow.
+    fn alu_sbc(&mut self, n: u8) {
+        let a = self.registers.a;
+        let c = u8::from(self.registers.flags.carry);
+        let result = a.wrapping_sub(n).wrapping_sub(c);
+        self.registers.flags.carry = u16::from(a) < u16::from(n) + u16::from(c);
+        self.registers.flags.half_carry = (a & 0x0F) < (n & 0x0F) + c;
+        self.registers.flags.negative = true;
+        self.registers.flags.zero = result == 0x00;
+        self.registers.a = result;
+    }
+
+    fn sbc_a_r(&mut self, reg: Register) -> u8 {
+        let v = self.registers.get_register(reg);
+        self.alu_sbc(v);
+
+        4
     }
 
     fn and_n(&mut self) -> u8 {
@@ -2339,6 +2366,26 @@ mod tests {
         let cycle = cpu.sub_hl();
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 15);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, true);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_sbc_a_r() {
+        let mc = MockDevice {
+            bytes: collection! { 99 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 35;
+        cpu.registers.b = 25;
+        cpu.registers.flags.carry = true;
+        let cycle = cpu.sbc_a_r(Register::B);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 9);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);

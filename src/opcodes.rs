@@ -476,10 +476,23 @@ pub enum OpCode {
     // Clock cycles: 8
     SubHl,
 
-    /// SUB n
-    /// Byte n is read as an integer and subtracted from the contents of register A, and the result is stored in register A.
-    /// Clock cycles: 8
+    // SUB n
+    // Byte n is read as an integer and subtracted from the contents of register A, and the result is stored in register A.
+    // Clock cycles: 8
     SubN,
+
+    // SBC A, r
+    // The contents of the register r along with the value of the carry
+    // flag are both subtracted from the register A, and the result is
+    // stored in register A. Register r may be any of B, C, D, E, H, L or A.
+    // Clock cycles: 4
+    SbcAB,
+    SbcAC,
+    SbcAD,
+    SbcAE,
+    SbcAH,
+    SbcAL,
+    SbcAA,
 
     /// AND n
     /// A bitwise AND operation is performed between the byte n and the contents of register A, and the result is stored in register A.
@@ -680,7 +693,14 @@ impl From<u8> for OpCode {
             0x94 => OpCode::SubH,
             0x95 => OpCode::SubL,
             0x96 => OpCode::SubHl,
+            0x98 => OpCode::SbcAB,
             0x97 => OpCode::SubA,
+            0x99 => OpCode::SbcAC,
+            0x9A => OpCode::SbcAD,
+            0x9B => OpCode::SbcAE,
+            0x9C => OpCode::SbcAH,
+            0x9D => OpCode::SbcAL,
+            0x9F => OpCode::SbcAA,
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
             0xAA => OpCode::XorD,
