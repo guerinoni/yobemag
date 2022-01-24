@@ -365,10 +365,10 @@ pub enum OpCode {
     CallNcNn,
     CallCNn,
 
-    /// CP n
-    /// The byte n is compared with (subtracted from) the register A, setting
-    /// the appropriate flags but not storing the result.
-    /// Clock cycles: 8
+    // CP n
+    // The byte n is compared with (subtracted from) the register A, setting
+    // the appropriate flags but not storing the result.
+    // Clock cycles: 8
     CpN,
 
     /// RRA

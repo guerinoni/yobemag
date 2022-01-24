@@ -773,15 +773,8 @@ impl CentralProcessingUnit {
     }
 
     fn cp_n(&mut self) -> u8 {
-        let n = self.fetch_byte();
-        let ret = self.registers.a;
-        let (result, overflow) = self.registers.a.overflowing_sub(n);
-        self.registers.flags.zero = result == 0;
-        self.registers.flags.negative = true;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_sub(self.registers.a, n);
-        self.registers.flags.carry = overflow;
-        self.registers.a = ret;
+        let v = self.fetch_byte();
+        self.alu_cp(v);
 
         8
     }
