@@ -233,6 +233,7 @@ impl CentralProcessingUnit {
             OpCode::SubH => self.sub_r(Register::H),
             OpCode::SubL => self.sub_r(Register::L),
             OpCode::SubA => self.sub_r(Register::A),
+            OpCode::SubHl => self.sub_hl(),
             OpCode::SubN => self.sub_n(),
             OpCode::AndN => self.and_n(),
             OpCode::DI => self.di(),
@@ -911,16 +912,9 @@ impl CentralProcessingUnit {
         8
     }
 
-    fn adca_n(&mut self) -> u8 {
-        let n = self.fetch_byte();
-        let a = self.registers.a;
-        let carry = self.registers.flags.carry;
-        let result = self.registers.a.wrapping_add(n).wrapping_add(carry as u8);
-        self.registers.flags.zero = result == 0;
-        self.registers.flags.negative = false;
-        self.registers.flags.half_carry = (a & 0xF) + (n & 0xF) + carry as u8 > 0xF;
-        self.registers.flags.carry = (a as u16) + (n as u16) + (carry as u8 as u16) > 0xFF;
-        self.registers.a = result;
+    fn adc_a_n(&mut self) -> u8 {
+        let v = self.fetch_byte();
+        self.alu_adc(v);
 
         8
     }
@@ -1021,6 +1015,18 @@ impl CentralProcessingUnit {
         self.alu_sub(v);
 
         4
+    }
+
+    fn sub_hl(&mut self) -> u8 {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        self.alu_sub(v);
+
+        8
     }
 
     fn sub_n(&mut self) -> u8 {
@@ -2317,6 +2323,25 @@ mod tests {
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_sub_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 99 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(99);
+        cpu.registers.a = 25;
+        let cycle = cpu.sub_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 15);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, true);
+        assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, false);
     }
 }

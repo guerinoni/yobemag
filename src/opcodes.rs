@@ -469,6 +469,13 @@ pub enum OpCode {
     SubL,
     SubA,
 
+    // SUB (HL)
+    // The byte at the memory address specified in the virtual 16-bit
+    // register HL is subtracted from the register A and the result is
+    // stored in register A.
+    // Clock cycles: 8
+    SubHl,
+
     /// SUB n
     /// Byte n is read as an integer and subtracted from the contents of register A, and the result is stored in register A.
     /// Clock cycles: 8
@@ -672,6 +679,7 @@ impl From<u8> for OpCode {
             0x93 => OpCode::SubE,
             0x94 => OpCode::SubH,
             0x95 => OpCode::SubL,
+            0x96 => OpCode::SubHl,
             0x97 => OpCode::SubA,
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
