@@ -209,7 +209,7 @@ impl CentralProcessingUnit {
             OpCode::PopHl => self.pop_rr(RegisterWord::HL),
             OpCode::PopAf => self.pop_rr(RegisterWord::AF),
             OpCode::AddaN => self.add_a_n(),
-            OpCode::AdcaN => self.adca_n(),
+            OpCode::AdcAn => self.adc_a_n(),
             OpCode::AddaB => self.add_a_r(Register::B),
             OpCode::AddaC => self.add_a_r(Register::C),
             OpCode::AddaD => self.add_a_r(Register::D),
@@ -1982,7 +1982,7 @@ mod tests {
             };
             let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 1;
-            let cycle = cpu.adca_n();
+            let cycle = cpu.adc_a_n();
             assert_eq!(cycle, 8);
             assert_eq!(cpu.registers.a, 10);
             assert_eq!(cpu.registers.flags.zero, false);
@@ -1997,7 +1997,7 @@ mod tests {
             };
             let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 0xFF;
-            let cycle = cpu.adca_n();
+            let cycle = cpu.adc_a_n();
             assert_eq!(cycle, 8);
             assert_eq!(cpu.registers.a, 0);
             assert_eq!(cpu.registers.flags.zero, true);

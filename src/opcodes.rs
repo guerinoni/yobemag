@@ -451,11 +451,11 @@ pub enum OpCode {
     // Clock cycles: 8
     AdcAHl,
 
-    /// ADC A, n
-    /// Byte n is read as an integer and added to the contents of register
-    /// A along with the value of the carry flag. The result is then stored in register A.
-    /// Clock cycles: 8
-    AdcaN,
+    // ADC A, n
+    // Byte n is read as an integer and added to the contents of register
+    // A along with the value of the carry flag. The result is then stored in register A.
+    // Clock cycles: 8
+    AdcAn,
 
     /// SUB r
     /// The contents of the register r are subtracted from the contents of register A, and the result is stored in register A.
@@ -703,7 +703,7 @@ impl From<u8> for OpCode {
             0xCB => OpCode::CB,
             0xCC => OpCode::CallZNn,
             0xCD => OpCode::CallNn,
-            0xCE => OpCode::AdcaN,
+            0xCE => OpCode::AdcAn,
             0xCF => OpCode::Rst08,
             0xD0 => OpCode::RetNc,
             0xD1 => OpCode::PopDe,
