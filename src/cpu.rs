@@ -998,25 +998,27 @@ impl CentralProcessingUnit {
         8
     }
 
-    fn sub_r(&mut self, reg: Register) -> u8 {
-        let r = match reg {
-            Register::B => self.registers.b,
-            Register::C => self.registers.c,
-            Register::D => self.registers.d,
-            Register::E => self.registers.e,
-            Register::H => self.registers.h,
-            Register::L => self.registers.l,
-            Register::A => self.registers.a,
-        };
-
-        let (result, overflow) = self.registers.a.overflowing_sub(r);
-        self.registers.flags.zero = result == 0;
-        self.registers.flags.negative = true;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_sub(self.registers.a, r);
-        self.registers.flags.carry = overflow;
-
+    // Subtract n from A.
+    // n = A,B,C,D,E,H,L,(HL),#
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Set.
+    // H - Set if no borrow from bit 4.
+    // C - Set if no borrow
+    fn alu_sub(&mut self, n: u8) {
+        let a = self.registers.a;
+        let result = a.wrapping_sub(n);
+        self.registers.flags.carry = u16::from(a) < u16::from(n);
+        self.registers.flags.half_carry =  (a & 0x0F) < (n & 0x0F);
+        self.registers.flags.negative= true;
+        self.registers.flags.zero = result == 0x00;
         self.registers.a = result;
+    }
+
+    fn sub_r(&mut self, reg: Register) -> u8 {
+        let v = self.registers.get_register(reg);
+        self.alu_sub(v);
 
         4
     }

@@ -457,10 +457,10 @@ pub enum OpCode {
     // Clock cycles: 8
     AdcAn,
 
-    /// SUB r
-    /// The contents of the register r are subtracted from the contents of register A, and the result is stored in register A.
-    /// Register r may be any of B, C, D, E, H, L, or A.
-    /// Clock cycles: 4
+    // SUB r
+    // The contents of the register r are subtracted from the contents of register A, and the result is stored in register A.
+    // Register r may be any of B, C, D, E, H, L, or A.
+    // Clock cycles: 4
     SubB,
     SubC,
     SubD,
