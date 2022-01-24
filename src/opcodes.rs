@@ -282,9 +282,9 @@ pub enum OpCode {
     IncHL,
     IncSP,
 
-    /// INC r
-    /// The register r is incremented by 1.
-    /// Clock cycles: 4
+    // INC r
+    // The register r is incremented by 1.
+    // Clock cycles: 4
     IncB,
     IncC,
     IncD,
@@ -292,6 +292,12 @@ pub enum OpCode {
     IncH,
     IncL,
     IncA,
+
+    // INC (HL)
+    // The byte at the memory address specified in the register HL is incremented
+    // by 1.
+    // Clock cycles: 12
+    IncHl,
 
     /// DEC rr
     /// The register pair rr is decremented by 1. Register pair rr may be any of BC, DE, HL or SP.
@@ -651,6 +657,7 @@ impl From<u8> for OpCode {
             0x31 => OpCode::LdSpNn,
             0x32 => OpCode::LddHlA,
             0x33 => OpCode::IncSP,
+            0x34 => OpCode::IncHl,
             0x36 => OpCode::LdHlN,
             0x35 => OpCode::DecHlSpecific,
             0x38 => OpCode::JrCPcDd,

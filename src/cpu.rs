@@ -172,6 +172,7 @@ impl CentralProcessingUnit {
             OpCode::IncH => self.inc_r(Register::H),
             OpCode::IncL => self.inc_r(Register::L),
             OpCode::IncA => self.inc_r(Register::A),
+            OpCode::IncHl => self.inc_hl(),
             OpCode::DecBc => self.dec_rr(RegisterWord::BC),
             OpCode::DecDe => self.dec_rr(RegisterWord::DE),
             OpCode::DecHl => self.dec_rr(RegisterWord::HL),
@@ -311,10 +312,6 @@ impl CentralProcessingUnit {
     fn halt(&mut self) -> u8 {
         self.halt = true;
         0
-    }
-
-    pub fn check_for_half_carry_first_nible_add(a: u16, b: u16) -> bool {
-        (((a & 0xF) + (b & 0xF)) & 0x10) != 0
     }
 
     pub fn check_for_half_carry_first_nible_sub(a: u8, b: u8) -> bool {
@@ -660,24 +657,43 @@ impl CentralProcessingUnit {
         8
     }
 
+    // Increment register n.
+    // n = A,B,C,D,E,H,L,(HL)
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Set if carry from bit 3.
+    // C - Not affected.
+    fn alu_inc(&mut self, a: u8) -> u8 {
+        let result = a.wrapping_add(1);
+        self.registers.flags.half_carry = (a & 0x0F) + 0x01 > 0x0F;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = result == 0x00;
+
+        result
+    }
+
     fn inc_r(&mut self, reg: Register) -> u8 {
-        let r = match reg {
-            Register::B => &mut self.registers.b,
-            Register::C => &mut self.registers.c,
-            Register::D => &mut self.registers.d,
-            Register::E => &mut self.registers.e,
-            Register::H => &mut self.registers.h,
-            Register::L => &mut self.registers.l,
-            Register::A => &mut self.registers.a,
+        let r = self.registers.get_register(&reg);
+        let v = self.alu_inc(r);
+        self.registers.set_register(&reg, v);
+
+        4
+    }
+
+    fn inc_hl(&mut self) -> u8 {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
         };
 
-        let ret = r.wrapping_add(1);
-        self.registers.flags.zero = ret == 0;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_add(*r as u16, 1);
-        self.registers.flags.negative = false;
-        *r = ret;
-
+        let h = self.alu_inc(v);
+        match self.mmu.write_byte(address as usize, h) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
         8
     }
 
@@ -1336,7 +1352,6 @@ mod tests {
         }
 
         fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
-            dbg!(address, value);
             self.bytes.insert(address, value);
             Ok(())
         }
@@ -1698,7 +1713,7 @@ mod tests {
             let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 15;
             let cycle = cpu.inc_r(Register::A);
-            assert_eq!(cycle, 8);
+            assert_eq!(cycle, 4);
             assert_eq!(cpu.registers.a, 16);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
@@ -1713,13 +1728,30 @@ mod tests {
             let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             cpu.registers.a = 1;
             let cycle = cpu.inc_r(Register::A);
-            assert_eq!(cycle, 8);
+            assert_eq!(cycle, 4);
             assert_eq!(cpu.registers.a, 2);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, false);
         }
+    }
+
+    #[test]
+    fn verify_inc_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 11 => 99 },
+            words: collection! {},
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(11);
+        let cycle = cpu.inc_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.hl(), 11);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 
     #[test]
@@ -2341,7 +2373,6 @@ mod tests {
             words: collection! {},
         };
         let mut cpu = CentralProcessingUnit::new(Box::new(mc));
-        dbg!(cpu.registers.stack_pointer);
         let cycle = cpu.ld_hl_sp();
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.stack_pointer, 65534);
@@ -2587,17 +2618,17 @@ mod tests {
     #[test]
     fn verify_cp_hl() {
         let mc = MockDevice {
-            bytes: collection! { 50 => 10 },
+            bytes: collection! { 5 => 10 },
             words: collection! {},
         };
 
         let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         cpu.registers.a = 1;
-        cpu.registers.set_hl(50);
+        cpu.registers.set_hl(5);
         let cycle = cpu.cp_hl();
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 1);
-        assert_eq!(cpu.registers.hl(), 50);
+        assert_eq!(cpu.registers.hl(), 5);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
