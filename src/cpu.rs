@@ -225,6 +225,7 @@ impl CentralProcessingUnit {
             OpCode::AdcH => self.adc_r(Register::H),
             OpCode::AdcL => self.adc_r(Register::L),
             OpCode::AdcA => self.adc_r(Register::A),
+            OpCode::AdcAHl => self.adc_a_hl(),
             OpCode::SubB => self.sub_r(Register::B),
             OpCode::SubC => self.sub_r(Register::C),
             OpCode::SubD => self.sub_r(Register::D),
@@ -983,6 +984,18 @@ impl CentralProcessingUnit {
         self.alu_adc(self.registers.get_register(reg));
 
         4
+    }
+
+    fn adc_a_hl(&mut self) -> u8 {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        self.alu_adc(v);
+
+        8
     }
 
     fn sub_r(&mut self, reg: Register) -> u8 {
@@ -2284,6 +2297,24 @@ mod tests {
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_adc_a_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 99 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.set_hl(99);
+        let cycle = cpu.adc_a_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 11);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, false);
     }
 }

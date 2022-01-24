@@ -444,6 +444,13 @@ pub enum OpCode {
     AdcL,
     AdcA,
 
+    // ADC A, (HL)
+    // The byte at the memory address specified in the virtual 16-bit
+    // register HL along with the value of the carry flag are added to the
+    // register A and the result is stored in register A.
+    // Clock cycles: 8
+    AdcAHl,
+
     /// ADC A, n
     /// Byte n is read as an integer and added to the contents of register
     /// A along with the value of the carry flag. The result is then stored in register A.
@@ -657,6 +664,7 @@ impl From<u8> for OpCode {
             0x8B => OpCode::AdcE,
             0x8C => OpCode::AdcH,
             0x8D => OpCode::AdcL,
+            0x8E => OpCode::AdcAHl,
             0x8F => OpCode::AdcA,
             0x90 => OpCode::SubB,
             0x91 => OpCode::SubC,
