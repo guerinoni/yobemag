@@ -508,6 +508,18 @@ pub enum OpCode {
     // Clock cycles: 8
     SbcAn,
 
+    // AND r
+    // A bitwise AND operation is performed between the contents of the
+    // register r and the contents of the register A, and the result is
+    // stored in register A. Register r may be any of B, C, D, E, H, L, or A.
+    // Clock cycles: 4
+    AndB,
+    AndC,
+    AndD,
+    AndE,
+    AndH,
+    AndL,
+    AndA,
 
     /// AND n
     /// A bitwise AND operation is performed between the byte n and the contents of register A, and the result is stored in register A.
@@ -717,6 +729,13 @@ impl From<u8> for OpCode {
             0x9D => OpCode::SbcAL,
             0x9E => OpCode::SbcAHl,
             0x9F => OpCode::SbcAA,
+            0xA0 => OpCode::AndB,
+            0xA1 => OpCode::AndC,
+            0xA2 => OpCode::AndD,
+            0xA3 => OpCode::AndE,
+            0xA4 => OpCode::AndH,
+            0xA5 => OpCode::AndL,
+            0xA7 => OpCode::AndA,
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
             0xAA => OpCode::XorD,

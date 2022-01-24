@@ -244,6 +244,13 @@ impl CentralProcessingUnit {
             OpCode::SbcAA => self.sbc_a_r(Register::A),
             OpCode::SbcAHl => self.sbc_a_hl(),
             OpCode::SbcAn => self.sbc_a_n(),
+            OpCode::AndB => self.and_r(Register::B),
+            OpCode::AndC => self.and_r(Register::C),
+            OpCode::AndD => self.and_r(Register::D),
+            OpCode::AndE => self.and_r(Register::E),
+            OpCode::AndH => self.and_r(Register::H),
+            OpCode::AndL => self.and_r(Register::L),
+            OpCode::AndA => self.and_r(Register::A),
             OpCode::AndN => self.and_n(),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
@@ -1088,6 +1095,30 @@ impl CentralProcessingUnit {
         self.alu_sbc(v);
 
         8
+    }
+
+    // Logically AND n with A, result in A.
+    // n = A,B,C,D,E,H,L,(HL),#
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Set.
+    // C - Reset
+    fn alu_and(&mut self, n: u8) {
+        let result = self.registers.a & n;
+        self.registers.flags.carry = false;
+        self.registers.flags.half_carry = true;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = result == 0x00;
+        self.registers.a = result;
+    }
+
+    fn and_r(&mut self, reg: Register) -> u8 {
+        let v = self.registers.get_register(reg);
+        self.alu_and(v);
+
+        4
     }
 
     fn and_n(&mut self) -> u8 {
@@ -2448,5 +2479,24 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_and_r() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 64;
+        cpu.registers.b = 32;
+        let cycle = cpu.and_r(Register::B);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 0);
+        assert_eq!(cpu.registers.flags.zero, true);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }
