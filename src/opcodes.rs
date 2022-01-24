@@ -494,6 +494,13 @@ pub enum OpCode {
     SbcAL,
     SbcAA,
 
+    // SBC A, (HL)
+    // The byte at the memory address specified in the virtual 16-bit
+    // register HL and the value of the carry flag are both subtracted from
+    // the register A, and the result is stored in register A.
+    // Clock cycles: 8
+    SbcAHl,
+
     /// AND n
     /// A bitwise AND operation is performed between the byte n and the contents of register A, and the result is stored in register A.
     /// Clock cycles: 8
@@ -700,6 +707,7 @@ impl From<u8> for OpCode {
             0x9B => OpCode::SbcAE,
             0x9C => OpCode::SbcAH,
             0x9D => OpCode::SbcAL,
+            0x9E => OpCode::SbcAHl,
             0x9F => OpCode::SbcAA,
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
