@@ -147,6 +147,7 @@ impl CentralProcessingUnit {
             OpCode::CpH => self.cp_r(Register::H),
             OpCode::CpL => self.cp_r(Register::L),
             OpCode::CpA => self.cp_r(Register::A),
+            OpCode::CpHl => self.cp_hl(),
             OpCode::XorB => self.xor_r(Register::B),
             OpCode::XorC => self.xor_r(Register::C),
             OpCode::XorD => self.xor_r(Register::D),
@@ -583,6 +584,18 @@ impl CentralProcessingUnit {
         self.alu_cp(v);
 
         4
+    }
+
+    fn cp_hl(&mut self) -> u8 {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        self.alu_cp(v);
+
+        8
     }
 
     // Logical exclusive OR n with register A, result in A.
@@ -2576,5 +2589,25 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_cp_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 50 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 1;
+        cpu.registers.set_hl(50);
+        let cycle = cpu.cp_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 1);
+        assert_eq!(cpu.registers.hl(), 50);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, true);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, true);
     }
 }
