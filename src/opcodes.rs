@@ -197,9 +197,9 @@ pub enum OpCode {
     // Clock cycles: 4
     LdSpHl,
 
-    /// OR r
-    /// A bitwise OR operation is performed between the contents of the register r and the contents of the register A, and the result is  stored in register A.
-    /// Clock cycles: 4
+    // OR r
+    // A bitwise OR operation is performed between the contents of the register r and the contents of the register A, and the result is  stored in register A.
+    // Clock cycles: 4
     OrB,
     OrC,
     OrD,
@@ -208,17 +208,17 @@ pub enum OpCode {
     OrL,
     OrA,
 
-    /// OR (HL)
-    /// A bitwise OR operation is performed between the byte at the memory
-    /// address specified in the virtual 16-bit register HL and the contents
-    /// of register A, and the result is stored in register A.
-    /// Clock cycles: 8
+    // OR (HL)
+    // A bitwise OR operation is performed between the byte at the memory
+    // address specified in the virtual 16-bit register HL and the contents
+    // of register A, and the result is stored in register A.
+    // Clock cycles: 8
     OrHl,
 
-    /// OR n
-    /// A bitwise OR operation is performed between the byte n and the
-    /// contents of register A, and the result is stored in register A.
-    /// Clock cycles: 8
+    // OR n
+    // A bitwise OR operation is performed between the byte n and the
+    // contents of register A, and the result is stored in register A.
+    // Clock cycles: 8
     OrN,
 
     /// XOR r
@@ -528,9 +528,9 @@ pub enum OpCode {
     // Clock cycles: 8
     AndHl,
 
-    /// AND n
-    /// A bitwise AND operation is performed between the byte n and the contents of register A, and the result is stored in register A.
-    /// Clock cycles: 8
+    // AND n
+    // A bitwise AND operation is performed between the byte n and the contents of register A, and the result is stored in register A.
+    // Clock cycles: 8
     AndN,
 
     /// DI

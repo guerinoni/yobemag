@@ -514,40 +514,46 @@ impl CentralProcessingUnit {
         4
     }
 
-    fn or(&mut self, value: u8) {
-        self.registers.a |= value;
+    // Logical OR n with register A, result in A.
+    // n = A,B,C,D,E,H,L,(HL),#
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Reset.
+    // C - Reset.
+    fn alu_or(&mut self, n: u8) {
+        let result = self.registers.a | n;
         self.registers.flags.carry = false;
         self.registers.flags.half_carry = false;
         self.registers.flags.negative = false;
-        self.registers.flags.zero = self.registers.a == 0;
+        self.registers.flags.zero = result == 0x00;
+        self.registers.a = result;
     }
 
     fn or_r(&mut self, reg: Register) -> u8 {
-        self.or(match reg {
-            Register::B => self.registers.b,
-            Register::C => self.registers.c,
-            Register::D => self.registers.d,
-            Register::E => self.registers.e,
-            Register::H => self.registers.h,
-            Register::L => self.registers.l,
-            Register::A => self.registers.a,
-        });
+        let v = self.registers.get_register(reg);
+        self.alu_or(v);
 
         4
     }
 
     fn or_hl(&mut self) -> u8 {
-        self.or(match self.mmu.read_byte(self.registers.hl() as usize) {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
-        });
+        };
+
+        self.alu_or(v);
 
         8
     }
 
     fn or_n(&mut self) -> u8 {
-        let n = self.fetch_byte();
-        self.or(n);
+        let v = self.fetch_byte();
+        self.alu_or(v);
+
         8
     }
 
@@ -1135,13 +1141,8 @@ impl CentralProcessingUnit {
     }
 
     fn and_n(&mut self) -> u8 {
-        let n = self.fetch_byte();
-        let result = self.registers.a & n;
-        self.registers.flags.zero = result == 0;
-        self.registers.flags.negative = false;
-        self.registers.flags.half_carry = true;
-        self.registers.flags.carry = false;
-        self.registers.a = result;
+        let v = self.fetch_byte();
+        self.alu_and(v);
 
         8
     }
