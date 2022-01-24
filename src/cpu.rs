@@ -243,6 +243,7 @@ impl CentralProcessingUnit {
             OpCode::SbcAL => self.sbc_a_r(Register::L),
             OpCode::SbcAA => self.sbc_a_r(Register::A),
             OpCode::SbcAHl => self.sbc_a_hl(),
+            OpCode::SbcAn => self.sbc_a_n(),
             OpCode::AndN => self.and_n(),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
@@ -1077,6 +1078,13 @@ impl CentralProcessingUnit {
             Err(e) => panic!("{}", e),
         };
 
+        self.alu_sbc(v);
+
+        8
+    }
+
+    fn sbc_a_n(&mut self) -> u8 {
+        let v = self.fetch_byte();
         self.alu_sbc(v);
 
         8
@@ -2416,6 +2424,24 @@ mod tests {
         cpu.registers.set_hl(99);
         cpu.registers.flags.carry = true;
         let cycle = cpu.sbc_a_hl();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.a, 246);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, true);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_sbc_a_n() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.flags.carry = true;
+        let cycle = cpu.sbc_a_n();
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 246);
         assert_eq!(cpu.registers.flags.zero, false);
