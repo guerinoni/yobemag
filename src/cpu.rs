@@ -140,6 +140,13 @@ impl CentralProcessingUnit {
             OpCode::OrA => self.or_r(Register::A),
             OpCode::OrHl => self.or_hl(),
             OpCode::OrN => self.or_n(),
+            OpCode::CpB => self.cp_r(Register::B),
+            OpCode::CpC => self.cp_r(Register::C),
+            OpCode::CpD => self.cp_r(Register::D),
+            OpCode::CpE => self.cp_r(Register::E),
+            OpCode::CpH => self.cp_r(Register::H),
+            OpCode::CpL => self.cp_r(Register::L),
+            OpCode::CpA => self.cp_r(Register::A),
             OpCode::XorB => self.xor_r(Register::B),
             OpCode::XorC => self.xor_r(Register::C),
             OpCode::XorD => self.xor_r(Register::D),
@@ -555,6 +562,27 @@ impl CentralProcessingUnit {
         self.alu_or(v);
 
         8
+    }
+
+    // Compare A with n. This is basically an A - n subtraction instruction but the results are thrown away.
+    // n = A,B,C,D,E,H,L,(HL),#
+    //
+    // Flags affected:
+    // Z - Set if result is zero. (Set if A = n.)
+    // N - Set.
+    // H - Set if no borrow from bit 4.
+    // C - Set for no borrow. (Set if A < n.)
+    fn alu_cp(&mut self, n: u8) {
+        let result = self.registers.a;
+        self.alu_sub(n);
+        self.registers.a = result;
+    }
+
+    fn cp_r(&mut self, reg: Register) -> u8 {
+        let v = self.registers.get_register(reg);
+        self.alu_cp(v);
+
+        4
     }
 
     // Logical exclusive OR n with register A, result in A.
@@ -2526,6 +2554,26 @@ mod tests {
         assert_eq!(cpu.registers.a, 0);
         assert_eq!(cpu.registers.flags.zero, true);
         assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_cp_r() {
+        let mc = MockDevice {
+            bytes: collection! { 32 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 64;
+        cpu.registers.c = 60;
+        let cycle = cpu.cp_r(Register::C);
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 64);
+        assert_eq!(cpu.registers.c, 60);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, false);
     }

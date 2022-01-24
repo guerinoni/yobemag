@@ -221,6 +221,19 @@ pub enum OpCode {
     // Clock cycles: 8
     OrN,
 
+    // CP r
+    // The contents of register R are compared with (subtracted from) the
+    // register A, setting the appropriate flags but not storing the result.
+    // Register r may be any of B, C, D, E, H, L or A.
+    // Clock cycles: 4
+    CpB,
+    CpC,
+    CpD,
+    CpE,
+    CpH,
+    CpL,
+    CpA,
+
     // XOR r
     // A bitwise XOR operation is performed between the contents of the register r and the contents of the register A, and the result is
     // stored in register A.
@@ -760,6 +773,13 @@ impl From<u8> for OpCode {
             0xB5 => OpCode::OrL,
             0xB6 => OpCode::OrHl,
             0xB7 => OpCode::OrA,
+            0xB8 => OpCode::CpB,
+            0xB9 => OpCode::CpC,
+            0xBA => OpCode::CpD,
+            0xBB => OpCode::CpE,
+            0xBC => OpCode::CpH,
+            0xBD => OpCode::CpL,
+            0xBF => OpCode::CpA,
             0xC0 => OpCode::RetNz,
             0xC1 => OpCode::PopBc,
             0xC2 => OpCode::JpNzNn,
