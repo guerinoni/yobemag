@@ -251,6 +251,7 @@ impl CentralProcessingUnit {
             OpCode::AndH => self.and_r(Register::H),
             OpCode::AndL => self.and_r(Register::L),
             OpCode::AndA => self.and_r(Register::A),
+            OpCode::AndHl => self.and_hl(),
             OpCode::AndN => self.and_n(),
             OpCode::DI => self.di(),
             OpCode::CallNn => self.call_nn(),
@@ -1119,6 +1120,18 @@ impl CentralProcessingUnit {
         self.alu_and(v);
 
         4
+    }
+
+    fn and_hl(&mut self) -> u8 {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        };
+
+        self.alu_and(v);
+
+        8
     }
 
     fn and_n(&mut self) -> u8 {
@@ -2493,6 +2506,25 @@ mod tests {
         cpu.registers.b = 32;
         let cycle = cpu.and_r(Register::B);
         assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 0);
+        assert_eq!(cpu.registers.flags.zero, true);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_and_hl() {
+        let mc = MockDevice {
+            bytes: collection! { 32 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 64;
+        cpu.registers.set_hl(32);
+        let cycle = cpu.and_hl();
+        assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 0);
         assert_eq!(cpu.registers.flags.zero, true);
         assert_eq!(cpu.registers.flags.negative, false);

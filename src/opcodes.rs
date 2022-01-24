@@ -521,6 +521,13 @@ pub enum OpCode {
     AndL,
     AndA,
 
+    // AND (HL)
+    // A bitwise AND operation is performed between the byte at the memory
+    // address specified in the virtual 16-bit register HL and the contents
+    // of register A, and the result is stored in register A.
+    // Clock cycles: 8
+    AndHl,
+
     /// AND n
     /// A bitwise AND operation is performed between the byte n and the contents of register A, and the result is stored in register A.
     /// Clock cycles: 8
@@ -735,6 +742,7 @@ impl From<u8> for OpCode {
             0xA3 => OpCode::AndE,
             0xA4 => OpCode::AndH,
             0xA5 => OpCode::AndL,
+            0xA6 => OpCode::AndHl,
             0xA7 => OpCode::AndA,
             0xA8 => OpCode::XorB,
             0xA9 => OpCode::XorC,
