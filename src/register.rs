@@ -128,7 +128,7 @@ impl Registers {
         }
     }
 
-    pub fn get_register(&self, reg: Register) -> u8 {
+    pub fn get_register(&self, reg: &Register) -> u8 {
         match reg {
             Register::B => self.b,
             Register::C => self.c,
@@ -140,7 +140,7 @@ impl Registers {
         }
     }
 
-    pub fn set_register(&mut self, reg: Register, value: u8) {
+    pub fn set_register(&mut self, reg: &Register, value: u8) {
         match reg {
             Register::B => self.b = value,
             Register::C => self.c = value,

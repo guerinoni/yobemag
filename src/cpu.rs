@@ -325,14 +325,14 @@ impl CentralProcessingUnit {
 
     fn ld_r_next(&mut self, reg: Register) -> u8 {
         let r = self.fetch_byte();
-        self.registers.set_register(reg, r);
+        self.registers.set_register(&reg, r);
 
         8
     }
 
     fn ld_r_r(&mut self, reg1: Register, reg2: Register) -> u8 {
-        let v = self.registers.get_register(reg2);
-        self.registers.set_register(reg1, v);
+        let v = self.registers.get_register(&reg2);
+        self.registers.set_register(&reg1, v);
 
         4
     }
@@ -344,13 +344,13 @@ impl CentralProcessingUnit {
             Err(e) => panic!("{}", e),
         };
 
-        self.registers.set_register(reg, v);
+        self.registers.set_register(&reg, v);
 
         8
     }
 
     fn ld_hl_r(&mut self, reg: Register) -> u8 {
-        let v = self.registers.get_register(reg);
+        let v = self.registers.get_register(&reg);
         match self.mmu.write_byte(self.registers.hl() as usize, v) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
@@ -540,7 +540,7 @@ impl CentralProcessingUnit {
     }
 
     fn or_r(&mut self, reg: Register) -> u8 {
-        let v = self.registers.get_register(reg);
+        let v = self.registers.get_register(&reg);
         self.alu_or(v);
 
         4
@@ -580,7 +580,7 @@ impl CentralProcessingUnit {
     }
 
     fn cp_r(&mut self, reg: Register) -> u8 {
-        let v = self.registers.get_register(reg);
+        let v = self.registers.get_register(&reg);
         self.alu_cp(v);
 
         4
@@ -616,7 +616,7 @@ impl CentralProcessingUnit {
     }
 
     fn xor_r(&mut self, reg: Register) -> u8 {
-        let v = self.registers.get_register(reg);
+        let v = self.registers.get_register(&reg);
         self.alu_xor(v);
 
         4
@@ -992,7 +992,7 @@ impl CentralProcessingUnit {
     }
 
     fn add_a_r(&mut self, reg: Register) -> u8 {
-        self.alu_add(self.registers.get_register(reg));
+        self.alu_add(self.registers.get_register(&reg));
 
         4
     }
@@ -1029,7 +1029,7 @@ impl CentralProcessingUnit {
     }
 
     fn adc_r(&mut self, reg: Register) -> u8 {
-        self.alu_adc(self.registers.get_register(reg));
+        self.alu_adc(self.registers.get_register(&reg));
 
         4
     }
@@ -1065,7 +1065,7 @@ impl CentralProcessingUnit {
     }
 
     fn sub_r(&mut self, reg: Register) -> u8 {
-        let v = self.registers.get_register(reg);
+        let v = self.registers.get_register(&reg);
         self.alu_sub(v);
 
         4
@@ -1110,7 +1110,7 @@ impl CentralProcessingUnit {
     }
 
     fn sbc_a_r(&mut self, reg: Register) -> u8 {
-        let v = self.registers.get_register(reg);
+        let v = self.registers.get_register(&reg);
         self.alu_sbc(v);
 
         4
@@ -1153,7 +1153,7 @@ impl CentralProcessingUnit {
     }
 
     fn and_r(&mut self, reg: Register) -> u8 {
-        let v = self.registers.get_register(reg);
+        let v = self.registers.get_register(&reg);
         self.alu_and(v);
 
         4
@@ -1268,7 +1268,7 @@ impl CentralProcessingUnit {
         };
 
         self.rotate_right_through_carry(&mut r);
-        self.registers.set_register(reg, r);
+        self.registers.set_register(&reg, r);
 
         8
     }
