@@ -265,10 +265,10 @@ pub enum OpCode {
     /// Clock cycles: 8
     XorN,
 
-    /// ADD HL, rr
-    /// The contents of the register pair rr are added to the contents of the
-    /// register pair HL and the result is stored in HL. Register pair rr may be any of BC, DE, HL or SP.
-    /// Clock cycles: 8
+    // ADD HL, rr
+    // The contents of the register pair rr are added to the contents of the
+    // register pair HL and the result is stored in HL. Register pair rr may be any of BC, DE, HL or SP.
+    // Clock cycles: 8
     AddHlBc,
     AddHlDe,
     AddHlHl,
@@ -332,7 +332,7 @@ pub enum OpCode {
     // upper nibble or both, based on whether the last operation was a subtraction
     // (n flag), and whether a carry and/or half carry occurred (c and h flags).
     // Clock cycles: 4
-    DAA,
+    Daa,
 
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
@@ -662,7 +662,7 @@ impl From<u8> for OpCode {
             0x24 => OpCode::IncH,
             0x25 => OpCode::DecH,
             0x26 => OpCode::LdHNext,
-            0x27 => OpCode::DAA,
+            0x27 => OpCode::Daa,
             0x29 => OpCode::AddHlHl,
             0x2A => OpCode::LdiAHl,
             0x2B => OpCode::DecHl,

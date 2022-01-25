@@ -185,7 +185,7 @@ impl CentralProcessingUnit {
             OpCode::DecL => self.dec_r(Register::L),
             OpCode::DecA => self.dec_r(Register::A),
             OpCode::DecHlSpecific => self.dec_hl(),
-            OpCode::DAA => self.daa(),
+            OpCode::Daa => self.daa(),
             OpCode::JpNN => self.jp_nn(),
             OpCode::JpHl => self.jp_hl(),
             OpCode::JrNzPcDd => self.jr_f_pc_dd(ConditionOperand::NZ),
@@ -636,13 +636,12 @@ impl CentralProcessingUnit {
 
     fn add_hl_rr(&mut self, reg: RegisterWord) -> u8 {
         let rr = self.registers.get_register_word(&reg);
-        let hl = self.registers.hl();
-        let result = hl + rr;
-        self.registers.flags.zero = false;
-        self.registers.flags.carry = (result & 0xFF) < (hl & 0xFF);
-        self.registers.flags.half_carry = (result & 0xF) < (hl & 0xF);
+        let a = self.registers.hl();
+        let r = a.wrapping_add(rr);
+        self.registers.flags.carry = a > 0xFFFF - r;
+        self.registers.flags.half_carry = (a & 0x0FFF) + (rr & 0x0FFF) > 0x0FFF;
         self.registers.flags.negative = false;
-        self.registers.set_hl(result);
+        self.registers.set_hl(r);
 
         8
     }
