@@ -203,6 +203,7 @@ impl CentralProcessingUnit {
             OpCode::CallZNn => self.call_flag_nn(ConditionOperand::Z),
             OpCode::CallNcNn => self.call_flag_nn(ConditionOperand::NC),
             OpCode::CallCNn => self.call_flag_nn(ConditionOperand::C),
+            OpCode::Ccf => self.ccf(),
             OpCode::RrA => self.rr_a(),
             OpCode::Rlca => self.rlca(),
             OpCode::LdHlSps => self.ld_hl_sp(),
@@ -910,6 +911,14 @@ impl CentralProcessingUnit {
         self.push(self.registers.program_counter as u16);
         self.registers.program_counter = value as u16;
         16
+    }
+
+    fn ccf(&mut self) -> u8 {
+        self.registers.flags.carry = !self.registers.flags.carry;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+
+        4
     }
 
     fn rr_a(&mut self) -> u8 {
@@ -2752,5 +2761,21 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_ccf() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        let cycle = cpu.ccf();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, true);
     }
 }

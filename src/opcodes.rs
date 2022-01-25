@@ -398,6 +398,11 @@ pub enum OpCode {
     /// Clock cycles: 4
     RrA,
 
+    // CCF
+    // The carry flag is inverted.
+    // Clock cycles: 4
+    Ccf,
+
     // LD HL, SP+s
     // The byte s is read as a signed integer and added to the register pair SP.
     // The result is then loaded into the register pair HL.
@@ -684,12 +689,13 @@ impl From<u8> for OpCode {
             0x36 => OpCode::LdHlN,
             0x35 => OpCode::DecHlSpecific,
             0x38 => OpCode::JrCPcDd,
+            0x39 => OpCode::AddHlSp,
             0x3A => OpCode::LddAHl,
             0x3B => OpCode::DecSp,
             0x3C => OpCode::IncA,
             0x3D => OpCode::DecA,
             0x3E => OpCode::LdANext,
-            0x39 => OpCode::AddHlSp,
+            0x3F => OpCode::Ccf,
             0x40 => OpCode::LdBB,
             0x41 => OpCode::LdBC,
             0x42 => OpCode::LdBD,
