@@ -618,13 +618,13 @@ pub enum OpCode {
     // Clock cycles: 24
     CallNn,
 
-    /// RST n
-    /// The current program counter is pushed onto the stack, high-order byte
-    /// first.
-    /// The value of the operand n is then loaded into the program counter, from
-    /// where execution continues. Operand n may be any of 0x00, 0x08, 0x10, 0x18,
-    /// 0x20, 0x28, 0x30 or 0x38.
-    /// Clock cycles: 16
+    // RST n
+    // The current program counter is pushed onto the stack, high-order byte
+    // first.
+    // The value of the operand n is then loaded into the program counter, from
+    // where execution continues. Operand n may be any of 0x00, 0x08, 0x10, 0x18,
+    // 0x20, 0x28, 0x30 or 0x38.
+    // Clock cycles: 16
     Rst00,
     Rst08,
     Rst10,

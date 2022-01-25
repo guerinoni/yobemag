@@ -903,9 +903,9 @@ impl CentralProcessingUnit {
         24
     }
 
-    fn rst(&mut self, value: u8) -> u8 {
-        self.stack_add(self.registers.program_counter as u16);
-        self.registers.program_counter = value as u16;
+    fn rst(&mut self, value: u16) -> u8 {
+        self.stack_add(self.registers.program_counter);
+        self.registers.program_counter = value;
 
         16
     }
