@@ -419,6 +419,12 @@ pub enum OpCode {
     // Clock cycles: 4
     Rlca,
 
+    // RLA
+    // The contents of register A are rotated left by 1 bit position through the
+    // carry flag.
+    // Clock cycles: 4
+    Rla,
+
     /// RET
     /// The 16-bit word on top of the stack is popped off, low-order byte first,
     /// and loaded into the program counter, from where execution continues.
@@ -667,6 +673,7 @@ impl From<u8> for OpCode {
             0x14 => OpCode::IncD,
             0x15 => OpCode::DecD,
             0x16 => OpCode::LdDNext,
+            0x17 => OpCode::Rla,
             0x18 => OpCode::JrPcDd,
             0x1A => OpCode::LdADe,
             0x1B => OpCode::DecDe,

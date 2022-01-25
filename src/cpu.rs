@@ -207,6 +207,7 @@ impl CentralProcessingUnit {
             OpCode::Scf => self.scf(),
             OpCode::RrA => self.rr_a(),
             OpCode::Rlca => self.rlca(),
+            OpCode::Rla => self.rla(),
             OpCode::LdHlSps => self.ld_hl_sp(),
             OpCode::Ret => self.ret(),
             OpCode::RetNz => self.ret_f(ConditionOperand::NZ),
@@ -969,6 +970,31 @@ impl CentralProcessingUnit {
 
     fn rlca(&mut self) -> u8 {
         self.registers.a = self.alu_rlc(self.registers.a);
+        self.registers.flags.zero = false;
+
+        4
+    }
+
+    // Rotate A left through Carry flag.
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Reset.
+    // C - Contains old bit 7 data.
+    fn alu_rl(&mut self, a: u8) -> u8 {
+        let c = (a & 0x80) >> 7 == 0x01;
+        let result = (a << 1) + u8::from(self.registers.flags.carry);
+        self.registers.flags.carry = c;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = result == 0x00;
+
+        result
+    }
+
+    fn rla(&mut self) -> u8 {
+        self.registers.a = self.alu_rl(self.registers.a);
         self.registers.flags.zero = false;
 
         4
@@ -2827,5 +2853,23 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_rla() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 11;
+        let cycle = cpu.rla();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 22);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }
