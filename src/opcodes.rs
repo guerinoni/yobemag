@@ -393,9 +393,9 @@ pub enum OpCode {
     // Clock cycles: 8
     CpN,
 
-    /// RRA
-    /// The contents of register A are rotated right by 1 bit position through the carry flag.
-    /// Clock cycles: 4
+    // RRA
+    // The contents of register A are rotated right by 1 bit position through the carry flag.
+    // Clock cycles: 4
     RrA,
 
     // CCF
@@ -424,6 +424,12 @@ pub enum OpCode {
     // carry flag.
     // Clock cycles: 4
     Rla,
+
+    // RRCA
+    // The contents of register A are rotated right by 1 bit position, after bit 0
+    // is copied into the carry flag.
+    // Clock cycles: 4
+    Rrca,
 
     /// RET
     /// The 16-bit word on top of the stack is popped off, low-order byte first,
@@ -660,12 +666,13 @@ impl From<u8> for OpCode {
             0x06 => OpCode::LdBNext,
             0x07 => OpCode::Rlca,
             0x08 => OpCode::LdNnSP,
+            0x09 => OpCode::AddHlBc,
             0x0A => OpCode::LdABc,
             0x0B => OpCode::DecBc,
             0x0C => OpCode::IncC,
             0x0D => OpCode::DecC,
             0x0E => OpCode::LdCNext,
-            0x09 => OpCode::AddHlBc,
+            0x0F => OpCode::Rrca,
             0x10 => OpCode::Stop,
             0x11 => OpCode::LdDeNn,
             0x13 => OpCode::IncDE,

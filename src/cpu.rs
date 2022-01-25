@@ -208,6 +208,7 @@ impl CentralProcessingUnit {
             OpCode::RrA => self.rr_a(),
             OpCode::Rlca => self.rlca(),
             OpCode::Rla => self.rla(),
+            OpCode::Rrca => self.rrca(),
             OpCode::LdHlSps => self.ld_hl_sp(),
             OpCode::Ret => self.ret(),
             OpCode::RetNz => self.ret_f(ConditionOperand::NZ),
@@ -942,10 +943,31 @@ impl CentralProcessingUnit {
         4
     }
 
+    // Rotate A right through Carry flag.
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Reset.
+    // C - Contains old bit 0 data.
+    fn alu_rr(&mut self, a: u8) -> u8 {
+        let c = a & 0x01 == 0x01;
+        let result = if self.registers.flags.carry {
+            0x80 | (a >> 1)
+        } else {
+            a >> 1
+        };
+        self.registers.flags.carry = c;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = result == 0x00;
+
+        result
+    }
+
     fn rr_a(&mut self) -> u8 {
-        let mut v = self.registers.a;
-        self.rotate_right_through_carry(&mut v);
-        self.registers.a = v;
+        self.registers.a = self.alu_rr(self.registers.a);
+        self.registers.flags.zero = false;
 
         4
     }
@@ -995,6 +1017,31 @@ impl CentralProcessingUnit {
 
     fn rla(&mut self) -> u8 {
         self.registers.a = self.alu_rl(self.registers.a);
+        self.registers.flags.zero = false;
+
+        4
+    }
+
+    // Rotate A right. Old bit 0 to Carry flag.
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Reset.
+    // C - Contains old bit 0 data
+    fn alu_rrc(&mut self, a: u8) -> u8 {
+        let c = a & 0x01 == 0x01;
+        let result = if c { 0x80 | (a >> 1) } else { a >> 1 };
+        self.registers.flags.carry = c;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = result == 0x00;
+
+        result
+    }
+
+    fn rrca(&mut self) -> u8 {
+        self.registers.a = self.alu_rrc(self.registers.a);
         self.registers.flags.zero = false;
 
         4
@@ -1746,7 +1793,7 @@ mod tests {
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
             assert_eq!(cpu.registers.a, 0);
-            assert_eq!(cpu.registers.flags.zero, true);
+            assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
             assert_eq!(cpu.registers.flags.carry, true);
@@ -2871,5 +2918,23 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_rrca() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 11;
+        let cycle = cpu.rrca();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 133);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, true);
     }
 }
