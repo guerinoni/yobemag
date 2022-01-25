@@ -447,6 +447,14 @@ pub enum OpCode {
     RetNc,
     RetC,
 
+    // RETI
+    // The 16-bit word on top of the stack is popped off, low-order byte first,
+    // and loaded into the program counter. Interrupts are then enabled by setting
+    // the interrupt master flag (IME), and execution then continues from the
+    // program counter.
+    // Clock cycles: 16
+    RetI,
+
     // PUSH rr
     // Push to the stack memory, data from the 16-bit register rr.
     // The contents of the register pair qq are pushed to the stack. First,
@@ -873,6 +881,7 @@ impl From<u8> for OpCode {
             0xD6 => OpCode::SubN,
             0xD7 => OpCode::Rst10,
             0xD8 => OpCode::RetC,
+            0xD9 => OpCode::RetI,
             0xDA => OpCode::JpCNn,
             0xDC => OpCode::CallCNn,
             0xDE => OpCode::SbcAn,

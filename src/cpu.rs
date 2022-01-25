@@ -215,6 +215,7 @@ impl CentralProcessingUnit {
             OpCode::RetZ => self.ret_f(ConditionOperand::Z),
             OpCode::RetNc => self.ret_f(ConditionOperand::NC),
             OpCode::RetC => self.ret_f(ConditionOperand::C),
+            OpCode::RetI => self.ret_i(),
             OpCode::PushBc => self.push_rr(RegisterWord::BC),
             OpCode::PushDe => self.push_rr(RegisterWord::DE),
             OpCode::PushHl => self.push_rr(RegisterWord::HL),
@@ -1062,6 +1063,13 @@ impl CentralProcessingUnit {
         }
 
         8
+    }
+
+    fn ret_i(&mut self) -> u8 {
+        self.registers.program_counter = self.stack_pop();
+        self.ime = true;
+
+        16
     }
 
     fn push_rr(&mut self, reg: RegisterWord) -> u8 {
@@ -2892,5 +2900,19 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_ret_i() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! { 65534 => 99 },
+        };
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        let cycle = cpu.ret_i();
+        assert_eq!(cycle, 16);
+        assert_eq!(cpu.registers.stack_pointer, 0);
+        assert_eq!(cpu.registers.program_counter, 99);
+        assert!(cpu.ime);
     }
 }
