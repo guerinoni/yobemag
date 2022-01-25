@@ -810,9 +810,9 @@ impl CentralProcessingUnit {
             ConditionOperand::C => self.registers.flags.carry,
         };
 
+        let v = self.fetch_byte();
         if condition {
-            let dd = self.fetch_byte();
-            self.registers.program_counter += dd as u16;
+            self.alu_jr(v);
             return 12;
         }
 
@@ -859,36 +859,17 @@ impl CentralProcessingUnit {
     }
 
     fn call_flag_nn(&mut self, operator: ConditionOperand) -> u8 {
-        let nn = self.fetch_word();
-        let flag = match operator {
+        let condition = match operator {
             ConditionOperand::Z => self.registers.flags.zero,
             ConditionOperand::NZ => !self.registers.flags.zero,
             ConditionOperand::C => self.registers.flags.carry,
             ConditionOperand::NC => !self.registers.flags.carry,
         };
 
-        if flag {
-            let high = (self.registers.program_counter >> 8) as u8;
-            self.registers.stack_pointer -= 1;
-            match self
-                .mmu
-                .write_byte(self.registers.stack_pointer as usize, high)
-            {
-                Ok(v) => v,
-                Err(e) => panic!("{}", e),
-            }
-
-            let low = (self.registers.program_counter & 0xFF) as u8;
-            self.registers.stack_pointer -= 1;
-            match self
-                .mmu
-                .write_byte(self.registers.stack_pointer as usize, low)
-            {
-                Ok(v) => v,
-                Err(e) => panic!("{}", e),
-            }
-
-            self.registers.program_counter = nn;
+        let v = self.fetch_word();
+        if condition {
+            self.stack_add(self.registers.program_counter);
+            self.registers.program_counter = v;
             return 24;
         }
 
@@ -907,36 +888,25 @@ impl CentralProcessingUnit {
         4
     }
 
+    fn stack_add(&mut self, v: u16) {
+        self.registers.stack_pointer -= 2;
+        self.mmu
+            .write_word(self.registers.stack_pointer as usize, v)
+            .unwrap();
+    }
+
     fn call_nn(&mut self) -> u8 {
         let nn = self.fetch_word();
-        let high = (self.registers.program_counter >> 8) as u8;
-        self.registers.stack_pointer -= 1;
-        match self
-            .mmu
-            .write_byte(self.registers.stack_pointer as usize, high)
-        {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
-        }
-
-        let low = (self.registers.program_counter & 0xFF) as u8;
-        self.registers.stack_pointer -= 1;
-        match self
-            .mmu
-            .write_byte(self.registers.stack_pointer as usize, low)
-        {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
-        }
-
+        self.stack_add(self.registers.program_counter);
         self.registers.program_counter = nn;
 
         24
     }
 
     fn rst(&mut self, value: u8) -> u8 {
-        self.push(self.registers.program_counter as u16);
+        self.stack_add(self.registers.program_counter as u16);
         self.registers.program_counter = value as u16;
+
         16
     }
 
@@ -1100,31 +1070,9 @@ impl CentralProcessingUnit {
         8
     }
 
-    fn push(&mut self, value: u16) {
-        let high = (value >> 8) as u8;
-        self.registers.stack_pointer -= 1;
-        match self
-            .mmu
-            .write_byte(self.registers.stack_pointer as usize, high)
-        {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
-        }
-
-        let low = (value & 0xFF) as u8;
-        self.registers.stack_pointer -= 1;
-        match self
-            .mmu
-            .write_byte(self.registers.stack_pointer as usize, low)
-        {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
-        }
-    }
-
     fn push_rr(&mut self, reg: RegisterWord) -> u8 {
         let v = self.registers.get_register_word(&reg);
-        self.push(v);
+        self.stack_add(v);
 
         16
     }

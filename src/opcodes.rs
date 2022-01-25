@@ -350,11 +350,11 @@ pub enum OpCode {
     // Clock cycles: 4
     JpHl,
 
-    /// JR f, PC+dd
-    /// The 8-bit signed integer dd is added to the program counter and the result is stored in the program counter only if the condition f is true.
-    /// Execution will then continue from the program counter.
-    /// Condition f may be any of nz, z, nc or c.
-    /// Clock cycles: 12 if condition is met, otherwise 8
+    // JR f, PC+dd
+    // The 8-bit signed integer dd is added to the program counter and the result is stored in the program counter only if the condition f is true.
+    // Execution will then continue from the program counter.
+    // Condition f may be any of nz, z, nc or c.
+    // Clock cycles: 12 if condition is met, otherwise 8
     JrNzPcDd,
     JrZPcDd,
     JrNcPcDd,
@@ -376,12 +376,12 @@ pub enum OpCode {
     JpNcNn,
     JpCNn,
 
-    /// CALL f, nn
-    /// Only if the condition f is true is the current program counter (return
-    /// address) pushed to the stack, high-order byte first, and the 16-bit word
-    /// nn loaded into the program counter. Execution will them continue from
-    /// the program counter. Condition f may be any of nz, z, nc or c.
-    /// Clock cycles: 24 if condition is met, otherwise 12
+    // CALL f, nn
+    // Only if the condition f is true is the current program counter (return
+    // address) pushed to the stack, high-order byte first, and the 16-bit word
+    // nn loaded into the program counter. Execution will them continue from
+    // the program counter. Condition f may be any of nz, z, nc or c.
+    // Clock cycles: 24 if condition is met, otherwise 12
     CallNzNn,
     CallZNn,
     CallNcNn,
@@ -612,10 +612,10 @@ pub enum OpCode {
     // Clock cycles: 4
     Ei,
 
-    /// CALL nn
-    /// The current program counter (return address) is pushed to the stack, high-order byte first.
-    /// The 16-bit word nn is then loaded into the program counter, from where execution continues.
-    /// Clock cycles: 24
+    // CALL nn
+    // The current program counter (return address) is pushed to the stack, high-order byte first.
+    // The 16-bit word nn is then loaded into the program counter, from where execution continues.
+    // Clock cycles: 24
     CallNn,
 
     /// RST n
