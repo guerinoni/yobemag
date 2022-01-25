@@ -274,9 +274,9 @@ pub enum OpCode {
     AddHlHl,
     AddHlSp,
 
-    /// INC rr
-    /// The register pair rr is incremented by 1.
-    /// Clock cycles: 8
+    // INC rr
+    // The register pair rr is incremented by 1.
+    // Clock cycles: 8
     IncBC,
     IncDE,
     IncHL,
@@ -299,9 +299,9 @@ pub enum OpCode {
     // Clock cycles: 12
     IncHl,
 
-    /// DEC rr
-    /// The register pair rr is decremented by 1. Register pair rr may be any of BC, DE, HL or SP.
-    /// Clock cycles: 8
+    // DEC rr
+    // The register pair rr is decremented by 1. Register pair rr may be any of BC, DE, HL or SP.
+    // Clock cycles: 8
     DecBc,
     DecDe,
     DecHl,
@@ -322,6 +322,17 @@ pub enum OpCode {
     /// The byte at the memory address specified in the register HL is decremented by 1.
     /// Clock cycles: 12
     DecHlSpecific,
+
+    // DAA
+    // The results of the previous operation as stored in the Accumulator and flags
+    // are retroactively adjusted to become a BCD (binary coded decimal) operation,
+    // where the lower and upper nibbles of the bytes in the operation are treated as
+    // two individual decimal digits, rather than the whole byte as one binary number.
+    // It does this by adding or subtracting 6 from the Accumulator's lower nibble,
+    // upper nibble or both, based on whether the last operation was a subtraction
+    // (n flag), and whether a carry and/or half carry occurred (c and h flags).
+    // Clock cycles: 4
+    DAA,
 
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
@@ -651,6 +662,7 @@ impl From<u8> for OpCode {
             0x24 => OpCode::IncH,
             0x25 => OpCode::DecH,
             0x26 => OpCode::LdHNext,
+            0x27 => OpCode::DAA,
             0x29 => OpCode::AddHlHl,
             0x2A => OpCode::LdiAHl,
             0x2B => OpCode::DecHl,

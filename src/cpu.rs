@@ -185,6 +185,7 @@ impl CentralProcessingUnit {
             OpCode::DecL => self.dec_r(Register::L),
             OpCode::DecA => self.dec_r(Register::A),
             OpCode::DecHlSpecific => self.dec_hl(),
+            OpCode::DAA => self.daa(),
             OpCode::JpNN => self.jp_nn(),
             OpCode::JpHl => self.jp_hl(),
             OpCode::JrNzPcDd => self.jr_f_pc_dd(ConditionOperand::NZ),
@@ -710,6 +711,7 @@ impl CentralProcessingUnit {
     fn dec_rr(&mut self, reg: RegisterWord) -> u8 {
         let rr = self.registers.get_register_word(&reg);
         self.registers.set_register_word(&reg, rr.wrapping_sub(1));
+
         8
     }
 
@@ -739,6 +741,38 @@ impl CentralProcessingUnit {
         }
 
         12
+    }
+
+    fn daa(&mut self) -> u8 {
+        let mut a = self.registers.a;
+        let mut adjust = if self.registers.flags.carry {
+            0x60
+        } else {
+            0x00
+        };
+
+        if self.registers.flags.half_carry {
+            adjust |= 0x06;
+        };
+
+        if !self.registers.flags.negative {
+            if a & 0x0F > 0x09 {
+                adjust |= 0x06;
+            };
+            if a > 0x99 {
+                adjust |= 0x60;
+            };
+            a = a.wrapping_add(adjust);
+        } else {
+            a = a.wrapping_sub(adjust);
+        }
+
+        self.registers.flags.carry = adjust >= 0x60;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.zero = a == 0x00;
+        self.registers.a = a;
+
+        4
     }
 
     fn jp_nn(&mut self) -> u8 {
@@ -2675,5 +2709,23 @@ mod tests {
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_daa() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 11;
+        let cycle = cpu.daa();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 17);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 }
