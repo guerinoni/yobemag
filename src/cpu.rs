@@ -1043,13 +1043,7 @@ impl CentralProcessingUnit {
     }
 
     fn ret(&mut self) -> u8 {
-        self.registers.program_counter =
-            match self.mmu.read_word(self.registers.stack_pointer as usize) {
-                Ok(v) => v,
-                Err(e) => panic!("{}", e),
-            };
-
-        self.registers.stack_pointer = self.registers.stack_pointer.wrapping_add(2);
+        self.registers.program_counter = self.stack_pop();
 
         16
     }
@@ -1063,7 +1057,7 @@ impl CentralProcessingUnit {
         };
 
         if condition {
-            self.ret();
+            self.registers.program_counter = self.stack_pop();
             return 20;
         }
 
@@ -1083,7 +1077,7 @@ impl CentralProcessingUnit {
             Err(e) => panic!("{}", e),
         };
 
-        self.registers.stack_pointer += 2;
+        self.registers.stack_pointer = self.registers.stack_pointer.wrapping_add(2);
         rr
     }
 
@@ -1934,14 +1928,15 @@ mod tests {
     #[test]
     fn verify_ret() {
         let mc = MockDevice {
-            bytes: collection! {},
-            words: collection! { 65534 => 99 },
+            bytes: collection! { 10 => 11 },
+            words: collection! { 10 => 11 },
         };
         let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.stack_pointer = 10;
         let cycle = cpu.ret();
         assert_eq!(cycle, 16);
-        assert_eq!(cpu.registers.program_counter, 99);
-        assert_eq!(cpu.registers.stack_pointer, 0);
+        assert_eq!(cpu.registers.program_counter, 11);
+        assert_eq!(cpu.registers.stack_pointer, 12);
     }
 
     #[test]

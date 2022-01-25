@@ -431,17 +431,17 @@ pub enum OpCode {
     // Clock cycles: 4
     Rrca,
 
-    /// RET
-    /// The 16-bit word on top of the stack is popped off, low-order byte first,
-    /// and loaded into the program counter, from where execution continues.
-    /// Clock cycles: 16
+    // RET
+    // The 16-bit word on top of the stack is popped off, low-order byte first,
+    // and loaded into the program counter, from where execution continues.
+    // Clock cycles: 16
     Ret,
 
-    /// RET f
-    /// Only if the condition f is true is the 16-bit word on top of the stack
-    /// popped off and loaded into the program counter. Execution will then
-    /// continue from the program counter.
-    /// Clock cycles: 20 if condition is met, otherwise 8
+    // RET f
+    // Only if the condition f is true is the 16-bit word on top of the stack
+    // popped off and loaded into the program counter. Execution will then
+    // continue from the program counter.
+    // Clock cycles: 20 if condition is met, otherwise 8
     RetNz,
     RetZ,
     RetNc,
