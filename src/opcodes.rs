@@ -414,9 +414,9 @@ pub enum OpCode {
     // Clock cycles: 12
     LdHlSps,
 
-    /// RLCA
-    /// The contents of register A are rotated left by 1 bit position, after the sign bit (7) is copied into the carry flag.
-    /// Clock cycles: 4
+    // RLCA
+    // The contents of register A are rotated left by 1 bit position, after the sign bit (7) is copied into the carry flag.
+    // Clock cycles: 4
     Rlca,
 
     /// RET
@@ -590,10 +590,15 @@ pub enum OpCode {
     // Clock cycles: 8
     AndN,
 
-    /// DI
-    /// Interrupts are disabled by resetting the Interrupt Master Flag (IME).
-    /// Clock cycles: 4
-    DI,
+    // DI
+    // Interrupts are disabled by resetting the Interrupt Master Flag (IME).
+    // Clock cycles: 4
+    Di,
+
+    // EI
+    // Interrupts are enabled by setting the Interrupt Master Flag (IME).
+    // Clock cycles: 4
+    Ei,
 
     /// CALL nn
     /// The current program counter (return address) is pushed to the stack, high-order byte first.
@@ -617,19 +622,19 @@ pub enum OpCode {
     Rst30,
     Rst38,
 
-    /// The CPU performs no operation during this cycle.
-    /// Clock cycles: 4
+    // The CPU performs no operation during this cycle.
+    // Clock cycles: 4
     Noop,
 
-    /// STOP
-    /// CPU operation is stopped.
-    /// Clock cycles: N/A
+    // STOP
+    // CPU operation is stopped.
+    // Clock cycles: N/A
     Stop,
 
-    /// HALT
-    /// CPU operation is suspended until an interrupt or reset is recieved. While in
-    /// this halted state, NOPs are executed to maintain memory refresh logic.
-    /// Clock cycles: 4 (+4 for every following NOP)
+    // HALT
+    // CPU operation is suspended until an interrupt or reset is recieved. While in
+    // this halted state, NOPs are executed to maintain memory refresh logic.
+    // Clock cycles: 4 (+4 for every following NOP)
     Halt,
 
     /// CB
@@ -872,13 +877,14 @@ impl From<u8> for OpCode {
             0xF0 => OpCode::LdHAn,
             0xF1 => OpCode::PopAf,
             0xF2 => OpCode::LdHAC,
-            0xF3 => OpCode::DI,
+            0xF3 => OpCode::Di,
             0xF5 => OpCode::PushAf,
             0xF6 => OpCode::OrN,
             0xF7 => OpCode::Rst30,
             0xF8 => OpCode::LdHlSps,
             0xF9 => OpCode::LdSpHl,
             0xFA => OpCode::LdANn,
+            0xFB => OpCode::Ei,
             0xFE => OpCode::CpN,
             0xFF => OpCode::Rst38,
 

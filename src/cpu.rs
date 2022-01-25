@@ -267,7 +267,8 @@ impl CentralProcessingUnit {
             OpCode::AndA => self.and_r(Register::A),
             OpCode::AndHl => self.and_hl(),
             OpCode::AndN => self.and_n(),
-            OpCode::DI => self.di(),
+            OpCode::Di => self.di(),
+            OpCode::Ei => self.ei(),
             OpCode::CallNn => self.call_nn(),
             OpCode::Rst00 => self.rst(0x00),
             OpCode::Rst08 => self.rst(0x08),
@@ -310,12 +311,15 @@ impl CentralProcessingUnit {
     }
 
     fn stop(&mut self) -> u8 {
+        // FIXME: is this necessary?
         self.stop = true;
+
         0
     }
 
     fn halt(&mut self) -> u8 {
         self.halt = true;
+
         0
     }
 
@@ -878,6 +882,13 @@ impl CentralProcessingUnit {
 
     fn di(&mut self) -> u8 {
         self.ime = false;
+
+        4
+    }
+
+    fn ei(&mut self) -> u8 {
+        self.ime = true;
+
         4
     }
 
@@ -938,13 +949,27 @@ impl CentralProcessingUnit {
         4
     }
 
-    fn rlca(&mut self) -> u8 {
-        let old_bit_zero_data = self.registers.a & 0x01 == 0x01;
-        self.registers.a = self.registers.a.rotate_left(1);
+    // Rotate A left. Old bit 7 to Carry flag.
+    //
+    // Flags affected:
+    // Z - Set if result is zero.
+    // N - Reset.
+    // H - Reset.
+    // C - Contains old bit 7 data.
+    fn alu_rlc(&mut self, a: u8) -> u8 {
+        let c = (a & 0x80) >> 7 == 0x01;
+        let result = (a << 1) | u8::from(c);
+        self.registers.flags.carry = c;
         self.registers.flags.half_carry = false;
         self.registers.flags.negative = false;
-        self.registers.flags.zero = self.registers.a == 0;
-        self.registers.flags.carry = old_bit_zero_data;
+        self.registers.flags.zero = result == 0x00;
+
+        result
+    }
+
+    fn rlca(&mut self) -> u8 {
+        self.registers.a = self.alu_rlc(self.registers.a);
+        self.registers.flags.zero = false;
 
         4
     }
@@ -1664,7 +1689,7 @@ mod tests {
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
-            assert_eq!(cpu.registers.flags.carry, true);
+            assert_eq!(cpu.registers.flags.carry, false);
         }
         {
             let mc = MockDevice {
