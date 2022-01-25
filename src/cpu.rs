@@ -792,11 +792,13 @@ impl CentralProcessingUnit {
 
     fn jp_nn(&mut self) -> u8 {
         self.registers.program_counter = self.fetch_word();
+
         16
     }
 
     fn jp_hl(&mut self) -> u8 {
         self.registers.program_counter = self.registers.hl();
+
         4
     }
 
@@ -817,12 +819,23 @@ impl CentralProcessingUnit {
         8
     }
 
+    // Add n to current address and jump to it.
+    // n = one byte signed immediate value
+    fn alu_jr(&mut self, n: u8) {
+        let n = n as i8;
+        self.registers.program_counter =
+            ((u32::from(self.registers.program_counter) as i32) + i32::from(n)) as u16;
+    }
+
     fn jr_pc_dd(&mut self) -> u8 {
-        self.registers.program_counter += self.fetch_byte() as u16;
+        let v = self.fetch_byte();
+        self.alu_jr(v);
+
         12
     }
 
     fn jp_f_nn(&mut self, op: ConditionOperand) -> u8 {
+        let nn = self.fetch_word();
         let condition = match op {
             ConditionOperand::NZ => !self.registers.flags.zero,
             ConditionOperand::Z => self.registers.flags.zero,
@@ -831,7 +844,7 @@ impl CentralProcessingUnit {
         };
 
         if condition {
-            self.registers.program_counter += self.fetch_word();
+            self.registers.program_counter += nn;
             return 16;
         }
 
@@ -2517,12 +2530,12 @@ mod tests {
         {
             let mc = MockDevice {
                 bytes: collection! {},
-                words: collection! {},
+                words: collection! { 256 => 300 },
             };
             let mut cpu = CentralProcessingUnit::new(Box::new(mc));
             let cycle = cpu.jp_f_nn(ConditionOperand::Z);
             assert_eq!(cycle, 12);
-            assert_eq!(cpu.registers.program_counter, 256);
+            assert_eq!(cpu.registers.program_counter, 258);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);

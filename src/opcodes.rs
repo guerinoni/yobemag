@@ -339,15 +339,15 @@ pub enum OpCode {
     // Clock cycles: 4
     Cpl,
 
-    /// JP nn
-    /// The 16-bit word nn is loaded into the program counter, from where execution continues.
-    /// Clock cycles: 16
+    // JP nn
+    // The 16-bit word nn is loaded into the program counter, from where execution continues.
+    // Clock cycles: 16
     JpNN,
 
-    /// JP HL
-    /// The contents of the register pair HL are loaded into the program
-    /// counter, from where execution continues.
-    /// Clock cycles: 4
+    // JP HL
+    // The contents of the register pair HL are loaded into the program
+    // counter, from where execution continues.
+    // Clock cycles: 4
     JpHl,
 
     /// JR f, PC+dd
@@ -360,17 +360,17 @@ pub enum OpCode {
     JrNcPcDd,
     JrCPcDd,
 
-    /// JR PC+dd
-    /// The 8-bit signed integer dd is added to the program counter and the
-    /// result is stored in the program counter, from where execution continues.
-    /// Clock cycles: 12
+    // JR PC+dd
+    // The 8-bit signed integer dd is added to the program counter and the
+    // result is stored in the program counter, from where execution continues.
+    // Clock cycles: 12
     JrPcDd,
 
-    /// JP f, nn
-    /// The 16-bit word nn is loaded into the program counter only if the
-    /// condition f is true. Execution will then continue from the program
-    /// counter. Condition f may be any of nz, z, nc or c.
-    /// Clock cycles: 16 if condition is met, otherwise 12
+    // JP f, nn
+    // The 16-bit word nn is loaded into the program counter only if the
+    // condition f is true. Execution will then continue from the program
+    // counter. Condition f may be any of nz, z, nc or c.
+    // Clock cycles: 16 if condition is met, otherwise 12
     JpNzNn,
     JpZNn,
     JpNcNn,
