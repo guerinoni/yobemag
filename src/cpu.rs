@@ -204,6 +204,7 @@ impl CentralProcessingUnit {
             OpCode::CallNcNn => self.call_flag_nn(ConditionOperand::NC),
             OpCode::CallCNn => self.call_flag_nn(ConditionOperand::C),
             OpCode::Ccf => self.ccf(),
+            OpCode::Scf => self.scf(),
             OpCode::RrA => self.rr_a(),
             OpCode::Rlca => self.rlca(),
             OpCode::LdHlSps => self.ld_hl_sp(),
@@ -915,6 +916,14 @@ impl CentralProcessingUnit {
 
     fn ccf(&mut self) -> u8 {
         self.registers.flags.carry = !self.registers.flags.carry;
+        self.registers.flags.half_carry = false;
+        self.registers.flags.negative = false;
+
+        4
+    }
+
+    fn scf(&mut self) -> u8 {
+        self.registers.flags.carry = true;
         self.registers.flags.half_carry = false;
         self.registers.flags.negative = false;
 
@@ -2766,12 +2775,28 @@ mod tests {
     #[test]
     fn verify_ccf() {
         let mc = MockDevice {
-            bytes: collection! { 256 => 10 },
+            bytes: collection! {},
             words: collection! {},
         };
 
         let mut cpu = CentralProcessingUnit::new(Box::new(mc));
         let cycle = cpu.ccf();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
+        assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_scf() {
+        let mc = MockDevice {
+            bytes: collection! {},
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        let cycle = cpu.scf();
         assert_eq!(cycle, 4);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
