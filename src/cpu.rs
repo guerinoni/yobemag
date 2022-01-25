@@ -186,6 +186,7 @@ impl CentralProcessingUnit {
             OpCode::DecA => self.dec_r(Register::A),
             OpCode::DecHlSpecific => self.dec_hl(),
             OpCode::Daa => self.daa(),
+            OpCode::Cpl => self.cpl(),
             OpCode::JpNN => self.jp_nn(),
             OpCode::JpHl => self.jp_hl(),
             OpCode::JrNzPcDd => self.jr_f_pc_dd(ConditionOperand::NZ),
@@ -769,6 +770,14 @@ impl CentralProcessingUnit {
         self.registers.flags.half_carry = false;
         self.registers.flags.zero = a == 0x00;
         self.registers.a = a;
+
+        4
+    }
+
+    fn cpl(&mut self) -> u8 {
+        self.registers.a = !self.registers.a;
+        self.registers.flags.half_carry = true;
+        self.registers.flags.negative = true;
 
         4
     }
@@ -2724,6 +2733,24 @@ mod tests {
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
+        assert_eq!(cpu.registers.flags.carry, false);
+    }
+
+    #[test]
+    fn verify_cpl() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        cpu.registers.a = 11;
+        let cycle = cpu.cpl();
+        assert_eq!(cycle, 4);
+        assert_eq!(cpu.registers.a, 244);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, true);
+        assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, false);
     }
 }

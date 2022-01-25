@@ -334,6 +334,11 @@ pub enum OpCode {
     // Clock cycles: 4
     Daa,
 
+    // CPL
+    // The contents of register A are inverted (one's complement).
+    // Clock cycles: 4
+    Cpl,
+
     /// JP nn
     /// The 16-bit word nn is loaded into the program counter, from where execution continues.
     /// Clock cycles: 16
@@ -670,6 +675,7 @@ impl From<u8> for OpCode {
             0x2C => OpCode::IncL,
             0x2D => OpCode::DecL,
             0x2E => OpCode::LdLNext,
+            0x2F => OpCode::Cpl,
             0x30 => OpCode::JrNcPcDd,
             0x31 => OpCode::LdSpNn,
             0x32 => OpCode::LddHlA,
