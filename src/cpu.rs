@@ -227,6 +227,7 @@ impl CentralProcessingUnit {
             OpCode::AddaL => self.add_a_r(Register::L),
             OpCode::AddaA => self.add_a_r(Register::A),
             OpCode::AddAHl => self.add_a_hl(),
+            OpCode::AddSp => self.add_sp(),
             OpCode::AdcB => self.adc_r(Register::B),
             OpCode::AdcC => self.adc_r(Register::C),
             OpCode::AdcD => self.adc_r(Register::D),
@@ -1021,6 +1022,30 @@ impl CentralProcessingUnit {
         };
 
         self.alu_add(v);
+
+        8
+    }
+
+    // Add n to Stack Pointer (SP).
+    // n = one byte signed immediate value (#).
+    //
+    // Flags affected:
+    // Z - Reset.
+    // N - Reset.
+    // H - Set or reset according to operation.
+    // C - Set or reset according to operation.
+    fn alu_add_sp(&mut self) {
+        let a = self.registers.stack_pointer;
+        let b = i16::from(self.fetch_byte() as i8) as u16;
+        self.registers.flags.carry = (a & 0x00FF) + (b & 0x00FF) > 0x00FF;
+        self.registers.flags.half_carry = (a & 0x000F) + (b & 0x000F) > 0x000F;
+        self.registers.flags.negative = false;
+        self.registers.flags.zero = false;
+        self.registers.stack_pointer = a.wrapping_add(b);
+    }
+
+    fn add_sp(&mut self) -> u8 {
+        self.alu_add_sp();
 
         8
     }
@@ -2631,6 +2656,23 @@ mod tests {
         assert_eq!(cpu.registers.hl(), 5);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, true);
+        assert_eq!(cpu.registers.flags.half_carry, true);
+        assert_eq!(cpu.registers.flags.carry, true);
+    }
+
+    #[test]
+    fn verify_add_sp() {
+        let mc = MockDevice {
+            bytes: collection! { 256 => 10 },
+            words: collection! {},
+        };
+
+        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        let cycle = cpu.add_sp();
+        assert_eq!(cycle, 8);
+        assert_eq!(cpu.registers.stack_pointer, 8);
+        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, true);
         assert_eq!(cpu.registers.flags.carry, true);
     }

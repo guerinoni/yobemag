@@ -460,6 +460,11 @@ pub enum OpCode {
     // Clock cycles: 8
     AddAHl,
 
+    // ADD SP, s
+    // The byte s is read as a signed integer and added to the register pair SP.
+    // Clock cycles: 16
+    AddSp,
+
     // ADC r
     // Clock cycles: 4
     AdcB,
@@ -829,6 +834,7 @@ impl From<u8> for OpCode {
             0xE5 => OpCode::PushHl,
             0xE6 => OpCode::AndN,
             0xE7 => OpCode::Rst20,
+            0xE8 => OpCode::AddSp,
             0xE9 => OpCode::JpHl,
             0xEA => OpCode::LdNnA,
             0xEE => OpCode::XorN,
