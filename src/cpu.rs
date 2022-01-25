@@ -316,12 +316,6 @@ impl CentralProcessingUnit {
         0
     }
 
-    pub fn check_for_half_carry_first_nible_sub(a: u8, b: u8) -> bool {
-        let sa = (a & 0xF) as i8;
-        let sb = (b & 0xF) as i8;
-        (sa - sb) < 0
-    }
-
     fn ld_r_next(&mut self, reg: Register) -> u8 {
         let r = self.fetch_byte();
         self.registers.set_register(&reg, r);
@@ -696,15 +690,24 @@ impl CentralProcessingUnit {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
+
         8
     }
 
-    fn dec(&mut self, input: u8) -> u8 {
-        let result = input.wrapping_sub(1);
-        self.registers.flags.zero = result == 0;
-        self.registers.flags.half_carry =
-            CentralProcessingUnit::check_for_half_carry_first_nible_sub(input, result);
+    // Decrement register n.
+    // n = A,B,C,D,E,H,L,(HL)
+    //
+    // Flags affected:
+    // Z - Set if reselt is zero.
+    // N - Set.
+    // H - Set if no borrow from bit 4.
+    // C - Not affected
+    fn alu_dec(&mut self, a: u8) -> u8 {
+        let result = a.wrapping_sub(1);
+        self.registers.flags.half_carry = a.trailing_zeros() >= 4;
         self.registers.flags.negative = true;
+        self.registers.flags.zero = result == 0x00;
+
         result
     }
 
@@ -716,26 +719,22 @@ impl CentralProcessingUnit {
     }
 
     fn dec_r(&mut self, reg: Register) -> u8 {
-        match reg {
-            Register::B => self.registers.b = self.dec(self.registers.b),
-            Register::C => self.registers.c = self.dec(self.registers.c),
-            Register::D => self.registers.d = self.dec(self.registers.d),
-            Register::E => self.registers.e = self.dec(self.registers.e),
-            Register::H => self.registers.h = self.dec(self.registers.h),
-            Register::L => self.registers.l = self.dec(self.registers.l),
-            Register::A => self.registers.a = self.dec(self.registers.a),
-        };
+        let v = self.registers.get_register(&reg);
+        let new_v = self.alu_dec(v);
+        self.registers.set_register(&reg, new_v);
 
         4
     }
 
     fn dec_hl(&mut self) -> u8 {
-        let addr = self.registers.hl() as usize;
-        let result = self.dec(match self.mmu.read_byte(addr) {
+        let address = self.registers.hl();
+        let v = match self.mmu.read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
-        });
-        match self.mmu.write_byte(addr, result) {
+        };
+
+        let h = self.alu_dec(v);
+        match self.mmu.write_byte(address as usize, h) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }

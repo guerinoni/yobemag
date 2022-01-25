@@ -307,9 +307,9 @@ pub enum OpCode {
     DecHl,
     DecSp,
 
-    /// DEC r
-    /// The register r is decremented by 1.
-    /// Clock cycles: 4
+    // DEC r
+    // The register r is decremented by 1.
+    // Clock cycles: 4
     DecB,
     DecC,
     DecD,
@@ -318,9 +318,9 @@ pub enum OpCode {
     DecL,
     DecA,
 
-    /// DEC (HL)
-    /// The byte at the memory address specified in the register HL is decremented by 1.
-    /// Clock cycles: 12
+    // DEC (HL)
+    // The byte at the memory address specified in the register HL is decremented by 1.
+    // Clock cycles: 12
     DecHlSpecific,
 
     // DAA
