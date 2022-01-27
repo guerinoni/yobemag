@@ -104,12 +104,12 @@ impl ReadWrite for MBC1 {
         match address {
             0x0000..=0x3FFF => Ok(self.rom[address]),
             0x4000..=0x7FFF => {
-                let i = self.rom_bank() as usize * 0x4000 as usize + address - 0x4000 as usize;
+                let i = self.rom_bank() as usize * 0x4000_usize + address - 0x4000_usize;
                 Ok(self.rom[i])
             }
             0xA000..=0xBFFF => {
                 if self.ram_enable {
-                    let i = self.ram_bank() as usize * 0x2000 as usize + address - 0xA000 as usize;
+                    let i = self.ram_bank() as usize * 0x2000_usize + address - 0xA000_usize;
                     Ok(self.ram[i])
                 } else {
                     Ok(0)
@@ -127,11 +127,32 @@ impl ReadWrite for MBC1 {
 
     fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
-            (0x2000..=0x3FFF) => {
+            0x0000..=0x1FFF => self.ram_enable = value & 0x0F == 0x0A,
+            0x2000..=0x3FFF => {
                 self.bank = if value == 0x00 {
                     1
                 } else {
                     ((value & 0x1F) as usize).try_into().unwrap()
+                }
+            }
+            0x4000..=0x5fff => self.bank = self.bank & 0x9F | (value & 0x03 << 5),
+            0x6000..=0x7fff => {
+                if value == 0 {
+                    self.romram_mode = false;
+                } else if value == 1 {
+                    self.romram_mode = true;
+                } else {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "invalid cartridge type.",
+                    ));
+                }
+            }
+            0xA000..=0xBFFF => {
+                if self.ram_enable {
+                    let i =
+                        self.ram_bank() as usize * 0x2000_usize + address as usize - 0xA000_usize;
+                    self.ram[i] = value;
                 }
             }
             _ => unimplemented!(),
