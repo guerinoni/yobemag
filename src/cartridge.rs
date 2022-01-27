@@ -6,7 +6,7 @@ use std::fs;
 pub struct NoMBCartridge {
     header: CartridgeHeader,
 
-    /// 0x0150-0x3FFF
+    // 0x0150-0x3FFF
     rom: Vec<u8>,
 }
 
@@ -40,34 +40,27 @@ impl ReadWrite for NoMBCartridge {
         unimplemented!()
     }
 }
+
 #[allow(dead_code)]
 pub struct MBC1 {
     header: CartridgeHeader,
 
-    /// 0x0150-0x3FFF
+    // 0x0150-0x3FFF
     rom: Vec<u8>,
     ram: Vec<u8>,
 
-    /// 0x0000-0x1FFF: RAM Enable (write only lower 4 bits)
-    ///  - 00: Disable RAM (default)
-    ///  - 0A: Enable RAM
+    // 0x0000-0x1FFF: RAM Enable (write only lower 4 bits)
+    //  - 00: Disable RAM (default)
+    //  - 0A: Enable RAM
     ram_enable: bool,
 
-    /// 0x6000-0x7FFF: ROM/RAM Mode Select (write only)
-    /// Selects whether the above register should be used as the upper 2 bits
-    /// of the ROM Bank Number or as the RAM Bank Number.
-    ///  - 00 = ROM Banking Mode (up to 8KB RAM, 2MB ROM) (default)
-    ///  - 01 = RAM Banking Mode (up to 32KB RAM, 512KB ROM)
+    // 0x6000-0x7FFF: ROM/RAM Mode Select (write only)
+    // Selects whether the above register should be used as the upper 2 bits
+    // of the ROM Bank Number or as the RAM Bank Number.
+    //  - 00 = ROM Banking Mode (up to 8KB RAM, 2MB ROM) (default)
+    //  - 01 = RAM Banking Mode (up to 32KB RAM, 512KB ROM)
     romram_mode: bool,
-
-    /// 0x2000-0x3FFF: ROM Bank Number (write only)
-    /// Selects the lower 5 bits of the ROM Bank Number (in range 01-1F)
-    rombank: usize,
-
-    /// 0x4000-0x5FFF: RAM Bank Number / Upper Bits of ROM Bank Number (write only)
-    /// Selects the 2-bit RAM Bank Number (in range 00-03) or the upper 2 bits
-    /// of the ROM Bank Number, depending on the ROM/RAM Mode Select.
-    rambank: usize,
+    bank: u8,
 }
 
 impl MBC1 {
@@ -79,8 +72,23 @@ impl MBC1 {
             ram: Vec::with_capacity(ram_size),
             ram_enable: false,
             romram_mode: false,
-            rombank: 0,
-            rambank: 0,
+            bank: 0,
+        }
+    }
+
+    fn rom_bank(&self) -> u8 {
+        if self.romram_mode {
+            self.bank & 0x7F
+        } else {
+            self.bank & 0x1F
+        }
+    }
+
+    fn ram_bank(&self) -> u8 {
+        if self.romram_mode {
+            0
+        } else {
+            (self.bank & 0x60) >> 5
         }
     }
 }
@@ -95,18 +103,17 @@ impl ReadWrite for MBC1 {
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         match address {
             0x0000..=0x3FFF => Ok(self.rom[address]),
-            0x4000..=0x5FFF => {
-                let rom_bank_number = if self.romram_mode {
-                    (self.rambank << 0x5) | self.rombank
-                } else {
-                    self.rombank
-                };
-
-                Ok(self.rom[address - 0x4000 + 0x4000 * rom_bank_number])
+            0x4000..=0x7FFF => {
+                let i = self.rom_bank() as usize * 0x4000 as usize + address - 0x4000 as usize;
+                Ok(self.rom[i])
             }
             0xA000..=0xBFFF => {
-                let bank_num = if self.romram_mode { 0 } else { self.rambank };
-                Ok(self.ram[address - 0xA000 + 0x2000 * bank_num])
+                if self.ram_enable {
+                    let i = self.ram_bank() as usize * 0x2000 as usize + address - 0xA000 as usize;
+                    Ok(self.ram[i])
+                } else {
+                    Ok(0)
+                }
             }
             _ => unimplemented!(),
         }
@@ -121,10 +128,10 @@ impl ReadWrite for MBC1 {
     fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
             (0x2000..=0x3FFF) => {
-                self.rombank = if value == 0x00 {
+                self.bank = if value == 0x00 {
                     1
                 } else {
-                    (value & 0x1F) as usize
+                    ((value & 0x1F) as usize).try_into().unwrap()
                 }
             }
             _ => unimplemented!(),

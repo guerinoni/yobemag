@@ -845,7 +845,7 @@ impl CentralProcessingUnit {
         };
 
         if condition {
-            self.registers.program_counter += nn;
+            self.registers.program_counter = self.registers.program_counter.wrapping_add(nn);
             return 16;
         }
 

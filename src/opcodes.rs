@@ -259,10 +259,10 @@ pub enum OpCode {
     // Clock cycles: 8
     XorHl,
 
-    /// XOR n
-    /// A bitwise XOR operation is performed between the byte n and the contents of register A,
-    /// and the result is stored in register A.
-    /// Clock cycles: 8
+    // XOR n
+    // A bitwise XOR operation is performed between the byte n and the contents of register A,
+    // and the result is stored in register A.
+    // Clock cycles: 8
     XorN,
 
     // ADD HL, rr
@@ -657,8 +657,8 @@ pub enum OpCode {
     // Clock cycles: 4 (+4 for every following NOP)
     Halt,
 
-    /// CB
-    /// Interpret the next byte as a prefix instruction (PrefixOpCode) rather than a normal instruction (OpCode)
+    // CB
+    // Interpret the next byte as a prefix instruction (PrefixOpCode) rather than a normal instruction (OpCode)
     CB,
 }
 
