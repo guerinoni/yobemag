@@ -1,13 +1,12 @@
 use core::panic;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::{
-    memory_device::ReadWrite, mmu::MemoryManagmentUnit, opcodes::*, prefix_opcodes::PrefixOpCode,
-    register::*,
-};
+use crate::{memory_device::ReadWrite, opcodes::*, prefix_opcodes::PrefixOpCode, register::*};
 
 pub struct CentralProcessingUnit {
     registers: Registers,
-    mmu: MemoryManagmentUnit,
+    mmu: Rc<RefCell<dyn ReadWrite>>,
     stop: bool,
     halt: bool,
 
@@ -17,8 +16,7 @@ pub struct CentralProcessingUnit {
 }
 
 impl CentralProcessingUnit {
-    pub fn new(device: Box<dyn ReadWrite>) -> CentralProcessingUnit {
-        let mmu = MemoryManagmentUnit::new(device);
+    pub fn new(mmu: Rc<RefCell<dyn ReadWrite>>) -> CentralProcessingUnit {
         CentralProcessingUnit {
             registers: Registers::new(),
             mmu,
@@ -291,7 +289,7 @@ impl CentralProcessingUnit {
     fn fetch_byte(&mut self) -> u8 {
         let address = self.registers.program_counter as usize;
         self.registers.program_counter += 1;
-        match self.mmu.read_byte(address as usize) {
+        match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -299,7 +297,7 @@ impl CentralProcessingUnit {
 
     fn fetch_word(&mut self) -> u16 {
         let address = self.registers.program_counter as usize;
-        let word = match self.mmu.read_word(address as usize) {
+        let word = match self.mmu.as_ref().borrow().read_word(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -342,7 +340,7 @@ impl CentralProcessingUnit {
 
     fn ld_r_hl(&mut self, reg: Register) -> u8 {
         let address = self.registers.hl() as usize;
-        let v = match self.mmu.read_byte(address) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -354,7 +352,12 @@ impl CentralProcessingUnit {
 
     fn ld_hl_r(&mut self, reg: Register) -> u8 {
         let v = self.registers.get_register(&reg);
-        match self.mmu.write_byte(self.registers.hl() as usize, v) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(self.registers.hl() as usize, v)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -364,7 +367,7 @@ impl CentralProcessingUnit {
 
     fn ld_a_rr(&mut self, reg: RegisterWord) -> u8 {
         let address = self.registers.get_register_word(&reg);
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -376,7 +379,7 @@ impl CentralProcessingUnit {
 
     fn ld_a_nn(&mut self) -> u8 {
         let address = self.fetch_word();
-        self.registers.a = match self.mmu.read_byte(address as usize) {
+        self.registers.a = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -386,7 +389,12 @@ impl CentralProcessingUnit {
 
     fn ld_rr_a(&mut self, reg: RegisterWord) -> u8 {
         let address = self.registers.get_register_word(&reg);
-        match self.mmu.write_byte(address as usize, self.registers.a) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(address as usize, self.registers.a)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -396,7 +404,12 @@ impl CentralProcessingUnit {
 
     fn ld_nn_a(&mut self) -> u8 {
         let address = self.fetch_word();
-        match self.mmu.write_byte(address as usize, self.registers.a) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(address as usize, self.registers.a)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -407,7 +420,7 @@ impl CentralProcessingUnit {
     fn ld_hl_next(&mut self) -> u8 {
         let hl = self.registers.hl();
         let next = self.fetch_byte();
-        match self.mmu.write_byte(hl as usize, next) {
+        match self.mmu.as_ref().borrow_mut().write_byte(hl as usize, next) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -424,7 +437,12 @@ impl CentralProcessingUnit {
 
     fn ldd_hl_a(&mut self) -> u8 {
         let address = self.registers.hl();
-        match self.mmu.write_byte(address as usize, self.registers.a) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(address as usize, self.registers.a)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -436,7 +454,7 @@ impl CentralProcessingUnit {
 
     fn ld_a_ff00_n(&mut self) -> u8 {
         let address = 0xFF00_u16 | u16::from(self.fetch_byte());
-        self.registers.a = match self.mmu.read_byte(address as usize) {
+        self.registers.a = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -446,7 +464,12 @@ impl CentralProcessingUnit {
 
     fn ld_ff00_na(&mut self) -> u8 {
         let address = 0xFF00_u16 | u16::from(self.fetch_byte());
-        match self.mmu.write_byte(address as usize, self.registers.a) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(address as usize, self.registers.a)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -456,7 +479,7 @@ impl CentralProcessingUnit {
 
     fn ld_a_ff00c(&mut self) -> u8 {
         let address = 0xFF00 | self.registers.c as u16;
-        self.registers.a = match self.mmu.read_byte(address as usize) {
+        self.registers.a = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -466,7 +489,12 @@ impl CentralProcessingUnit {
 
     fn ld_ff00_ca(&mut self) -> u8 {
         let address = 0xFF00 | self.registers.c as u16;
-        match self.mmu.write_byte(address as usize, self.registers.a) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(address as usize, self.registers.a)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -476,7 +504,7 @@ impl CentralProcessingUnit {
 
     fn ldd_a_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        self.registers.a = match self.mmu.read_byte(address as usize) {
+        self.registers.a = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -489,6 +517,8 @@ impl CentralProcessingUnit {
     fn ld_nn_sp(&mut self) -> u8 {
         let address = self.fetch_word();
         self.mmu
+            .as_ref()
+            .borrow_mut()
             .write_word(address as usize, self.registers.stack_pointer)
             .unwrap();
 
@@ -497,7 +527,7 @@ impl CentralProcessingUnit {
 
     fn ldi_a_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        self.registers.a = match self.mmu.read_byte(address as usize) {
+        self.registers.a = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -509,7 +539,12 @@ impl CentralProcessingUnit {
 
     fn ldi_hl_a(&mut self) -> u8 {
         let address = self.registers.hl();
-        match self.mmu.write_byte(address as usize, self.registers.a) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(address as usize, self.registers.a)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -551,7 +586,7 @@ impl CentralProcessingUnit {
 
     fn or_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -591,7 +626,7 @@ impl CentralProcessingUnit {
 
     fn cp_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -627,7 +662,7 @@ impl CentralProcessingUnit {
 
     fn xor_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -689,13 +724,18 @@ impl CentralProcessingUnit {
 
     fn inc_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
 
         let h = self.alu_inc(v);
-        match self.mmu.write_byte(address as usize, h) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(address as usize, h)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -737,13 +777,18 @@ impl CentralProcessingUnit {
 
     fn dec_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
 
         let h = self.alu_dec(v);
-        match self.mmu.write_byte(address as usize, h) {
+        match self
+            .mmu
+            .as_ref()
+            .borrow_mut()
+            .write_byte(address as usize, h)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         }
@@ -892,6 +937,8 @@ impl CentralProcessingUnit {
     fn stack_add(&mut self, v: u16) {
         self.registers.stack_pointer -= 2;
         self.mmu
+            .as_ref()
+            .borrow_mut()
             .write_word(self.registers.stack_pointer as usize, v)
             .unwrap();
     }
@@ -1080,7 +1127,12 @@ impl CentralProcessingUnit {
     }
 
     fn stack_pop(&mut self) -> u16 {
-        let rr = match self.mmu.read_word(self.registers.stack_pointer as usize) {
+        let rr = match self
+            .mmu
+            .as_ref()
+            .borrow()
+            .read_word(self.registers.stack_pointer as usize)
+        {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -1136,7 +1188,7 @@ impl CentralProcessingUnit {
 
     fn add_a_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -1197,7 +1249,7 @@ impl CentralProcessingUnit {
 
     fn adc_a_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -1234,7 +1286,7 @@ impl CentralProcessingUnit {
 
     fn sub_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -1279,7 +1331,7 @@ impl CentralProcessingUnit {
 
     fn sbc_a_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -1322,7 +1374,7 @@ impl CentralProcessingUnit {
 
     fn and_hl(&mut self) -> u8 {
         let address = self.registers.hl();
-        let v = match self.mmu.read_byte(address as usize) {
+        let v = match self.mmu.as_ref().borrow().read_byte(address as usize) {
             Ok(v) => v,
             Err(e) => panic!("{}", e),
         };
@@ -1471,7 +1523,9 @@ impl CentralProcessingUnit {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
     use std::collections::HashMap;
+    use std::{borrow::Borrow, borrow::BorrowMut, rc::Rc};
 
     use crate::memory_device::ReadWrite;
     use crate::register::{ConditionOperand, Register, RegisterWord};
@@ -1514,11 +1568,11 @@ mod tests {
 
     #[test]
     fn verify_ld_r_next() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 10 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ld_r_next(Register::A);
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 10);
@@ -1526,11 +1580,11 @@ mod tests {
 
     #[test]
     fn verify_ld_r_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.b = 9;
         let cycle = cpu.ld_r_r(Register::A, Register::B);
         assert_eq!(cycle, 4);
@@ -1539,11 +1593,11 @@ mod tests {
 
     #[test]
     fn verify_ld_r_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 44 => 10 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(44);
         let cycle = cpu.ld_r_hl(Register::B);
         assert_eq!(cycle, 8);
@@ -1552,25 +1606,25 @@ mod tests {
 
     #[test]
     fn verify_ld_hl_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(44);
         cpu.registers.b = 99;
         let cycle = cpu.ld_hl_r(Register::B);
         assert_eq!(cycle, 8);
-        assert_eq!(cpu.mmu.read_byte(44).unwrap(), 99);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(44).unwrap(), 99);
     }
 
     #[test]
     fn verify_ld_a_rr() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 44 => 10 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_bc(44);
         let cycle = cpu.ld_a_rr(RegisterWord::BC);
         assert_eq!(cycle, 8);
@@ -1579,11 +1633,11 @@ mod tests {
 
     #[test]
     fn verify_ld_a_nn() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 44 => 10 },
             words: collection! { 256 => 44 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ld_a_nn();
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.a, 10);
@@ -1592,52 +1646,52 @@ mod tests {
     #[test]
     fn verify_ld_rr_a() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.set_bc(11);
             cpu.registers.a = 99;
             let cycle = cpu.ld_rr_a(RegisterWord::BC);
             assert_eq!(cycle, 8);
-            assert_eq!(cpu.mmu.read_byte(11).unwrap(), 99);
+            assert_eq!(cpu.mmu.as_ref().borrow().read_byte(11).unwrap(), 99);
         }
     }
 
     #[test]
     fn verify_ld_nn_a() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! { 256 => 44 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 99;
         let cycle = cpu.ld_nn_a();
         assert_eq!(cycle, 16);
-        assert_eq!(cpu.mmu.read_byte(44).unwrap(), 99);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(44).unwrap(), 99);
     }
 
     #[test]
     fn verify_ld_hl_next() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 94 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(99);
         let cycle = cpu.ld_hl_next();
         assert_eq!(cycle, 12);
-        assert_eq!(cpu.mmu.read_byte(99).unwrap(), 94);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(99).unwrap(), 94);
     }
 
     #[test]
     fn verify_ld_a_ff00_n() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 1, 0xFF01 => 10 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ld_a_ff00_n();
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.a, 10);
@@ -1645,24 +1699,24 @@ mod tests {
 
     #[test]
     fn verify_ld_ff00_na() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 1 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 94;
         let cycle = cpu.ld_ff00_na();
         assert_eq!(cycle, 12);
-        assert_eq!(cpu.mmu.read_byte(0xFF00 + 1).unwrap(), 94);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(0xFF00 + 1).unwrap(), 94);
     }
 
     #[test]
     fn verify_ld_a_ff00c() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 0xFF02 => 10 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.c = 2;
         let cycle = cpu.ld_a_ff00c();
         assert_eq!(cycle, 8);
@@ -1671,25 +1725,25 @@ mod tests {
 
     #[test]
     fn verify_ld_ff00_ca() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 10;
         cpu.registers.c = 2;
         let cycle = cpu.ld_ff00_ca();
         assert_eq!(cycle, 8);
-        assert_eq!(cpu.mmu.read_byte(0xFF02).unwrap(), 10);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(0xFF02).unwrap(), 10);
     }
 
     #[test]
     fn verify_ldd_a_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 88 => 10 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(88);
         let cycle = cpu.ldd_a_hl();
         assert_eq!(cycle, 8);
@@ -1699,25 +1753,25 @@ mod tests {
 
     #[test]
     fn verify_ld_nn_sp() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! { 256 => 1000 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ld_nn_sp();
         assert_eq!(cycle, 20);
-        assert_eq!(cpu.mmu.read_byte(1000).unwrap(), 254);
-        assert_eq!(cpu.mmu.read_byte(1001).unwrap(), 255);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(1000).unwrap(), 254);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(1001).unwrap(), 255);
     }
 
     #[test]
     fn verify_rlca() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 1;
             let cycle = cpu.rlca();
             assert_eq!(cycle, 4);
@@ -1728,11 +1782,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 2;
             let cycle = cpu.rlca();
             assert_eq!(cycle, 4);
@@ -1747,11 +1801,11 @@ mod tests {
     #[test]
     fn verify_rr_a() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 1;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
@@ -1762,11 +1816,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, true);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 2;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
@@ -1777,11 +1831,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 3;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
@@ -1795,26 +1849,26 @@ mod tests {
 
     #[test]
     fn verify_call_nn() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! { 256 => 1000 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.stack_pointer = 2;
         let cycle = cpu.call_nn();
         assert_eq!(cycle, 24);
         assert_eq!(cpu.registers.program_counter, 1000);
-        assert_eq!(cpu.mmu.read_byte(1).unwrap(), 1);
-        assert_eq!(cpu.mmu.read_byte(0).unwrap(), 2);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(1).unwrap(), 1);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(0).unwrap(), 2);
     }
 
     #[test]
     fn verify_or_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 10;
         cpu.registers.b = 5;
         let cycle = cpu.or_r(Register::B);
@@ -1824,11 +1878,11 @@ mod tests {
 
     #[test]
     fn verify_xor_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 10;
         cpu.registers.b = 1;
         let cycle = cpu.xor_r(Register::B);
@@ -1838,11 +1892,11 @@ mod tests {
 
     #[test]
     fn verify_jr_pc_dd() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 99 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.jr_pc_dd();
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.program_counter, 356);
@@ -1851,11 +1905,11 @@ mod tests {
     #[test]
     fn verify_inc_r() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 99 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 15;
             let cycle = cpu.inc_r(Register::A);
             assert_eq!(cycle, 4);
@@ -1866,11 +1920,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 99 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 1;
             let cycle = cpu.inc_r(Register::A);
             assert_eq!(cycle, 4);
@@ -1884,11 +1938,11 @@ mod tests {
 
     #[test]
     fn verify_inc_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 11 => 99 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(11);
         let cycle = cpu.inc_hl();
         assert_eq!(cycle, 8);
@@ -1902,11 +1956,11 @@ mod tests {
     #[test]
     fn verify_dec_r() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 99 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 16;
             let cycle = cpu.dec_r(Register::A);
             assert_eq!(cycle, 4);
@@ -1917,11 +1971,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 99 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 1;
             let cycle = cpu.dec_r(Register::A);
             assert_eq!(cycle, 4);
@@ -1935,11 +1989,11 @@ mod tests {
 
     #[test]
     fn verify_ret() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 10 => 11 },
             words: collection! { 10 => 11 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.stack_pointer = 10;
         let cycle = cpu.ret();
         assert_eq!(cycle, 16);
@@ -1949,11 +2003,11 @@ mod tests {
 
     #[test]
     fn verify_ld_dd_nn() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! { 256 => 99 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ld_dd_nn(RegisterWord::SP);
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.stack_pointer, 99);
@@ -1961,26 +2015,26 @@ mod tests {
 
     #[test]
     fn verify_push_qq() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_bc(10001);
         let cycle = cpu.push_rr(RegisterWord::BC);
         assert_eq!(cycle, 16);
         assert_eq!(cpu.registers.stack_pointer, 0xFFFE - 2);
-        assert_eq!(cpu.mmu.read_byte(65533).unwrap(), 39);
-        assert_eq!(cpu.mmu.read_byte(65532).unwrap(), 17);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(65533).unwrap(), 39);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(65532).unwrap(), 17);
     }
 
     #[test]
     fn verify_pop_qq() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! { 100 => 99 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.stack_pointer = 100;
         let cycle = cpu.pop_rr(RegisterWord::BC);
         assert_eq!(cycle, 12);
@@ -1990,11 +2044,11 @@ mod tests {
 
     #[test]
     fn verify_ldi_a_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 99 => 8 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(99);
         let cycle = cpu.ldi_a_hl();
         assert_eq!(cycle, 8);
@@ -2004,11 +2058,11 @@ mod tests {
 
     #[test]
     fn verify_sub_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 80;
         cpu.registers.b = 20;
         let cycle = cpu.sub_r(Register::B);
@@ -2024,11 +2078,11 @@ mod tests {
     #[test]
     fn verify_and_n() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 2 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 1;
             let cycle = cpu.and_n();
             assert_eq!(cycle, 8);
@@ -2039,11 +2093,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 7 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 3;
             let cycle = cpu.and_n();
             assert_eq!(cycle, 8);
@@ -2058,39 +2112,39 @@ mod tests {
     #[test]
     fn verify_call_flag_nn() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! { 256 => 1000 },
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.stack_pointer = 2;
             let cycle = cpu.call_flag_nn(ConditionOperand::Z);
             assert_eq!(cycle, 12);
             assert_eq!(cpu.registers.program_counter, 258);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! { 256 => 1000 },
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.stack_pointer = 2;
             cpu.registers.flags.zero = true;
             let cycle = cpu.call_flag_nn(ConditionOperand::Z);
             assert_eq!(cycle, 24);
             assert_eq!(cpu.registers.program_counter, 1000);
-            assert_eq!(cpu.mmu.read_byte(1).unwrap(), 1);
-            assert_eq!(cpu.mmu.read_byte(0).unwrap(), 2);
+            assert_eq!(cpu.mmu.as_ref().borrow().read_byte(1).unwrap(), 1);
+            assert_eq!(cpu.mmu.as_ref().borrow().read_byte(0).unwrap(), 2);
         }
     }
 
     #[test]
     fn verify_cp_n() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 99 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 100;
         let cycle = cpu.cp_n();
         assert_eq!(cycle, 8);
@@ -2099,42 +2153,42 @@ mod tests {
 
     #[test]
     fn verify_ldi_hl_a() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(10);
         cpu.registers.a = 11;
         let cycle = cpu.ldi_hl_a();
         assert_eq!(cycle, 8);
-        assert_eq!(cpu.mmu.read_byte(10).unwrap(), 11);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(10).unwrap(), 11);
         assert_eq!(cpu.registers.hl(), 11);
     }
 
     #[test]
     fn verify_ldd_hl_a() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(10);
         cpu.registers.a = 11;
         let cycle = cpu.ldd_hl_a();
         assert_eq!(cycle, 8);
-        assert_eq!(cpu.mmu.read_byte(10).unwrap(), 11);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(10).unwrap(), 11);
         assert_eq!(cpu.registers.hl(), 9);
     }
 
     #[test]
     fn verify_add_a_n() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 10 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 11;
             let cycle = cpu.add_a_n();
             assert_eq!(cycle, 8);
@@ -2145,11 +2199,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 2 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = u8::MAX - 2;
             let cycle = cpu.add_a_n();
             assert_eq!(cycle, 8);
@@ -2164,11 +2218,11 @@ mod tests {
     #[test]
     fn verify_sub_n() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 10 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 80;
             let cycle = cpu.sub_n();
             assert_eq!(cycle, 8);
@@ -2179,11 +2233,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 80 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 80;
             let cycle = cpu.sub_n();
             assert_eq!(cycle, 8);
@@ -2197,11 +2251,11 @@ mod tests {
 
     #[test]
     fn verify_xor_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 100 => 90 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(100);
         cpu.registers.a = 1;
         let cycle = cpu.xor_hl();
@@ -2215,11 +2269,11 @@ mod tests {
 
     #[test]
     fn verify_rlc_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.c = 3;
         let cycle = cpu.rlc_r(Register::C);
         assert_eq!(cycle, 8);
@@ -2232,11 +2286,11 @@ mod tests {
 
     #[test]
     fn verify_srl_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.c = 3;
         let cycle = cpu.srl_r(Register::C);
         assert_eq!(cycle, 8);
@@ -2250,11 +2304,11 @@ mod tests {
     #[test]
     fn verify_rr_r() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.b = 3;
             let cycle = cpu.rr_r(Register::B);
             assert_eq!(cycle, 8);
@@ -2268,11 +2322,11 @@ mod tests {
 
     #[test]
     fn verify_xor_n() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 10 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 1;
         let cycle = cpu.xor_n();
         assert_eq!(cycle, 8);
@@ -2286,11 +2340,11 @@ mod tests {
     #[test]
     fn verify_adca_n() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 9 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 1;
             let cycle = cpu.adc_a_n();
             assert_eq!(cycle, 8);
@@ -2301,11 +2355,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 1 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 0xFF;
             let cycle = cpu.adc_a_n();
             assert_eq!(cycle, 8);
@@ -2320,22 +2374,22 @@ mod tests {
     #[test]
     fn verify_ret_f() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! { 65534 => 99 },
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             let cycle = cpu.ret_f(ConditionOperand::NZ);
             assert_eq!(cycle, 20);
             assert_eq!(cpu.registers.stack_pointer, 0);
             assert_eq!(cpu.registers.program_counter, 99);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! { 65534 => 99 },
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             let cycle = cpu.ret_f(ConditionOperand::Z);
             assert_eq!(cycle, 8);
             assert_eq!(cpu.registers.stack_pointer, 65534);
@@ -2345,11 +2399,11 @@ mod tests {
 
     #[test]
     fn verify_or_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 33 => 5},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 10;
         cpu.registers.set_hl(33);
         let cycle = cpu.or_hl();
@@ -2363,15 +2417,15 @@ mod tests {
 
     #[test]
     fn verify_dec_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 16 => 99 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(16);
         let cycle = cpu.dec_hl();
         assert_eq!(cycle, 12);
-        assert_eq!(cpu.mmu.read_byte(16).unwrap(), 98);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(16).unwrap(), 98);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, false);
@@ -2380,11 +2434,11 @@ mod tests {
 
     #[test]
     fn verify_add_hl_rr() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 16 => 99 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(10);
         cpu.registers.set_bc(100);
         let cycle = cpu.add_hl_rr(RegisterWord::BC);
@@ -2398,11 +2452,11 @@ mod tests {
 
     #[test]
     fn verify_jp_nn() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! { 256 => 99 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.jp_nn();
         assert_eq!(cycle, 16);
         assert_eq!(cpu.registers.program_counter, 99);
@@ -2410,11 +2464,11 @@ mod tests {
 
     #[test]
     fn verify_jp_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(10);
         let cycle = cpu.jp_hl();
         assert_eq!(cycle, 4);
@@ -2425,11 +2479,11 @@ mod tests {
     #[test]
     fn verify_swap_r() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 5;
             cpu.registers.b = 10;
             let cycle = cpu.swap_r(Register::B);
@@ -2446,11 +2500,11 @@ mod tests {
     #[test]
     fn verify_or_n() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! { 256 => 1 },
                 words: collection! {},
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.a = 10;
             let cycle = cpu.or_n();
             assert_eq!(cycle, 8);
@@ -2465,11 +2519,11 @@ mod tests {
     #[test]
     fn verify_jp_f_nn() {
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! { 256 => 300 },
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             let cycle = cpu.jp_f_nn(ConditionOperand::NZ);
             assert_eq!(cycle, 16);
             assert_eq!(cpu.registers.program_counter, 558);
@@ -2479,11 +2533,11 @@ mod tests {
             assert_eq!(cpu.registers.flags.carry, false);
         }
         {
-            let mc = MockDevice {
+            let mc = Rc::new(RefCell::new(MockDevice {
                 bytes: collection! {},
                 words: collection! { 256 => 300 },
-            };
-            let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+            }));
+            let mut cpu = CentralProcessingUnit::new(mc.clone());
             let cycle = cpu.jp_f_nn(ConditionOperand::Z);
             assert_eq!(cycle, 12);
             assert_eq!(cpu.registers.program_counter, 258);
@@ -2496,11 +2550,11 @@ mod tests {
 
     #[test]
     fn verify_add_a_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 5;
         cpu.registers.b = 10;
         let cycle = cpu.add_a_r(Register::B);
@@ -2514,11 +2568,11 @@ mod tests {
 
     #[test]
     fn verify_ld_hl_sp() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 20 },
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ld_hl_sp();
         assert_eq!(cycle, 12);
         assert_eq!(cpu.registers.stack_pointer, 65534);
@@ -2531,11 +2585,11 @@ mod tests {
 
     #[test]
     fn verify_dec_rr() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_de(100);
         let cycle = cpu.dec_rr(RegisterWord::DE);
         assert_eq!(cycle, 8);
@@ -2544,26 +2598,25 @@ mod tests {
 
     #[test]
     fn verify_rst() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.rst(0x08);
         assert_eq!(cycle, 16);
         assert_eq!(cpu.registers.program_counter, 0x08);
-        assert_eq!(cpu.mmu.read_byte(65533).unwrap(), 1);
-        assert_eq!(cpu.mmu.read_byte(65532).unwrap(), 0);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(65533).unwrap(), 1);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(65532).unwrap(), 0);
     }
 
     #[test]
     fn verify_ld_sp_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(99);
         let cycle = cpu.ld_sp_hl();
         assert_eq!(cycle, 4);
@@ -2572,12 +2625,11 @@ mod tests {
 
     #[test]
     fn verify_add_a_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 99 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(99);
         cpu.registers.a = 1;
         let cycle = cpu.add_a_hl();
@@ -2591,12 +2643,11 @@ mod tests {
 
     #[test]
     fn verify_adc_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 99 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.flags.carry = true;
         cpu.registers.a = 11;
         cpu.registers.b = 5;
@@ -2611,12 +2662,11 @@ mod tests {
 
     #[test]
     fn verify_adc_a_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 99 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(99);
         let cycle = cpu.adc_a_hl();
         assert_eq!(cycle, 8);
@@ -2629,12 +2679,11 @@ mod tests {
 
     #[test]
     fn verify_sub_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 99 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(99);
         cpu.registers.a = 25;
         let cycle = cpu.sub_hl();
@@ -2648,12 +2697,11 @@ mod tests {
 
     #[test]
     fn verify_sbc_a_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 99 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 35;
         cpu.registers.b = 25;
         cpu.registers.flags.carry = true;
@@ -2668,12 +2716,11 @@ mod tests {
 
     #[test]
     fn verify_sbc_a_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 99 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.set_hl(99);
         cpu.registers.flags.carry = true;
         let cycle = cpu.sbc_a_hl();
@@ -2687,12 +2734,11 @@ mod tests {
 
     #[test]
     fn verify_sbc_a_n() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.flags.carry = true;
         let cycle = cpu.sbc_a_n();
         assert_eq!(cycle, 8);
@@ -2705,12 +2751,11 @@ mod tests {
 
     #[test]
     fn verify_and_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 64;
         cpu.registers.b = 32;
         let cycle = cpu.and_r(Register::B);
@@ -2724,12 +2769,11 @@ mod tests {
 
     #[test]
     fn verify_and_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 32 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 64;
         cpu.registers.set_hl(32);
         let cycle = cpu.and_hl();
@@ -2743,12 +2787,11 @@ mod tests {
 
     #[test]
     fn verify_cp_r() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 32 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 64;
         cpu.registers.c = 60;
         let cycle = cpu.cp_r(Register::C);
@@ -2763,12 +2806,11 @@ mod tests {
 
     #[test]
     fn verify_cp_hl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 5 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 1;
         cpu.registers.set_hl(5);
         let cycle = cpu.cp_hl();
@@ -2783,12 +2825,11 @@ mod tests {
 
     #[test]
     fn verify_add_sp() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.add_sp();
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.stack_pointer, 8);
@@ -2800,12 +2841,11 @@ mod tests {
 
     #[test]
     fn verify_daa() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 11;
         let cycle = cpu.daa();
         assert_eq!(cycle, 4);
@@ -2818,12 +2858,11 @@ mod tests {
 
     #[test]
     fn verify_cpl() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! { 256 => 10 },
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 11;
         let cycle = cpu.cpl();
         assert_eq!(cycle, 4);
@@ -2836,12 +2875,11 @@ mod tests {
 
     #[test]
     fn verify_ccf() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ccf();
         assert_eq!(cycle, 4);
         assert_eq!(cpu.registers.flags.zero, false);
@@ -2852,12 +2890,11 @@ mod tests {
 
     #[test]
     fn verify_scf() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.scf();
         assert_eq!(cycle, 4);
         assert_eq!(cpu.registers.flags.zero, false);
@@ -2868,12 +2905,11 @@ mod tests {
 
     #[test]
     fn verify_rla() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 11;
         let cycle = cpu.rla();
         assert_eq!(cycle, 4);
@@ -2886,12 +2922,11 @@ mod tests {
 
     #[test]
     fn verify_rrca() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
-        };
-
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         cpu.registers.a = 11;
         let cycle = cpu.rrca();
         assert_eq!(cycle, 4);
@@ -2904,11 +2939,11 @@ mod tests {
 
     #[test]
     fn verify_ret_i() {
-        let mc = MockDevice {
+        let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! { 65534 => 99 },
-        };
-        let mut cpu = CentralProcessingUnit::new(Box::new(mc));
+        }));
+        let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ret_i();
         assert_eq!(cycle, 16);
         assert_eq!(cpu.registers.stack_pointer, 0);

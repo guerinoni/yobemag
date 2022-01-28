@@ -5,7 +5,7 @@ use crate::serial_data_transfer::SerialDataTransfer;
 use crate::sound::Sound;
 use crate::timer::Timer;
 
-/// Holds all memory space addressable for emulation.
+// Holds all memory space addressable for emulation.
 pub struct MemoryManagmentUnit {
     cartridge: Box<dyn ReadWrite>,
     gpu: GraphicsProcessingUnit,
