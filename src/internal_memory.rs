@@ -7,8 +7,8 @@ pub struct InternalMemory {
     // working ram bank
     wram: [u8; 0x8000],
     wram_bank: u8,
-    /// high ram (zero-page): 0xFF80-0xFFFE
-    hram: [u8; 0x1FFF + 1],
+    // high ram (zero-page): 0xFF80-0xFFFE
+    hram: [u8; 0x007F],
     /// interrupt flag (request) register: 0xFF0F
     interrupt_flag: u8,
     /// interrupt flag enable: 0xFFFF
@@ -22,7 +22,7 @@ impl InternalMemory {
         InternalMemory {
             wram: [0; 0x8000],
             wram_bank: 1,
-            hram: [0; 0x1FFF + 1],
+            hram: [0; 0x007F],
             interrupt_flag: 0,
             interrupt_enable: 0,
             io_reg: InputOutputRegisters::new(),
