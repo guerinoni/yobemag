@@ -52,8 +52,10 @@ impl Default for Color {
 }
 
 pub struct GraphicsProcessingUnit {
-    /// video ram: 0x8000-0x9FFF
-    vram: [u8; 0x1FFF + 1],
+    // video ram: 0x8000-0x9FFF
+    vram: [u8; 0x4000],
+    bank: u8,
+
     /// Current status of LCD displsy: 0xFF41
     /// The LCD controller operates on a 222 Hz = 4.194 MHz dot clock.
     /// An entire frame is 154 scanlines, 70224 dots, or 16.74 ms.
@@ -90,27 +92,32 @@ pub struct GraphicsProcessingUnit {
     /// Bit 7 - LCD Display Enable             (0=Off, 1=On)
     control: u8,
 
-    /// The LY indicates the vertical line to which the present data is transferred to the LCD Driver.
-    /// The LY can take on any value between 0 through 153. The values between 144 and 153 indicate the V-Blank period.
+    // The LY indicates the vertical line to which the present data is transferred to the LCD Driver.
+    // The LY can take on any value between 0 through 153. The values between 144 and 153 indicate the V-Blank period.
     current_y: u8,
 
-    /// This register assigns gray shades to the color indexes of the BG and Window tiles.
-    /// Bit 7-6 - Color for index 3
-    /// Bit 5-4 - Color for index 2
-    /// Bit 3-2 - Color for index 1
-    /// Bit 1-0 - Color for index 0
+    // This register assigns gray shades to the color indexes of the BG and Window tiles.
+    // Bit 7-6 - Color for index 3
+    // Bit 5-4 - Color for index 2
+    // Bit 3-2 - Color for index 1
+    // Bit 1-0 - Color for index 0
     bg_pallete: Palette,
 
-    /// These registers assigns gray shades to the color indexes of the OBJs that use the corresponding palette.
-    /// They work exactly like BGP, except that the lower two bits are ignored because color index 0 is transparent for OBJs.
+    // These registers assigns gray shades to the color indexes of the OBJs that use the corresponding palette.
+    // They work exactly like BGP, except that the lower two bits are ignored because color index 0 is transparent for OBJs.
+    // This register assigns gray shades for sprite palette 0. It works exactly as BGP (FF47), except that the lower
+    // two bits aren't used because sprite data 00 is transparent.
     bgj_pallete_0: Palette,
+    // This register assigns gray shades for sprite palette 1. It works exactly as BGP (FF47), except that the lower
+    // two bits aren't used because sprite data 00 is transparent.
     bgj_pallete_1: Palette,
 }
 
 impl GraphicsProcessingUnit {
     pub fn new() -> GraphicsProcessingUnit {
         GraphicsProcessingUnit {
-            vram: [0; 0x1FFF + 1],
+            vram: [0; 0x4000],
+            bank: 0,
             status: 0,
             scroll_y: 0,
             scroll_x: 0,
@@ -118,7 +125,7 @@ impl GraphicsProcessingUnit {
             current_y: 0,
             bg_pallete: Palette::default(),
             bgj_pallete_0: Palette::default(),
-            bgj_pallete_1: Palette::default(),
+            bgj_pallete_1: Palette::from(1),
         }
     }
 }
@@ -134,11 +141,14 @@ impl ReadWrite for GraphicsProcessingUnit {
             || 0xFF47 == address
             || 0xFF48 == address
             || 0xFF49 == address
+            || 0xFF4F == address
     }
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
         match address {
-            0x8000..=0x9FFF => Ok(self.vram[address - 0x8000]),
+            0x8000..=0x9FFF => {
+                Ok(self.vram[self.bank as usize * 0x2000_usize + address - 0x8000_usize])
+            }
             0xFF40 => Ok(self.control),
             0xFF41 => Ok(self.status),
             0xFF42 => Ok(self.scroll_y),
@@ -147,6 +157,7 @@ impl ReadWrite for GraphicsProcessingUnit {
             0xFF47 => Ok(self.bg_pallete.into()),
             0xFF48 => Ok(self.bgj_pallete_0.into()),
             0xFF49 => Ok(self.bgj_pallete_1.into()),
+            0xFF4F => Ok(0xFE | self.bank),
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -160,7 +171,9 @@ impl ReadWrite for GraphicsProcessingUnit {
 
     fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
-            0x8000..=0x9FFF => self.vram[address - 0x8000] = value,
+            0x8000..=0x9FFF => {
+                self.vram[self.bank as usize * 0x2000_usize + address - 0x8000_usize] = value
+            }
             0xFF40 => self.control = value,
             0xFF41 => self.status = value,
             0xFF42 => self.scroll_y = value,
@@ -169,6 +182,7 @@ impl ReadWrite for GraphicsProcessingUnit {
             0xFF47 => self.bg_pallete = value.into(),
             0xFF48 => self.bgj_pallete_0 = value.into(),
             0xFF49 => self.bgj_pallete_1 = value.into(),
+            0xFF4F => self.bank = value & 0x01,
             _ => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
