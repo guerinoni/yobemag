@@ -26,6 +26,10 @@ impl MemoryManagmentUnit {
             sound: Sound::new(),
         }
     }
+
+    pub fn step(&mut self) {
+        todo!();
+    }
 }
 
 impl ReadWrite for MemoryManagmentUnit {

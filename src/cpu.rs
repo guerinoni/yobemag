@@ -1525,7 +1525,7 @@ impl CentralProcessingUnit {
 mod tests {
     use std::cell::RefCell;
     use std::collections::HashMap;
-    use std::{borrow::Borrow, borrow::BorrowMut, rc::Rc};
+    use std::rc::Rc;
 
     use crate::memory_device::ReadWrite;
     use crate::register::{ConditionOperand, Register, RegisterWord};
@@ -1554,8 +1554,9 @@ mod tests {
             self.bytes.insert(address, value);
             Ok(())
         }
-        fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
-            unimplemented!()
+        fn write_word(&mut self, address: usize, value: u16) -> Result<(), std::io::Error> {
+            self.words.insert(address, value);
+            Ok(())
         }
     }
 
@@ -1760,8 +1761,7 @@ mod tests {
         let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ld_nn_sp();
         assert_eq!(cycle, 20);
-        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(1000).unwrap(), 254);
-        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(1001).unwrap(), 255);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_word(1000).unwrap(), 65534);
     }
 
     #[test]
@@ -1858,8 +1858,7 @@ mod tests {
         let cycle = cpu.call_nn();
         assert_eq!(cycle, 24);
         assert_eq!(cpu.registers.program_counter, 1000);
-        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(1).unwrap(), 1);
-        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(0).unwrap(), 2);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_word(0).unwrap(), 258);
     }
 
     #[test]
@@ -2014,7 +2013,7 @@ mod tests {
     }
 
     #[test]
-    fn verify_push_qq() {
+    fn verify_push_rr() {
         let mc = Rc::new(RefCell::new(MockDevice {
             bytes: collection! {},
             words: collection! {},
@@ -2024,8 +2023,7 @@ mod tests {
         let cycle = cpu.push_rr(RegisterWord::BC);
         assert_eq!(cycle, 16);
         assert_eq!(cpu.registers.stack_pointer, 0xFFFE - 2);
-        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(65533).unwrap(), 39);
-        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(65532).unwrap(), 17);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_word(65532).unwrap(), 10001);
     }
 
     #[test]
@@ -2133,8 +2131,7 @@ mod tests {
             let cycle = cpu.call_flag_nn(ConditionOperand::Z);
             assert_eq!(cycle, 24);
             assert_eq!(cpu.registers.program_counter, 1000);
-            assert_eq!(cpu.mmu.as_ref().borrow().read_byte(1).unwrap(), 1);
-            assert_eq!(cpu.mmu.as_ref().borrow().read_byte(0).unwrap(), 2);
+            assert_eq!(cpu.mmu.as_ref().borrow().read_word(0).unwrap(), 258);
         }
     }
 
@@ -2606,8 +2603,7 @@ mod tests {
         let cycle = cpu.rst(0x08);
         assert_eq!(cycle, 16);
         assert_eq!(cpu.registers.program_counter, 0x08);
-        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(65533).unwrap(), 1);
-        assert_eq!(cpu.mmu.as_ref().borrow().read_byte(65532).unwrap(), 0);
+        assert_eq!(cpu.mmu.as_ref().borrow().read_word(65532).unwrap(), 256);
     }
 
     #[test]

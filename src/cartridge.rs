@@ -37,7 +37,7 @@ impl ReadWrite for NoMBCartridge {
     }
 
     fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
-        unimplemented!()
+        unimplemented!();
     }
 }
 
