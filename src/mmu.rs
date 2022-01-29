@@ -27,8 +27,8 @@ impl MemoryManagmentUnit {
         }
     }
 
-    pub fn step(&mut self) {
-        todo!();
+    pub fn step(&mut self, cycles: u8) {
+        println!("{}", cycles);
     }
 }
 

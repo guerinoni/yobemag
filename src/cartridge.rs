@@ -26,10 +26,9 @@ impl ReadWrite for NoMBCartridge {
     }
 
     fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
-        Ok(u16::from_le_bytes([
-            self.rom[address],
-            self.rom[address + 1],
-        ]))
+        let low = self.read_byte(address)?;
+        let high = self.read_byte(address + 1)?;
+        Ok(u16::from(low) | (u16::from(high) << 8))
     }
 
     fn write_byte(&mut self, _address: usize, _value: u8) -> Result<(), std::io::Error> {
@@ -120,9 +119,9 @@ impl ReadWrite for MBC1 {
     }
 
     fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
-        let low = self.rom[address] as u16;
-        let high = self.rom[address + 1] as u16;
-        Ok(high << 8 | low)
+        let low = self.read_byte(address)?;
+        let high = self.read_byte(address + 1)?;
+        Ok(u16::from(low) | (u16::from(high) << 8))
     }
 
     fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {

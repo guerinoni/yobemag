@@ -16,7 +16,7 @@ impl Emulator {
     }
 
     pub fn step(&mut self) {
-        self.cpu.step();
-        self.mmu.borrow_mut().step();
+        let cycles = self.cpu.step();
+        self.mmu.borrow_mut().step(cycles);
     }
 }
