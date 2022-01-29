@@ -18,14 +18,14 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: fmt
+    - name: fmt-check
       run: cargo fmt --all -- --check
 
     - name: tests
       run: cargo test
 
     - name: clippy
-      run: cargo clippy --all -- -D warnings
+      run: make clippy
 
     - name: run cargo-tarpaulin
       uses: actions-rs/tarpaulin@v0.1
