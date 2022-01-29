@@ -1,4 +1,5 @@
 use crate::gpu::GraphicsProcessingUnit;
+use crate::input_output_registers::InputOutputRegisters;
 use crate::internal_memory::InternalMemory;
 use crate::memory_device::ReadWrite;
 use crate::serial_data_transfer::SerialDataTransfer;
@@ -13,6 +14,8 @@ pub struct MemoryManagmentUnit {
     serial: SerialDataTransfer,
     timer: Timer,
     sound: Sound,
+    // I/O registers, like joypad.
+    io_reg: InputOutputRegisters,
 }
 
 impl MemoryManagmentUnit {
@@ -24,6 +27,7 @@ impl MemoryManagmentUnit {
             serial: SerialDataTransfer::new(),
             timer: Timer::new(),
             sound: Sound::new(),
+            io_reg: InputOutputRegisters::new(),
         }
     }
 
@@ -63,6 +67,10 @@ impl ReadWrite for MemoryManagmentUnit {
             return self.sound.read_byte(address);
         }
 
+        if self.io_reg.contains(address) {
+            return self.io_reg.read_byte(address);
+        }
+
         Err(std::io::Error::new(
             std::io::ErrorKind::OutOfMemory,
             format!(
@@ -95,6 +103,10 @@ impl ReadWrite for MemoryManagmentUnit {
         }
 
         if self.sound.contains(address) {
+            return self.sound.read_word(address);
+        }
+
+        if self.io_reg.contains(address) {
             return self.sound.read_word(address);
         }
 

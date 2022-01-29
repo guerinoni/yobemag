@@ -1,4 +1,3 @@
-use crate::input_output_registers::InputOutputRegisters;
 use crate::memory_device::ReadWrite;
 
 /// InternalMemory holds all memory banks for internal handling of the emulating job, not GPU or
@@ -9,12 +8,15 @@ pub struct InternalMemory {
     wram_bank: u8,
     // high ram (zero-page): 0xFF80-0xFFFE
     hram: [u8; 0x007F],
-    /// interrupt flag (request) register: 0xFF0F
+    // interrupt flag (request) register: 0xFF0F
+    // Bit 0: V-Blank  Interrupt Request (INT 40h)  (1=Request)
+    // Bit 1: LCD STAT Interrupt Request (INT 48h)  (1=Request)
+    // Bit 2: Timer    Interrupt Request (INT 50h)  (1=Request)
+    // Bit 3: Serial   Interrupt Request (INT 58h)  (1=Request)
+    // Bit 4: Joypad   Interrupt Request (INT 60h)  (1=Request)
     interrupt_flag: u8,
-    /// interrupt flag enable: 0xFFFF
+    // interrupt flag enable: 0xFFFF
     interrupt_enable: u8,
-    /// I/O registers.
-    io_reg: InputOutputRegisters,
 }
 
 impl InternalMemory {
@@ -25,7 +27,6 @@ impl InternalMemory {
             hram: [0; 0x007F],
             interrupt_flag: 0,
             interrupt_enable: 0,
-            io_reg: InputOutputRegisters::new(),
         }
     }
 }
@@ -39,15 +40,10 @@ impl ReadWrite for InternalMemory {
             || (0xFF80..=0xFFFE).contains(&address)
             || 0xFF0F == address
             || 0xFFFF == address
-            || self.io_reg.contains(address)
             || 0xFF70 == address
     }
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
-        if self.io_reg.contains(address) {
-            return self.io_reg.read_byte(address);
-        }
-
         match address {
             0xC000..=0xCFFF => Ok(self.wram[address - 0xC000]),
             0xD000..=0xDFFF => Ok(self.wram[address - 0xD000 + 0x1000 * self.wram_bank as usize]),
