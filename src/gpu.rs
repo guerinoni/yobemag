@@ -56,6 +56,35 @@ pub struct GraphicsProcessingUnit {
     vram: [u8; 0x4000],
     bank: u8,
 
+    // Gameboy video controller can display up to 40 sprites either in 8x8 or in 8x16 pixels.
+    // Because of a limitation of hardware, only ten sprites can be displayed per scan line.
+    // Sprite patterns have the same format as BG tiles, but they are taken from the Sprite
+    // Pattern Table located at 0x8000-0x8FFF and have unsigned numbering.
+    // Byte0 - Y Position
+    // Specifies the sprites vertical position on the screen (minus 16). An off-screen value (for example, Y=0 or
+    // Y>=160) hides the sprite.
+    //
+    // Byte1 - X Position
+    // Specifies the sprites horizontal position on the screen (minus 8). An off-screen value (X=0 or X>=168) hides the
+    // sprite, but the sprite still affects the priority ordering - a better way to hide a sprite is to set its
+    // Y-coordinate off-screen.
+    //
+    // Byte2 - Tile/Pattern Number
+    // Specifies the sprites Tile Number (00-FF). This (unsigned) value selects a tile from memory at 8000h-8FFFh. In
+    // CGB Mode this could be either in VRAM Bank 0 or 1, depending on Bit 3 of the following byte. In 8x16 mode, the
+    // lower bit of the tile number is ignored. IE: the upper 8x8 tile is "NN AND FEh", and the lower 8x8 tile
+    // is "NN OR 01h".
+    //
+    // Byte3 - Attributes/Flags:
+    // Bit7   OBJ-to-BG Priority (0=OBJ Above BG, 1=OBJ Behind BG color 1-3)
+    //        (Used for both BG and Window. BG color 0 is always behind OBJ)
+    // Bit6   Y flip          (0=Normal, 1=Vertically mirrored)
+    // Bit5   X flip          (0=Normal, 1=Horizontally mirrored)
+    // Bit4   Palette number  **Non CGB Mode Only** (0=OBP0, 1=OBP1)
+    // Bit3   Tile VRAM-Bank  **CGB Mode Only**     (0=Bank 0, 1=Bank 1)
+    // Bit2-0 Palette number  **CGB Mode Only**     (OBP0-7)
+    oam: [u8; 0xA0],
+
     /// Current status of LCD displsy: 0xFF41
     /// The LCD controller operates on a 222 Hz = 4.194 MHz dot clock.
     /// An entire frame is 154 scanlines, 70224 dots, or 16.74 ms.
@@ -118,6 +147,8 @@ impl GraphicsProcessingUnit {
         GraphicsProcessingUnit {
             vram: [0; 0x4000],
             bank: 0,
+            data: [0xFF; SCREEN_W * SCREEN_H * 3],
+            oam: [0x00; 0xA0],
             status: 0,
             scroll_y: 0,
             scroll_x: 0,
@@ -133,6 +164,7 @@ impl GraphicsProcessingUnit {
 impl ReadWrite for GraphicsProcessingUnit {
     fn contains(&self, address: usize) -> bool {
         (0x8000..=0x9FFF).contains(&address)
+            || (0xFE00..=0xFE9F).contains(&address)
             || 0xFF40 == address
             || 0xFF41 == address
             || 0xFF42 == address
@@ -149,6 +181,7 @@ impl ReadWrite for GraphicsProcessingUnit {
             0x8000..=0x9FFF => {
                 Ok(self.vram[self.bank as usize * 0x2000_usize + address - 0x8000_usize])
             }
+            0xFE00..=0xFE9F => Ok(self.oam[address - 0xFE00]),
             0xFF40 => Ok(self.control),
             0xFF41 => Ok(self.status),
             0xFF42 => Ok(self.scroll_y),
@@ -174,6 +207,7 @@ impl ReadWrite for GraphicsProcessingUnit {
             0x8000..=0x9FFF => {
                 self.vram[self.bank as usize * 0x2000_usize + address - 0x8000_usize] = value
             }
+            0xFE00..=0xFE9F => self.oam[address - 0xFE00] = value,
             0xFF40 => self.control = value,
             0xFF41 => self.status = value,
             0xFF42 => self.scroll_y = value,
