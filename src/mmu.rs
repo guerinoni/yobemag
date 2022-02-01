@@ -6,6 +6,12 @@ use crate::serial_data_transfer::SerialDataTransfer;
 use crate::sound::Sound;
 use crate::timer::Timer;
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub enum Speed {
+    Normal = 0x01,
+    Double = 0x02,
+}
+
 // Holds all memory space addressable for emulation.
 pub struct MemoryManagmentUnit {
     cartridge: Box<dyn ReadWrite>,
@@ -14,6 +20,12 @@ pub struct MemoryManagmentUnit {
     serial: SerialDataTransfer,
     timer: Timer,
     sound: Sound,
+
+    // Bit 7: Current Speed     (0=Normal, 1=Double) (Read Only)
+    // Bit 0: Prepare Speed Switch (0=No, 1=Prepare) (Read/Write)
+    speed: Speed,
+    toggle_speed_request: bool,
+
     // I/O registers, like joypad.
     io_reg: InputOutputRegisters,
 }
@@ -27,12 +39,27 @@ impl MemoryManagmentUnit {
             serial: SerialDataTransfer::new(),
             timer: Timer::new(),
             sound: Sound::new(),
+            speed: Speed::Normal,
+            toggle_speed_request: false,
             io_reg: InputOutputRegisters::new(),
         }
     }
 
     pub fn step(&mut self, cycles: u8) {
+        let cpu_divider = self.speed as u32;
         println!("{}", cycles);
+    }
+
+    pub fn toggle_speed(&mut self) {
+        if self.toggle_speed_request {
+            if self.speed == Speed::Double {
+                self.speed = Speed::Normal;
+            } else {
+                self.speed = Speed::Double;
+            }
+        }
+
+        self.toggle_speed_request = false;
     }
 }
 
@@ -71,13 +98,30 @@ impl ReadWrite for MemoryManagmentUnit {
             return self.io_reg.read_byte(address);
         }
 
-        Err(std::io::Error::new(
-            std::io::ErrorKind::OutOfMemory,
-            format!(
-                "MMU don't know where read byte for this address {:#04x}",
-                address
-            ),
-        ))
+        match address {
+            0xFF4D => {
+                let s = if self.speed == Speed::Double {
+                    0x80
+                } else {
+                    0x00
+                };
+                let t = if self.toggle_speed_request {
+                    0x01
+                } else {
+                    0x00
+                };
+                Ok(s | t)
+            }
+            _ => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::OutOfMemory,
+                    format!(
+                        "MMU don't know where read byte for this address {:#04x}",
+                        address
+                    ),
+                ))
+            }
+        }
     }
 
     fn read_word(&self, address: usize) -> Result<u16, std::io::Error> {
@@ -145,13 +189,20 @@ impl ReadWrite for MemoryManagmentUnit {
             return self.sound.write_byte(address, value);
         }
 
-        Err(std::io::Error::new(
-            std::io::ErrorKind::OutOfMemory,
-            format!(
-                "MMU don't know where write byte for this address {:#04x}",
-                address
-            ),
-        ))
+        match address {
+            0xFF4D => self.toggle_speed_request = (value & 0x01) == 0x01,
+            _ => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::OutOfMemory,
+                    format!(
+                        "MMU don't know where write byte for this address {:#04x}",
+                        address
+                    ),
+                ))
+            }
+        }
+
+        Ok(())
     }
 
     fn write_word(&mut self, address: usize, value: u16) -> Result<(), std::io::Error> {

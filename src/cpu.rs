@@ -26,6 +26,10 @@ impl CentralProcessingUnit {
         }
     }
 
+    pub fn need_toggle_speed(&self) -> bool {
+        self.registers.program_counter == 0x10
+    }
+
     pub fn step(&mut self) -> u8 {
         if self.stop {
             return 0;

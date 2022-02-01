@@ -16,6 +16,10 @@ impl Emulator {
     }
 
     pub fn step(&mut self) {
+        if self.cpu.need_toggle_speed() {
+            self.mmu.borrow_mut().toggle_speed();
+        }
+
         let cycles = self.cpu.step();
         self.mmu.borrow_mut().step(cycles);
     }
