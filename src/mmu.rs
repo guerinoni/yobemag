@@ -46,7 +46,7 @@ impl MemoryManagmentUnit {
     }
 
     pub fn step(&mut self, cycles: u8) {
-        let cpu_divider = self.speed as u32;
+        let _cpu_divider = self.speed as u32;
         println!("{}", cycles);
     }
 

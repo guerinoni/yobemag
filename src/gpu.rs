@@ -54,6 +54,7 @@ impl Default for Color {
 const SCREEN_W: usize = 160;
 const SCREEN_H: usize = 144;
 
+#[allow(dead_code)]
 pub struct GraphicsProcessingUnit {
     // video ram: 0x8000-0x9FFF
     vram: [u8; 0x4000],
