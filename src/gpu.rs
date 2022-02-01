@@ -51,10 +51,16 @@ impl Default for Color {
     }
 }
 
+const SCREEN_W: usize = 160;
+const SCREEN_H: usize = 144;
+
 pub struct GraphicsProcessingUnit {
     // video ram: 0x8000-0x9FFF
     vram: [u8; 0x4000],
     bank: u8,
+
+    // Digital image with mode RGB.
+    data: [u8; SCREEN_W * SCREEN_H * 3],
 
     // Gameboy video controller can display up to 40 sprites either in 8x8 or in 8x16 pixels.
     // Because of a limitation of hardware, only ten sprites can be displayed per scan line.
