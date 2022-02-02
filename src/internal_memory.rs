@@ -95,7 +95,9 @@ impl ReadWrite for InternalMemory {
         Ok(())
     }
 
-    fn write_word(&mut self, _address: usize, _value: u16) -> Result<(), std::io::Error> {
-        todo!("implement this func")
+    fn write_word(&mut self, address: usize, value: u16) -> Result<(), std::io::Error> {
+        self.write_byte(address, (value & 0xFF) as u8)?;
+        self.write_byte(address + 1, (value >> 8) as u8)?;
+        Ok(())
     }
 }

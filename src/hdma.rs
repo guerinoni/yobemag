@@ -30,7 +30,7 @@ pub struct Hdma {
     // These two registers specify the address within 0x8000-0x9FF0 to which the data will be copied. Only bits 12-4 are
     // respected; others are ignored. The four lower bits of this address will be ignored and treated as 0.
     pub destination: u16,
-    pub active: bool,
+    active: bool,
     pub mode: HdmaMode,
     pub remain: u8,
 }
@@ -44,6 +44,24 @@ impl Default for Hdma {
             mode: HdmaMode::Gdma,
             remain: 0,
         }
+    }
+}
+
+impl Hdma {
+    pub fn is_active(&self) -> bool {
+        self.active
+    }
+
+    pub fn update_remain_after_hrampart(&mut self) {
+        if self.remain == 0 {
+            self.remain = 0x7F;
+        } else {
+            self.remain -= 1;
+        }
+    }
+
+    pub fn set_active(&mut self, status: bool) {
+        self.active = status;
     }
 }
 

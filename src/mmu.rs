@@ -1,4 +1,5 @@
 use crate::gpu::GraphicsProcessingUnit;
+use crate::hdma::{Hdma, HdmaMode};
 use crate::input_output_registers::InputOutputRegisters;
 use crate::internal_memory::InternalMemory;
 use crate::memory_device::ReadWrite;
@@ -28,6 +29,8 @@ pub struct MemoryManagmentUnit {
 
     // I/O registers, like joypad.
     io_reg: InputOutputRegisters,
+
+    hdma: Hdma,
 }
 
 impl MemoryManagmentUnit {
@@ -42,12 +45,72 @@ impl MemoryManagmentUnit {
             speed: Speed::Normal,
             toggle_speed_request: false,
             io_reg: InputOutputRegisters::new(),
+            hdma: Hdma::default(),
         }
     }
 
     pub fn step(&mut self, cycles: u8) {
         let _cpu_divider = self.speed as u32;
         println!("{}", cycles);
+    }
+
+    //     run_dma_hrampart:
+    //     ldh ($FF00+c), a
+    //    wait:
+    //     dec b
+    //     jr nz,wait
+    //     ret
+    fn run_dma_hrampart(&mut self) {
+        let mmu_src = self.hdma.source;
+        for i in 0..0x10 {
+            let b: u8 = self.read_byte((mmu_src + i) as usize).unwrap();
+            self.gpu
+                .write_byte((self.hdma.destination + i) as usize, b)
+                .unwrap();
+        }
+
+        self.hdma.source += 0x10;
+        self.hdma.destination += 0x10;
+        self.hdma.update_remain_after_hrampart();
+    }
+
+    // Writing to this register launches a DMA transfer from ROM or RAM to OAM memory (sprite attribute table).
+    // The written value specifies the transfer source address divided by 100h, ie. source & destination are:
+    //  Source:      XX00-XX9F   ;XX in range from 00-F1h
+    //  Destination: 0xFE00-0xFE9F
+    // The transfer takes 160 machine cycles: 152 microseconds in normal speed or 76 microseconds in CGB Double Speed Mode.
+    // On DMG, during this time, the CPU can access only HRAM (memory at FF80-FFFE); on CGB, the bus used by the source area cannot be used (this isn't understood well at the moment, it's recommended to assume same behavior as DMG). For this reason, the programmer must copy a short procedure into HRAM,
+    // and use this procedure to start the transfer from inside HRAM, and wait until the transfer has finished:
+    // run_dma:  ; This part is in ROM
+    // ld a, start address / 100h
+    // ld bc, 2946h  ; B: wait time; C: OAM trigger
+    // jp run_dma_hrampart
+    fn run_dma(&mut self) -> u32 {
+        if !self.hdma.is_active() {
+            return 0;
+        }
+
+        match self.hdma.mode {
+            HdmaMode::Gdma => {
+                let len = u32::from(self.hdma.remain) + 1;
+                for _ in 0..len {
+                    self.run_dma_hrampart();
+                }
+                self.hdma.set_active(false);
+                len * 8
+            }
+            HdmaMode::Hdma => {
+                if !self.gpu.h_blank {
+                    return 0;
+                }
+                self.run_dma_hrampart();
+                if self.hdma.remain == 0x7F {
+                    self.hdma.set_active(false);
+                }
+
+                8
+            }
+        }
     }
 
     pub fn toggle_speed(&mut self) {
@@ -96,6 +159,10 @@ impl ReadWrite for MemoryManagmentUnit {
 
         if self.io_reg.contains(address) {
             return self.io_reg.read_byte(address);
+        }
+
+        if self.hdma.contains(address) {
+            return self.hdma.read_byte(address);
         }
 
         match address {
@@ -154,6 +221,10 @@ impl ReadWrite for MemoryManagmentUnit {
             return self.sound.read_word(address);
         }
 
+        if self.hdma.contains(address) {
+            return self.hdma.read_word(address);
+        }
+
         Err(std::io::Error::new(
             std::io::ErrorKind::OutOfMemory,
             format!(
@@ -189,6 +260,10 @@ impl ReadWrite for MemoryManagmentUnit {
             return self.sound.write_byte(address, value);
         }
 
+        if self.hdma.contains(address) {
+            return self.hdma.write_byte(address, value);
+        }
+
         match address {
             0xFF4D => self.toggle_speed_request = (value & 0x01) == 0x01,
             _ => {
@@ -206,16 +281,34 @@ impl ReadWrite for MemoryManagmentUnit {
     }
 
     fn write_word(&mut self, address: usize, value: u16) -> Result<(), std::io::Error> {
-        match self.write_byte(address, (value & 0xFF) as u8) {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
+        if self.gpu.contains(address) {
+            return self.gpu.write_word(address, value);
         }
 
-        match self.write_byte(address + 1, (value >> 8) as u8) {
-            Ok(v) => v,
-            Err(e) => panic!("{}", e),
+        if self.cartridge.contains(address) {
+            return self.cartridge.write_word(address, value);
         }
 
-        Ok(())
+        if self.internal.contains(address) {
+            return self.internal.write_word(address, value);
+        }
+
+        if self.serial.contains(address) {
+            return self.serial.write_word(address, value);
+        }
+
+        if self.timer.contains(address) {
+            return self.timer.write_word(address, value);
+        }
+
+        if self.sound.contains(address) {
+            return self.sound.write_word(address, value);
+        }
+
+        if self.hdma.contains(address) {
+            return self.hdma.write_word(address, value);
+        }
+
+        unimplemented!()
     }
 }
