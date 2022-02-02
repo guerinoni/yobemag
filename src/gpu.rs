@@ -63,6 +63,20 @@ pub struct GraphicsProcessingUnit {
     // Digital image with mode RGB.
     data: [u8; SCREEN_W * SCREEN_H * 3],
 
+    // The H-Blank DMA transfers 10h bytes of data during each H-Blank, ie. at LY=0-143,
+    // no data is transferred during V-Blank (LY=144-153), but the transfer will then continue at LY=00.
+    // The execution of the program is halted during the separate transfers, but the program execution continues
+    // during the 'spaces' between each data block. Note that the program should not change the Destination VRAM
+    // bank (FF4F), or the Source ROM/RAM bank (in case data is transferred from bankable memory) until the transfer has completed!
+    // (The transfer should be paused as described below while the banks are switched)
+    pub h_blank: bool,
+    // The V-Blank interrupt occurs ca. 59.7 times a second on a handheld Game Boy (DMG or CGB) or Game Boy Player
+    // and ca. 61.1 times a second on a Super Game Boy (SGB).
+    // This interrupt occurs at the beginning of the V-Blank period (LY=144).
+    // During this period video hardware is not using VRAM so it may be freely accessed.
+    // This period lasts approximately 1.1 milliseconds.
+    pub v_blank: bool,
+
     // Gameboy video controller can display up to 40 sprites either in 8x8 or in 8x16 pixels.
     // Because of a limitation of hardware, only ten sprites can be displayed per scan line.
     // Sprite patterns have the same format as BG tiles, but they are taken from the Sprite
@@ -155,6 +169,8 @@ impl GraphicsProcessingUnit {
             vram: [0; 0x4000],
             bank: 0,
             data: [0xFF; SCREEN_W * SCREEN_H * 3],
+            v_blank: false,
+            h_blank: false,
             oam: [0x00; 0xA0],
             status: 0,
             scroll_y: 0,
@@ -165,6 +181,11 @@ impl GraphicsProcessingUnit {
             bgj_pallete_0: Palette::default(),
             bgj_pallete_1: Palette::from(1),
         }
+    }
+
+    pub fn step(&mut self, cycles: u32) -> u8 {
+        self.h_blank = false;
+        0
     }
 }
 
