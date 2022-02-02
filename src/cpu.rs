@@ -30,7 +30,13 @@ impl CentralProcessingUnit {
         self.registers.program_counter == 0x10
     }
 
-    pub fn step(&mut self) -> u8 {
+    pub fn step(&mut self) -> u32 {
+        let cycles = self.exec() as u32;
+
+        cycles
+    }
+
+    fn exec(&mut self) -> u8 {
         if self.stop {
             return 0;
         }
@@ -40,7 +46,7 @@ impl CentralProcessingUnit {
         }
 
         let op_code = self.fetch_byte();
-        println!("{:#04x}", op_code);
+
         match op_code.into() {
             OpCode::LdBNext => self.ld_r_next(Register::B),
             OpCode::LdCNext => self.ld_r_next(Register::C),
