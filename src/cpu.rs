@@ -34,9 +34,7 @@ impl CentralProcessingUnit {
     }
 
     pub fn step(&mut self) -> u32 {
-        let cycles = self.exec() as u32;
-
-        cycles
+        self.exec() as u32
     }
 
     fn exec(&mut self) -> u8 {

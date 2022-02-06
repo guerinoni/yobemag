@@ -39,8 +39,8 @@ impl MemoryManagmentUnit {
             cartridge,
             gpu: GraphicsProcessingUnit::new(),
             internal: InternalMemory::new(),
-            timer: Timer::new(),
             serial: SerialDataTransfer::default(),
+            timer: Timer::default(),
             sound: Sound::new(),
             speed: Speed::Normal,
             toggle_speed_request: false,
@@ -49,8 +49,16 @@ impl MemoryManagmentUnit {
         }
     }
 
-    pub fn step(&mut self, cycles: u8) {
-        let _cpu_divider = self.speed as u32;
+    pub fn step(&mut self, cycles: u32) {
+        let cpu_divider = self.speed as u32;
+        let vram_cycles = self.run_dma();
+        let gpu_cycles = cycles / cpu_divider + vram_cycles;
+        let cpu_cycles = cycles + vram_cycles * cpu_divider;
+        self.timer.step(cpu_cycles);
+        self.gpu.step(gpu_cycles);
+
+        self.gpu.step(cycles);
+
         println!("{}", cycles);
     }
 

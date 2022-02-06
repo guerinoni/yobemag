@@ -185,6 +185,7 @@ impl GraphicsProcessingUnit {
 
     pub fn step(&mut self, cycles: u32) -> u8 {
         self.h_blank = false;
+        let _lol = cycles;
         0
     }
 }

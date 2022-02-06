@@ -1,5 +1,6 @@
 use crate::memory_device::ReadWrite;
 
+#[derive(Default)]
 pub struct SerialDataTransfer {
     // Before a transfer, it holds the next byte that will go out: 0xFF01
     // During a transfer, it has a blend of the outgoing and incoming bytes.
@@ -11,15 +12,6 @@ pub struct SerialDataTransfer {
     // Bit 1 - Clock Speed (0=Normal, 1=Fast) ** CGB Mode Only **
     // Bit 7 - Transfer Start Flag (0=No transfer is in progress or requested, 1=Transfer in progress, or requested)
     control: u8,
-}
-
-impl Default for SerialDataTransfer {
-    fn default() -> Self {
-        Self {
-            data: 0,
-            control: 0,
-        }
-    }
 }
 
 impl ReadWrite for SerialDataTransfer {
