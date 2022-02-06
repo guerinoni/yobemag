@@ -4,6 +4,9 @@ use std::rc::Rc;
 
 use crate::{memory_device::ReadWrite, opcodes::*, prefix_opcodes::PrefixOpCode, register::*};
 
+// One cycle of the master clock is called a "clock", or a "t-cycle".
+// It can either equal 0.25 µs, or 0.125 µs in CGB double-speed.
+// The duration of a nop instruction is called a "nop" or "m-cycle", and equals four clocks.
 pub struct CentralProcessingUnit {
     registers: Registers,
     mmu: Rc<RefCell<dyn ReadWrite>>,
