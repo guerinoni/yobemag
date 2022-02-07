@@ -12,6 +12,22 @@ pub struct SerialDataTransfer {
     // Bit 1 - Clock Speed (0=Normal, 1=Fast) ** CGB Mode Only **
     // Bit 7 - Transfer Start Flag (0=No transfer is in progress or requested, 1=Transfer in progress, or requested)
     control: u8,
+
+    debug_msg: String,
+}
+
+impl SerialDataTransfer {
+    pub fn print_serial_debug(&mut self) {
+        if self.read_byte(0xFF02).unwrap() == 0x81 {
+            let ch = self.read_byte(0xFF01).unwrap();
+            self.debug_msg.push(ch as char);
+            self.write_byte(0xFF02, 0).unwrap();
+        }
+
+        if !self.debug_msg.is_empty() {
+            println!("DGB: {}", self.debug_msg);
+        }
+    }
 }
 
 impl ReadWrite for SerialDataTransfer {

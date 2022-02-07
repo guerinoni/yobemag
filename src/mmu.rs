@@ -50,6 +50,7 @@ impl MemoryManagmentUnit {
     }
 
     pub fn step(&mut self, cycles: u32) {
+        self.serial.print_serial_debug();
         let cpu_divider = self.speed as u32;
         let vram_cycles = self.run_dma();
         let gpu_cycles = cycles / cpu_divider + vram_cycles;
