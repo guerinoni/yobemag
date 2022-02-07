@@ -59,7 +59,7 @@ impl MemoryManagmentUnit {
 
         self.gpu.step(cycles);
 
-        println!("{}", cycles);
+        // println!("{}", cycles);
     }
 
     //     run_dma_hrampart:

@@ -47,8 +47,10 @@ impl CentralProcessingUnit {
         }
 
         let op_code = self.fetch_byte();
+        let opcode: OpCode = op_code.into();
+        println!("{} (0x{:02x})", opcode, op_code);
 
-        match op_code.into() {
+        match opcode {
             OpCode::LdBNext => self.ld_r_next(Register::B),
             OpCode::LdCNext => self.ld_r_next(Register::C),
             OpCode::LdDNext => self.ld_r_next(Register::D),
