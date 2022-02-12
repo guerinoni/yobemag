@@ -13,6 +13,15 @@ pub enum Speed {
     Double = 0x02,
 }
 
+impl From<Speed> for u32 {
+    fn from(item: Speed) -> u32 {
+        match item {
+            Speed::Normal => 1,
+            Speed::Double => 2,
+        }
+    }
+}
+
 // Holds all memory space addressable for emulation.
 pub struct MemoryManagmentUnit {
     cartridge: Box<dyn ReadWrite>,
@@ -51,7 +60,7 @@ impl MemoryManagmentUnit {
 
     pub fn step(&mut self, cycles: u32) {
         self.serial.print_serial_debug();
-        let cpu_divider = self.speed as u32;
+        let cpu_divider: u32 = self.speed.into();
         let vram_cycles = self.run_dma();
         let gpu_cycles = cycles / cpu_divider + vram_cycles;
         let cpu_cycles = cycles + vram_cycles * cpu_divider;

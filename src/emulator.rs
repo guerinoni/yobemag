@@ -20,7 +20,7 @@ impl Emulator {
             self.mmu.borrow_mut().toggle_speed();
         }
 
-        let cycles = self.cpu.step();
-        self.mmu.borrow_mut().step(cycles);
+        let clock_cycles = self.cpu.step();
+        self.mmu.borrow_mut().step(clock_cycles);
     }
 }
