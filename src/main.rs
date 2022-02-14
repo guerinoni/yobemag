@@ -16,6 +16,7 @@ mod register;
 mod serial_data_transfer;
 mod sound;
 mod timer;
+mod interrupt;
 
 fn main() -> Result<(), std::io::Error> {
     println!("starting yobemag...");
