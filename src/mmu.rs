@@ -1,7 +1,11 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::gpu::GraphicsProcessingUnit;
 use crate::hdma::{Hdma, HdmaMode};
 use crate::input_output_registers::InputOutputRegisters;
 use crate::internal_memory::InternalMemory;
+use crate::interrupt::InterruptFlag;
 use crate::memory_device::ReadWrite;
 use crate::serial_data_transfer::SerialDataTransfer;
 use crate::sound::Sound;
@@ -49,7 +53,7 @@ impl MemoryManagmentUnit {
             gpu: GraphicsProcessingUnit::new(),
             internal: InternalMemory::new(),
             serial: SerialDataTransfer::default(),
-            timer: Timer::default(),
+            timer: Timer::new(Rc::new(RefCell::new(InterruptFlag::default()))),
             sound: Sound::new(),
             speed: Speed::Normal,
             toggle_speed_request: false,
@@ -68,8 +72,6 @@ impl MemoryManagmentUnit {
         self.gpu.step(gpu_cycles);
 
         self.gpu.step(cycles);
-
-        // println!("{}", cycles);
     }
 
     //     run_dma_hrampart:

@@ -1,9 +1,15 @@
-use crate::memory_device::ReadWrite;
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use crate::{
+    clock::Clock,
+    interrupt::{InterruptFlag, InterruptKind},
+    memory_device::ReadWrite,
+};
 
 // Each time when the timer overflows (ie. when TIMA gets bigger than FFh), then an interrupt is requested by
 // setting Bit 2 in the IF Register (0xFF0F). When that interrupt is enabled, then the CPU will execute it by calling
 // the timer interrupt vector at 0050h.
-#[derive(Default)]
 pub struct Timer {
     // This register is incremented at rate of 16384Hz (~16779Hz on SGB).
     // Writing any value to this register resets it to 00h.
@@ -89,10 +95,33 @@ impl ReadWrite for Timer {
 
     fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
         match address {
-            0xFF04 => self.divider = 0,
+            0xFF04 => {
+                self.divider = 0;
+                self.clock1.reset_counter();
+            }
             0xFF05 => self.tima = value,
             0xFF06 => self.tma = value,
-            0xFF07 => self.tac = value,
+            0xFF07 => {
+                if (self.tac & 0x03) != (value & 0x03) {
+                    self.clock2.reset_counter();
+                    let new_period = match value & 0x03 {
+                        0x00 => 1024,
+                        0x01 => 16,
+                        0x02 => 64,
+                        0x03 => 256,
+                        _ => {
+                            return Err(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                format!("period of clock can't be {}", value),
+                            ))
+                        }
+                    };
+
+                    self.clock2.set_period(new_period);
+                    self.tima = self.tma;
+                }
+                self.tac = value;
+            }
             _ => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
