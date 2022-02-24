@@ -4,13 +4,12 @@
 // Bit 2: Timer    Interrupt Request (INT 50h)  (1=Request)
 // Bit 3: Serial   Interrupt Request (INT 58h)  (1=Request)
 // Bit 4: Joypad   Interrupt Request (INT 60h)  (1=Request)
-// #[derive(Clone)]
-pub enum Flag {
-    VBlank  = 0,
+pub enum InterruptKind {
+    VBlank = 0,
     LCDStat = 1,
-    Timer   = 2,
-    Serial  = 3,
-    Joypad  = 4,
+    Timer = 2,
+    Serial = 3,
+    Joypad = 4,
 }
 
 #[derive(Default)]
@@ -19,7 +18,7 @@ pub struct InterruptFlag {
 }
 
 impl InterruptFlag {
-    pub fn request(&mut self, flag: Flag) {
+    pub fn request(&mut self, flag: InterruptKind) {
         self.data |= 1 << flag as u8;
     }
 }
@@ -31,35 +30,35 @@ mod test {
     #[test]
     fn request_vblank() {
         let mut interrupt = InterruptFlag::default();
-        interrupt.request(Flag::VBlank);
+        interrupt.request(InterruptKind::VBlank);
         assert_eq!(interrupt.data, 1);
     }
 
     #[test]
     fn request_lcd() {
         let mut interrupt = InterruptFlag::default();
-        interrupt.request(Flag::LCDStat);
+        interrupt.request(InterruptKind::LCDStat);
         assert_eq!(interrupt.data, 2);
     }
 
     #[test]
     fn request_timer() {
         let mut interrupt = InterruptFlag::default();
-        interrupt.request(Flag::Timer);
+        interrupt.request(InterruptKind::Timer);
         assert_eq!(interrupt.data, 4);
     }
 
     #[test]
     fn request_serial() {
         let mut interrupt = InterruptFlag::default();
-        interrupt.request(Flag::Serial);
+        interrupt.request(InterruptKind::Serial);
         assert_eq!(interrupt.data, 8);
     }
 
     #[test]
     fn request_joypad() {
         let mut interrupt = InterruptFlag::default();
-        interrupt.request(Flag::Joypad);
+        interrupt.request(InterruptKind::Joypad);
         assert_eq!(interrupt.data, 16);
     }
 }
