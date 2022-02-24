@@ -22,21 +22,52 @@ pub struct Timer {
     //  - Bits 1-0: Input Clock Select (TIMA rate)
     //    - 00: CPU Clock / 1024 (DMG, CGB:   4096 Hz, SGB:   ~4194 Hz)
     //    - 01: CPU Clock / 16   (DMG, CGB: 262144 Hz, SGB: ~268400 Hz)
-    //    - 10: CPU Clock / 64   (DMG, CGB:  65536 Hz, SGB:  ~67110 Hz)
+    //     - 10: CPU Clock / 64   (DMG, CGB:  65536 Hz, SGB:  ~67110 Hz)
     //    - 11: CPU Clock / 256  (DMG, CGB:  16384 Hz, SGB:  ~16780 Hz)
     tac: u8,
+
+    clock1: Clock,
+    clock2: Clock,
+    interrupt_flag: Rc<RefCell<InterruptFlag>>,
+}
+
+impl Timer {
+    pub fn new(interrupt_flag: Rc<RefCell<InterruptFlag>>) -> Self {
+        Self {
+            divider: 0xAC,
+            tima: 0,
+            tma: 0,
+            tac: 0,
+            clock1: Clock::new(256),
+            clock2: Clock::new(1024),
+            interrupt_flag,
+        }
+    }
 }
 
 impl Timer {
     pub fn step(&mut self, cycles: u32) {
-        let _lol = cycles;
-        // self.divider = self.divider.wrapping_add(self.div_clock.next(cycles) as u8);
+        // clock cycles is 4194304, so divider increment every 256 cycles.
+        self.divider = self.divider.wrapping_add(self.clock1.step(cycles));
+
+        if (self.tac & 0x04) != 0x00 {
+            let n = self.clock2.step(cycles);
+            for _ in 0..n {
+                self.tima = self.tima.wrapping_add(1);
+                if self.tima == 0x00 {
+                    self.tima = self.tma;
+                    self.interrupt_flag
+                        .borrow_mut()
+                        .request(InterruptKind::Timer);
+                }
+            }
+        }
     }
 }
 
 impl ReadWrite for Timer {
     fn contains(&self, address: usize) -> bool {
-        0xFF07 == address
+        0xFF04 == address || 0xFF05 == address || 0xFF06 == address || 0xFF07 == address
     }
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
