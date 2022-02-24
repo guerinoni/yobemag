@@ -168,6 +168,7 @@ impl ReadWrite for MBC1 {
 pub fn make_cartridge(filename: &str) -> Result<Box<dyn ReadWrite>, std::io::Error> {
     let data = fs::read(filename)?;
     let header = CartridgeHeader::new(&data)?;
+    println!("Cartridge type {}", header.memory_bank_type);
     match header.memory_bank_type {
         MemoryBankType::NoMemoryBank => Ok(Box::new(NoMBCartridge::new(data, header))),
         MemoryBankType::MBC1 => Ok(Box::new(MBC1::new(data, header))),

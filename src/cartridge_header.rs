@@ -1,4 +1,4 @@
-use std::num::Wrapping;
+use std::{fmt, num::Wrapping};
 
 pub struct CartridgeHeader {
     // title: String,
@@ -18,6 +18,20 @@ pub enum MemoryBankType {
     MBC3,
     MBC4,
     MBC5,
+}
+
+impl fmt::Display for MemoryBankType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MemoryBankType::NoMemoryBank => write!(f, "NoMemoryBank"),
+            MemoryBankType::MBC1 => write!(f, "MBC1"),
+            MemoryBankType::MBC2 => write!(f, "MBC2"),
+            MemoryBankType::MMM01 => write!(f, "MMM01"),
+            MemoryBankType::MBC3 => write!(f, "MBC3"),
+            MemoryBankType::MBC4 => write!(f, "MBC4"),
+            MemoryBankType::MBC5 => write!(f, "MBC5"),
+        }
+    }
 }
 
 const NINTENDO_LOGO: [u8; 48] = [
