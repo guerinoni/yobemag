@@ -291,6 +291,6 @@ mod tests {
             zero: true,
         };
 
-        assert_eq!(r.af(), 496);
+        assert_eq!(r.af(), 4592);
     }
 }

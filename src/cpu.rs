@@ -1822,7 +1822,7 @@ mod tests {
             cpu.registers.a = 1;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
-            assert_eq!(cpu.registers.a, 0);
+            assert_eq!(cpu.registers.a, 128);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
@@ -1837,7 +1837,7 @@ mod tests {
             cpu.registers.a = 2;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
-            assert_eq!(cpu.registers.a, 1);
+            assert_eq!(cpu.registers.a, 129);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
@@ -1852,7 +1852,7 @@ mod tests {
             cpu.registers.a = 3;
             let cycle = cpu.rr_a();
             assert_eq!(cycle, 4);
-            assert_eq!(cpu.registers.a, 1);
+            assert_eq!(cpu.registers.a, 129);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
@@ -1929,7 +1929,7 @@ mod tests {
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, true);
-            assert_eq!(cpu.registers.flags.carry, false);
+            assert_eq!(cpu.registers.flags.carry, true);
         }
         {
             let mc = Rc::new(RefCell::new(MockDevice {
@@ -1944,7 +1944,7 @@ mod tests {
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
-            assert_eq!(cpu.registers.flags.carry, false);
+            assert_eq!(cpu.registers.flags.carry, true);
         }
     }
 
@@ -1962,7 +1962,7 @@ mod tests {
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
-        assert_eq!(cpu.registers.flags.carry, false);
+        assert_eq!(cpu.registers.flags.carry, true);
     }
 
     #[test]
@@ -1980,7 +1980,7 @@ mod tests {
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, true);
             assert_eq!(cpu.registers.flags.half_carry, true);
-            assert_eq!(cpu.registers.flags.carry, false);
+            assert_eq!(cpu.registers.flags.carry, true);
         }
         {
             let mc = Rc::new(RefCell::new(MockDevice {
@@ -1995,7 +1995,7 @@ mod tests {
             assert_eq!(cpu.registers.flags.zero, true);
             assert_eq!(cpu.registers.flags.negative, true);
             assert_eq!(cpu.registers.flags.half_carry, false);
-            assert_eq!(cpu.registers.flags.carry, false);
+            assert_eq!(cpu.registers.flags.carry, true);
         }
     }
 
@@ -2130,8 +2130,8 @@ mod tests {
             let mut cpu = CentralProcessingUnit::new(mc.clone());
             cpu.registers.stack_pointer = 2;
             let cycle = cpu.call_flag_nn(ConditionOperand::Z);
-            assert_eq!(cycle, 12);
-            assert_eq!(cpu.registers.program_counter, 258);
+            assert_eq!(cycle, 24);
+            assert_eq!(cpu.registers.program_counter, 1000);
         }
         {
             let mc = Rc::new(RefCell::new(MockDevice {
@@ -2322,7 +2322,7 @@ mod tests {
             cpu.registers.b = 3;
             let cycle = cpu.rr_r(Register::B);
             assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.b, 1);
+            assert_eq!(cpu.registers.b, 129);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
@@ -2358,7 +2358,7 @@ mod tests {
             cpu.registers.a = 1;
             let cycle = cpu.adc_a_n();
             assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.a, 10);
+            assert_eq!(cpu.registers.a, 11);
             assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, false);
@@ -2373,8 +2373,8 @@ mod tests {
             cpu.registers.a = 0xFF;
             let cycle = cpu.adc_a_n();
             assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.a, 0);
-            assert_eq!(cpu.registers.flags.zero, true);
+            assert_eq!(cpu.registers.a, 1);
+            assert_eq!(cpu.registers.flags.zero, false);
             assert_eq!(cpu.registers.flags.negative, false);
             assert_eq!(cpu.registers.flags.half_carry, true);
             assert_eq!(cpu.registers.flags.carry, true);
@@ -2390,9 +2390,9 @@ mod tests {
             }));
             let mut cpu = CentralProcessingUnit::new(mc.clone());
             let cycle = cpu.ret_f(ConditionOperand::NZ);
-            assert_eq!(cycle, 20);
-            assert_eq!(cpu.registers.stack_pointer, 0);
-            assert_eq!(cpu.registers.program_counter, 99);
+            assert_eq!(cycle, 8);
+            assert_eq!(cpu.registers.stack_pointer, 65534);
+            assert_eq!(cpu.registers.program_counter, 256);
         }
         {
             let mc = Rc::new(RefCell::new(MockDevice {
@@ -2401,9 +2401,9 @@ mod tests {
             }));
             let mut cpu = CentralProcessingUnit::new(mc.clone());
             let cycle = cpu.ret_f(ConditionOperand::Z);
-            assert_eq!(cycle, 8);
-            assert_eq!(cpu.registers.stack_pointer, 65534);
-            assert_eq!(cpu.registers.program_counter, 256);
+            assert_eq!(cycle, 20);
+            assert_eq!(cpu.registers.stack_pointer, 0);
+            assert_eq!(cpu.registers.program_counter, 99);
         }
     }
 
@@ -2439,7 +2439,7 @@ mod tests {
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, false);
-        assert_eq!(cpu.registers.flags.carry, false);
+        assert_eq!(cpu.registers.flags.carry, true);
     }
 
     #[test]
@@ -2454,7 +2454,7 @@ mod tests {
         let cycle = cpu.add_hl_rr(RegisterWord::BC);
         assert_eq!(cycle, 8);
         assert_eq!(cpu.registers.hl(), 110);
-        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.zero, true);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, false);
@@ -2535,12 +2535,12 @@ mod tests {
             }));
             let mut cpu = CentralProcessingUnit::new(mc.clone());
             let cycle = cpu.jp_f_nn(ConditionOperand::NZ);
-            assert_eq!(cycle, 16);
-            assert_eq!(cpu.registers.program_counter, 558);
-            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cycle, 12);
+            assert_eq!(cpu.registers.program_counter, 258);
+            assert_eq!(cpu.registers.flags.zero, true);
             assert_eq!(cpu.registers.flags.negative, false);
-            assert_eq!(cpu.registers.flags.half_carry, false);
-            assert_eq!(cpu.registers.flags.carry, false);
+            assert_eq!(cpu.registers.flags.half_carry, true);
+            assert_eq!(cpu.registers.flags.carry, true);
         }
         {
             let mc = Rc::new(RefCell::new(MockDevice {
@@ -2549,12 +2549,12 @@ mod tests {
             }));
             let mut cpu = CentralProcessingUnit::new(mc.clone());
             let cycle = cpu.jp_f_nn(ConditionOperand::Z);
-            assert_eq!(cycle, 12);
-            assert_eq!(cpu.registers.program_counter, 258);
-            assert_eq!(cpu.registers.flags.zero, false);
+            assert_eq!(cycle, 16);
+            assert_eq!(cpu.registers.program_counter, 558);
+            assert_eq!(cpu.registers.flags.zero, true);
             assert_eq!(cpu.registers.flags.negative, false);
-            assert_eq!(cpu.registers.flags.half_carry, false);
-            assert_eq!(cpu.registers.flags.carry, false);
+            assert_eq!(cpu.registers.flags.half_carry, true);
+            assert_eq!(cpu.registers.flags.carry, true);
         }
     }
 
@@ -2679,7 +2679,7 @@ mod tests {
         cpu.registers.set_hl(99);
         let cycle = cpu.adc_a_hl();
         assert_eq!(cycle, 8);
-        assert_eq!(cpu.registers.a, 11);
+        assert_eq!(cpu.registers.a, 28);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
@@ -2734,11 +2734,11 @@ mod tests {
         cpu.registers.flags.carry = true;
         let cycle = cpu.sbc_a_hl();
         assert_eq!(cycle, 8);
-        assert_eq!(cpu.registers.a, 246);
+        assert_eq!(cpu.registers.a, 6);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
-        assert_eq!(cpu.registers.flags.carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 
     #[test]
@@ -2751,11 +2751,11 @@ mod tests {
         cpu.registers.flags.carry = true;
         let cycle = cpu.sbc_a_n();
         assert_eq!(cycle, 8);
-        assert_eq!(cpu.registers.a, 246);
+        assert_eq!(cpu.registers.a, 6);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
-        assert_eq!(cpu.registers.flags.carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 
     #[test]
@@ -2858,11 +2858,11 @@ mod tests {
         cpu.registers.a = 11;
         let cycle = cpu.daa();
         assert_eq!(cycle, 4);
-        assert_eq!(cpu.registers.a, 17);
+        assert_eq!(cpu.registers.a, 113);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
-        assert_eq!(cpu.registers.flags.carry, false);
+        assert_eq!(cpu.registers.flags.carry, true);
     }
 
     #[test]
@@ -2876,10 +2876,10 @@ mod tests {
         let cycle = cpu.cpl();
         assert_eq!(cycle, 4);
         assert_eq!(cpu.registers.a, 244);
-        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.zero, true);
         assert_eq!(cpu.registers.flags.negative, true);
         assert_eq!(cpu.registers.flags.half_carry, true);
-        assert_eq!(cpu.registers.flags.carry, false);
+        assert_eq!(cpu.registers.flags.carry, true);
     }
 
     #[test]
@@ -2891,10 +2891,10 @@ mod tests {
         let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.ccf();
         assert_eq!(cycle, 4);
-        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.zero, true);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
-        assert_eq!(cpu.registers.flags.carry, true);
+        assert_eq!(cpu.registers.flags.carry, false);
     }
 
     #[test]
@@ -2906,7 +2906,7 @@ mod tests {
         let mut cpu = CentralProcessingUnit::new(mc.clone());
         let cycle = cpu.scf();
         assert_eq!(cycle, 4);
-        assert_eq!(cpu.registers.flags.zero, false);
+        assert_eq!(cpu.registers.flags.zero, true);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
         assert_eq!(cpu.registers.flags.carry, true);
@@ -2922,7 +2922,7 @@ mod tests {
         cpu.registers.a = 11;
         let cycle = cpu.rla();
         assert_eq!(cycle, 4);
-        assert_eq!(cpu.registers.a, 22);
+        assert_eq!(cpu.registers.a, 23);
         assert_eq!(cpu.registers.flags.zero, false);
         assert_eq!(cpu.registers.flags.negative, false);
         assert_eq!(cpu.registers.flags.half_carry, false);
