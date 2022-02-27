@@ -3,12 +3,14 @@ use std::env;
 mod background_palette_index;
 mod cartridge;
 mod cartridge_header;
+mod clock;
 mod cpu;
 mod emulator;
 mod gpu;
 mod hdma;
 mod input_output_registers;
 mod internal_memory;
+mod interrupt;
 mod memory_device;
 mod mmu;
 mod opcodes;
@@ -17,7 +19,6 @@ mod register;
 mod serial_data_transfer;
 mod sound;
 mod timer;
-mod interrupt;
 
 fn main() -> Result<(), std::io::Error> {
     println!("starting yobemag...");

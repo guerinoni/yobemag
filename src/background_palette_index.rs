@@ -17,6 +17,13 @@ pub(crate) struct BackgroundPaletteIndex {
     auto_increment: bool,
 }
 
+impl BackgroundPaletteIndex {
+    /// Get the background palette index's value.
+    pub(crate) fn value(&self) -> u8 {
+        self.value
+    }
+}
+
 impl Default for BackgroundPaletteIndex {
     fn default() -> Self {
         Self {
@@ -28,7 +35,7 @@ impl Default for BackgroundPaletteIndex {
 
 impl ReadWrite for BackgroundPaletteIndex {
     fn contains(&self, address: usize) -> bool {
-        address == 0xFF69
+        address == 0xFF68
     }
 
     fn read_byte(&self, _address: usize) -> Result<u8, std::io::Error> {
