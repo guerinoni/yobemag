@@ -1,5 +1,6 @@
 use std::env;
 
+mod background_palette_index;
 mod cartridge;
 mod cartridge_header;
 mod cpu;

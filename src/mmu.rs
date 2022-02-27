@@ -70,8 +70,6 @@ impl MemoryManagmentUnit {
         let cpu_cycles = cycles + vram_cycles * cpu_divider;
         self.timer.step(cpu_cycles);
         self.gpu.step(gpu_cycles);
-
-        self.gpu.step(cycles);
     }
 
     //     run_dma_hrampart:

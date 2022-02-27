@@ -1,4 +1,4 @@
-use crate::memory_device::ReadWrite;
+use crate::{background_palette_index::BackgroundPaletteIndex, memory_device::ReadWrite};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 struct Palette {
@@ -161,6 +161,8 @@ pub struct GraphicsProcessingUnit {
     // This register assigns gray shades for sprite palette 1. It works exactly as BGP (FF47), except that the lower
     // two bits aren't used because sprite data 00 is transparent.
     bgj_pallete_1: Palette,
+
+    bpi: BackgroundPaletteIndex,
 }
 
 impl GraphicsProcessingUnit {
@@ -180,6 +182,7 @@ impl GraphicsProcessingUnit {
             bg_pallete: Palette::default(),
             bgj_pallete_0: Palette::default(),
             bgj_pallete_1: Palette::from(1),
+            bpi: BackgroundPaletteIndex::default(),
         }
     }
 
@@ -203,9 +206,14 @@ impl ReadWrite for GraphicsProcessingUnit {
             || 0xFF48 == address
             || 0xFF49 == address
             || 0xFF4F == address
+            || self.bpi.contains(address)
     }
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
+        if self.bpi.contains(address) {
+            return self.bpi.read_byte(address);
+        }
+
         match address {
             0x8000..=0x9FFF => {
                 Ok(self.vram[self.bank as usize * 0x2000_usize + address - 0x8000_usize])
@@ -232,6 +240,10 @@ impl ReadWrite for GraphicsProcessingUnit {
     }
 
     fn write_byte(&mut self, address: usize, value: u8) -> Result<(), std::io::Error> {
+        if self.bpi.contains(address) {
+            return self.bpi.write_byte(address, value);
+        }
+
         match address {
             0x8000..=0x9FFF => {
                 self.vram[self.bank as usize * 0x2000_usize + address - 0x8000_usize] = value
