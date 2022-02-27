@@ -12,6 +12,7 @@ use crate::memory_device::ReadWrite;
 // so the index must be manually incremented in that case.
 // Writing to 0xFF69 during rendering still causes auto-increment to occur.
 // Unlike the following, this register can be accessed outside V-Blank and H-Blank.
+#[derive(Default)]
 pub(crate) struct BackgroundPaletteIndex {
     value: u8,
     auto_increment: bool,
@@ -21,15 +22,6 @@ impl BackgroundPaletteIndex {
     /// Get the background palette index's value.
     pub(crate) fn value(&self) -> u8 {
         self.value
-    }
-}
-
-impl Default for BackgroundPaletteIndex {
-    fn default() -> Self {
-        Self {
-            value: 0,
-            auto_increment: false,
-        }
     }
 }
 
@@ -56,7 +48,7 @@ impl ReadWrite for BackgroundPaletteIndex {
         Ok(())
     }
 
-    fn write_word(&mut self, address: usize, value: u16) -> Result<(), std::io::Error> {
+    fn write_word(&mut self, address: usize, _value: u16) -> Result<(), std::io::Error> {
         Err(std::io::Error::new(
             std::io::ErrorKind::AddrNotAvailable,
             format!("can't read word in {:#04x}.", address),

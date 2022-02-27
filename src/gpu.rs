@@ -230,8 +230,8 @@ impl ReadWrite for GraphicsProcessingUnit {
             0xFF49 => Ok(self.bgj_pallete_1.into()),
             0xFF4F => Ok(0xFE | self.bank),
             0xFF69 => {
-                let r = self.bpi.value() >> 3;
-                let c = self.bpi.value() >> 1 & 0x3;
+                let _r = self.bpi.value() >> 3;
+                let _c = self.bpi.value() >> 1 & 0x3;
                 // FIXME: missing parts
                 Ok(0)
             }

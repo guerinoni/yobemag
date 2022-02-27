@@ -11,7 +11,7 @@ impl Clock {
     pub fn step(&mut self, cycles: u32) -> u8 {
         self.counter += cycles;
         let rs = self.counter / self.period;
-        self.counter = self.counter % self.period;
+        self.counter %= self.period;
         rs as u8
     }
 

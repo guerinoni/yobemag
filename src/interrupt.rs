@@ -4,6 +4,7 @@
 // Bit 2: Timer    Interrupt Request (INT 50h)  (1=Request)
 // Bit 3: Serial   Interrupt Request (INT 58h)  (1=Request)
 // Bit 4: Joypad   Interrupt Request (INT 60h)  (1=Request)
+#[allow(unused)]
 pub enum InterruptKind {
     VBlank = 0,
     LCDStat = 1,
