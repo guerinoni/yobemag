@@ -206,7 +206,7 @@ impl ReadWrite for GraphicsProcessingUnit {
             || 0xFF48 == address
             || 0xFF49 == address
             || 0xFF4F == address
-            || self.bpi.contains(address)
+            || self.bpi.contains(address) || address == 0xFF69
     }
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
@@ -228,6 +228,12 @@ impl ReadWrite for GraphicsProcessingUnit {
             0xFF48 => Ok(self.bgj_pallete_0.into()),
             0xFF49 => Ok(self.bgj_pallete_1.into()),
             0xFF4F => Ok(0xFE | self.bank),
+            0xFF69 => {
+                let r = self.bpi.value() >> 3;
+                let c = self.bpi.value() >> 1 & 0x3;
+                // FIXME: missing parts
+                Ok(0)
+            }
             _ => Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "can't write byte here",
@@ -258,6 +264,9 @@ impl ReadWrite for GraphicsProcessingUnit {
             0xFF48 => self.bgj_pallete_0 = value.into(),
             0xFF49 => self.bgj_pallete_1 = value.into(),
             0xFF4F => self.bank = value & 0x01,
+            0xFF69 => {
+                // TODO: do something here
+            }
             _ => {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
