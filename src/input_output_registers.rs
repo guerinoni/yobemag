@@ -1,5 +1,6 @@
 use crate::memory_device::ReadWrite;
 
+#[derive(Default)]
 pub struct InputOutputRegisters {
     /// Mask that holds input comes from gameboy button: 0xFF00.
     /// Bit 0 - P10 Input Right or Button A (0=Pressed) (Read Only)
@@ -11,12 +12,6 @@ pub struct InputOutputRegisters {
     /// Bit 6 and 7 unused.
     /// TODO: protect write on read-only register.
     buttons: u8,
-}
-
-impl InputOutputRegisters {
-    pub fn new() -> InputOutputRegisters {
-        InputOutputRegisters { buttons: 0 }
-    }
 }
 
 impl ReadWrite for InputOutputRegisters {

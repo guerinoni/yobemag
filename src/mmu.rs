@@ -57,7 +57,7 @@ impl MemoryManagmentUnit {
             sound: Sound::new(),
             speed: Speed::Normal,
             toggle_speed_request: false,
-            io_reg: InputOutputRegisters::new(),
+            io_reg: InputOutputRegisters::default(),
             hdma: Hdma::default(),
         }
     }
@@ -277,6 +277,11 @@ impl ReadWrite for MemoryManagmentUnit {
         if self.sound.contains(address) {
             return self.sound.write_byte(address, value);
         }
+
+        if self.io_reg.contains(address) {
+            return self.io_reg.write_byte(address, value);
+        }
+
 
         if self.hdma.contains(address) {
             return self.hdma.write_byte(address, value);
