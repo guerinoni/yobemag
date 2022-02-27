@@ -71,15 +71,15 @@ impl MBC1 {
             ram: Vec::with_capacity(ram_size),
             ram_enable: false,
             romram_mode: false,
-            bank: 0,
+            bank: 0x01,
         }
     }
 
     fn rom_bank(&self) -> u8 {
         if self.romram_mode {
-            self.bank & 0x7F
-        } else {
             self.bank & 0x1F
+        } else {
+            self.bank & 0x7F
         }
     }
 
@@ -103,7 +103,8 @@ impl ReadWrite for MBC1 {
         match address {
             0x0000..=0x3FFF => Ok(self.rom[address]),
             0x4000..=0x7FFF => {
-                let i = self.rom_bank() as usize * 0x4000_usize + address - 0x4000_usize;
+                let rb = self.rom_bank();
+                let i = rb as usize * 0x4000_usize + address - 0x4000_usize;
                 Ok(self.rom[i])
             }
             0xA000..=0xBFFF => {
