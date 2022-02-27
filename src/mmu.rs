@@ -282,7 +282,6 @@ impl ReadWrite for MemoryManagmentUnit {
             return self.io_reg.write_byte(address, value);
         }
 
-
         if self.hdma.contains(address) {
             return self.hdma.write_byte(address, value);
         }

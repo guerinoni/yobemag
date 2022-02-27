@@ -206,7 +206,8 @@ impl ReadWrite for GraphicsProcessingUnit {
             || 0xFF48 == address
             || 0xFF49 == address
             || 0xFF4F == address
-            || self.bpi.contains(address) || address == 0xFF69
+            || self.bpi.contains(address)
+            || address == 0xFF69
     }
 
     fn read_byte(&self, address: usize) -> Result<u8, std::io::Error> {
