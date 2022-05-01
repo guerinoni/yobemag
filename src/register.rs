@@ -263,13 +263,7 @@ mod tests {
 
         assert_eq!(flags.to_u8(), 240);
 
-        let mut flags = CpuFlag {
-            carry: false,
-            half_carry: false,
-            negative: false,
-            zero: false,
-        };
-        flags = CpuFlag::from_u8(240);
+        let flags = CpuFlag::from_u8(240);
         assert_eq!(
             flags,
             CpuFlag {
